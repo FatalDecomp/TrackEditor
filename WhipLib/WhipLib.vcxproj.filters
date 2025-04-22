@@ -233,6 +233,9 @@
     <ClInclude Include="ObjExporter.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="ObjImporter.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Unmangler.cpp">
@@ -326,6 +329,9 @@
       <Filter>Source Files\Entity</Filter>
     </ClCompile>
     <ClCompile Include="ObjExporter.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ObjImporter.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

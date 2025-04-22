@@ -270,6 +270,7 @@ exit 1</Command>
     <ClInclude Include="MathHelpers.h" />
     <ClInclude Include="NoclipComponent.h" />
     <ClInclude Include="ObjExporter.h" />
+    <ClInclude Include="ObjImporter.h" />
     <ClInclude Include="PhysicsComponent.h" />
     <ClInclude Include="Renderer.h" />
     <ClInclude Include="Scene.h" />
@@ -334,6 +335,7 @@ exit 1</Command>
     <ClCompile Include="MathHelpers.cpp" />
     <ClCompile Include="NoclipComponent.cpp" />
     <ClCompile Include="ObjExporter.cpp" />
+    <ClCompile Include="ObjImporter.cpp" />
     <ClCompile Include="PhysicsComponent.cpp" />
     <ClCompile Include="Renderer.cpp" />
     <ClCompile Include="Scene.cpp" />

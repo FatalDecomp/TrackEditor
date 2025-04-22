@@ -46,6 +46,7 @@ SRC = 	Camera.cpp \
 		MathHelpers.cpp \
 		NoclipComponent.cpp \
 		ObjExporter.cpp \
+		ObjImporter.cpp \
 		Palette.cpp \
 		PhysicsComponent.cpp \
 		Renderer.cpp \
