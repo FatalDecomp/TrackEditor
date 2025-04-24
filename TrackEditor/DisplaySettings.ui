@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>559</width>
-    <height>645</height>
+    <width>282</width>
+    <height>789</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -39,20 +39,37 @@
        <rect>
         <x>0</x>
         <y>0</y>
-        <width>557</width>
-        <height>643</height>
+        <width>280</width>
+        <height>787</height>
        </rect>
       </property>
       <layout class="QGridLayout" name="gridLayout">
-       <item row="5" column="1">
-        <widget class="QCheckBox" name="ckAllSurface">
+       <item row="20" column="1" colspan="2">
+        <widget class="QCheckBox" name="ckMillionPlus">
+         <property name="text">
+          <string>Million Plus</string>
+         </property>
+        </widget>
+       </item>
+       <item row="19" column="1" colspan="2">
+        <widget class="QComboBox" name="cbTestCarPos"/>
+       </item>
+       <item row="12" column="2">
+        <widget class="QCheckBox" name="ckLUOWallWireframe">
          <property name="text">
           <string/>
          </property>
         </widget>
        </item>
-       <item row="12" column="1">
-        <widget class="QCheckBox" name="ckLUOWallSurface">
+       <item row="21" column="0" colspan="4">
+        <widget class="Line" name="line_3">
+         <property name="orientation">
+          <enum>Qt::Horizontal</enum>
+         </property>
+        </widget>
+       </item>
+       <item row="11" column="2">
+        <widget class="QCheckBox" name="ckRoofWireframe">
          <property name="text">
           <string/>
          </property>
@@ -68,24 +85,48 @@
          </property>
         </widget>
        </item>
-       <item row="5" column="0">
-        <widget class="QLabel" name="lblAll">
+       <item row="18" column="1" colspan="2">
+        <widget class="QComboBox" name="cbTestCarType"/>
+       </item>
+       <item row="24" column="0">
+        <widget class="QPushButton" name="pbRefBrowse">
          <property name="text">
-          <string>All</string>
+          <string>Browse...</string>
+         </property>
+        </widget>
+       </item>
+       <item row="5" column="2">
+        <widget class="QCheckBox" name="ckAllWireframe">
+         <property name="text">
+          <string/>
+         </property>
+        </widget>
+       </item>
+       <item row="15" column="1">
+        <widget class="QCheckBox" name="ckRLOWallSurface">
+         <property name="text">
+          <string/>
+         </property>
+        </widget>
+       </item>
+       <item row="6" column="0">
+        <widget class="QLabel" name="lblLLane">
+         <property name="text">
+          <string>Center</string>
          </property>
          <property name="alignment">
           <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
          </property>
         </widget>
        </item>
-       <item row="8" column="2">
-        <widget class="QCheckBox" name="ckRShoulderWireframe">
+       <item row="14" column="1">
+        <widget class="QCheckBox" name="ckRUOWallSurface">
          <property name="text">
           <string/>
          </property>
         </widget>
        </item>
-       <item row="21" column="0">
+       <item row="26" column="2">
         <spacer name="verticalSpacer">
          <property name="orientation">
           <enum>Qt::Vertical</enum>
@@ -98,13 +139,76 @@
          </property>
         </spacer>
        </item>
-       <item row="15" column="0">
-        <widget class="QLabel" name="lblRLOWall">
+       <item row="14" column="2">
+        <widget class="QCheckBox" name="ckRUOWallWireframe">
          <property name="text">
-          <string>R Lower Outer Wall</string>
+          <string/>
+         </property>
+        </widget>
+       </item>
+       <item row="5" column="1">
+        <widget class="QCheckBox" name="ckAllSurface">
+         <property name="text">
+          <string/>
+         </property>
+        </widget>
+       </item>
+       <item row="6" column="2">
+        <widget class="QCheckBox" name="ckCenterWireframe">
+         <property name="text">
+          <string/>
+         </property>
+        </widget>
+       </item>
+       <item row="17" column="0" colspan="4">
+        <widget class="Line" name="line_2">
+         <property name="orientation">
+          <enum>Qt::Horizontal</enum>
+         </property>
+        </widget>
+       </item>
+       <item row="11" column="1">
+        <widget class="QCheckBox" name="ckRoofSurface">
+         <property name="text">
+          <string/>
+         </property>
+        </widget>
+       </item>
+       <item row="5" column="0">
+        <widget class="QLabel" name="lblAll">
+         <property name="text">
+          <string>All</string>
          </property>
          <property name="alignment">
           <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+         </property>
+        </widget>
+       </item>
+       <item row="16" column="2">
+        <widget class="QCheckBox" name="ckOWallFloorWireframe">
+         <property name="text">
+          <string/>
+         </property>
+        </widget>
+       </item>
+       <item row="8" column="2">
+        <widget class="QCheckBox" name="ckRShoulderWireframe">
+         <property name="text">
+          <string/>
+         </property>
+        </widget>
+       </item>
+       <item row="9" column="1">
+        <widget class="QCheckBox" name="ckLWallSurface">
+         <property name="text">
+          <string/>
+         </property>
+        </widget>
+       </item>
+       <item row="4" column="2">
+        <widget class="QLabel" name="label_2">
+         <property name="text">
+          <string>Wireframe</string>
          </property>
         </widget>
        </item>
@@ -115,6 +219,85 @@
          </property>
          <property name="alignment">
           <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+         </property>
+        </widget>
+       </item>
+       <item row="8" column="1">
+        <widget class="QCheckBox" name="ckRShoulderSurface">
+         <property name="text">
+          <string/>
+         </property>
+        </widget>
+       </item>
+       <item row="15" column="0">
+        <widget class="QLabel" name="lblRLOWall">
+         <property name="text">
+          <string>R Lower Outer Wall</string>
+         </property>
+         <property name="alignment">
+          <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+         </property>
+        </widget>
+       </item>
+       <item row="4" column="1">
+        <widget class="QLabel" name="label">
+         <property name="text">
+          <string>Surface</string>
+         </property>
+        </widget>
+       </item>
+       <item row="23" column="0">
+        <widget class="QLabel" name="lblRefModelFile">
+         <property name="text">
+          <string>(none loaded)</string>
+         </property>
+        </widget>
+       </item>
+       <item row="3" column="0" colspan="4">
+        <widget class="Line" name="line">
+         <property name="orientation">
+          <enum>Qt::Horizontal</enum>
+         </property>
+        </widget>
+       </item>
+       <item row="18" column="0">
+        <widget class="QCheckBox" name="ckTestCar">
+         <property name="text">
+          <string>Test Car</string>
+         </property>
+        </widget>
+       </item>
+       <item row="7" column="0">
+        <widget class="QLabel" name="lblLShoulder">
+         <property name="text">
+          <string>Left Shoulder</string>
+         </property>
+         <property name="alignment">
+          <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+         </property>
+        </widget>
+       </item>
+       <item row="14" column="0">
+        <widget class="QLabel" name="lblRUOWall">
+         <property name="text">
+          <string>R Upper Outer Wall</string>
+         </property>
+         <property name="alignment">
+          <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+         </property>
+        </widget>
+       </item>
+       <item row="22" column="0">
+        <widget class="QCheckBox" name="ckRefModel">
+         <property name="text">
+          <string>Reference Model</string>
+         </property>
+        </widget>
+       </item>
+       <item row="16" column="1">
+        <widget class="QCheckBox" name="ckOWallFloorSurface">
+         <property name="text">
+          <string/>
          </property>
         </widget>
        </item>
@@ -131,13 +314,50 @@
          </property>
         </spacer>
        </item>
-       <item row="13" column="0">
-        <widget class="QLabel" name="lblLLOWall">
+       <item row="9" column="2">
+        <widget class="QCheckBox" name="ckLWallWireframe">
          <property name="text">
-          <string>L Lower Outer Wall</string>
+          <string/>
+         </property>
+        </widget>
+       </item>
+       <item row="7" column="2">
+        <widget class="QCheckBox" name="ckLShoulderWireframe">
+         <property name="text">
+          <string/>
+         </property>
+        </widget>
+       </item>
+       <item row="4" column="0">
+        <widget class="QLabel" name="label_16">
+         <property name="font">
+          <font>
+           <weight>75</weight>
+           <bold>true</bold>
+          </font>
+         </property>
+         <property name="text">
+          <string>Show</string>
          </property>
          <property name="alignment">
           <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+         </property>
+        </widget>
+       </item>
+       <item row="6" column="1">
+        <widget class="QCheckBox" name="ckCenterSurface">
+         <property name="text">
+          <string/>
+         </property>
+        </widget>
+       </item>
+       <item row="19" column="0">
+        <widget class="QLabel" name="label_3">
+         <property name="text">
+          <string>Position</string>
+         </property>
+         <property name="alignment">
+          <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
          </property>
         </widget>
        </item>
@@ -148,20 +368,10 @@
          </property>
         </widget>
        </item>
-       <item row="17" column="0" colspan="4">
-        <widget class="Line" name="line_2">
-         <property name="orientation">
-          <enum>Qt::Horizontal</enum>
-         </property>
-        </widget>
-       </item>
-       <item row="10" column="0">
-        <widget class="QLabel" name="lblRWall">
+       <item row="10" column="2">
+        <widget class="QCheckBox" name="ckRWallWireframe">
          <property name="text">
-          <string>Right Wall</string>
-         </property>
-         <property name="alignment">
-          <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+          <string/>
          </property>
         </widget>
        </item>
@@ -175,23 +385,6 @@
          </property>
         </widget>
        </item>
-       <item row="7" column="0">
-        <widget class="QLabel" name="lblLShoulder">
-         <property name="text">
-          <string>Left Shoulder</string>
-         </property>
-         <property name="alignment">
-          <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-         </property>
-        </widget>
-       </item>
-       <item row="7" column="2">
-        <widget class="QCheckBox" name="ckLShoulderWireframe">
-         <property name="text">
-          <string/>
-         </property>
-        </widget>
-       </item>
        <item row="9" column="0">
         <widget class="QLabel" name="lblLWall">
          <property name="text">
@@ -202,41 +395,6 @@
          </property>
         </widget>
        </item>
-       <item row="16" column="2">
-        <widget class="QCheckBox" name="ckOWallFloorWireframe">
-         <property name="text">
-          <string/>
-         </property>
-        </widget>
-       </item>
-       <item row="9" column="1">
-        <widget class="QCheckBox" name="ckLWallSurface">
-         <property name="text">
-          <string/>
-         </property>
-        </widget>
-       </item>
-       <item row="6" column="2">
-        <widget class="QCheckBox" name="ckCenterWireframe">
-         <property name="text">
-          <string/>
-         </property>
-        </widget>
-       </item>
-       <item row="6" column="1">
-        <widget class="QCheckBox" name="ckCenterSurface">
-         <property name="text">
-          <string/>
-         </property>
-        </widget>
-       </item>
-       <item row="11" column="1">
-        <widget class="QCheckBox" name="ckRoofSurface">
-         <property name="text">
-          <string/>
-         </property>
-        </widget>
-       </item>
        <item row="13" column="1">
         <widget class="QCheckBox" name="ckLLOWallSurface">
          <property name="text">
@@ -244,10 +402,44 @@
          </property>
         </widget>
        </item>
-       <item row="10" column="2">
-        <widget class="QCheckBox" name="ckRWallWireframe">
+       <item row="7" column="1">
+        <widget class="QCheckBox" name="ckLShoulderSurface">
          <property name="text">
           <string/>
+         </property>
+        </widget>
+       </item>
+       <item row="10" column="0">
+        <widget class="QLabel" name="lblRWall">
+         <property name="text">
+          <string>Right Wall</string>
+         </property>
+         <property name="alignment">
+          <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+         </property>
+        </widget>
+       </item>
+       <item row="12" column="1">
+        <widget class="QCheckBox" name="ckLUOWallSurface">
+         <property name="text">
+          <string/>
+         </property>
+        </widget>
+       </item>
+       <item row="13" column="2">
+        <widget class="QCheckBox" name="ckLLOWallWireframe">
+         <property name="text">
+          <string/>
+         </property>
+        </widget>
+       </item>
+       <item row="13" column="0">
+        <widget class="QLabel" name="lblLLOWall">
+         <property name="text">
+          <string>L Lower Outer Wall</string>
+         </property>
+         <property name="alignment">
+          <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
          </property>
         </widget>
        </item>
@@ -373,140 +565,10 @@
          </item>
         </layout>
        </item>
-       <item row="14" column="0">
-        <widget class="QLabel" name="lblRUOWall">
-         <property name="text">
-          <string>R Upper Outer Wall</string>
-         </property>
-         <property name="alignment">
-          <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-         </property>
-        </widget>
-       </item>
-       <item row="18" column="0">
-        <widget class="QCheckBox" name="ckTestCar">
-         <property name="text">
-          <string>Test Car</string>
-         </property>
-        </widget>
-       </item>
-       <item row="18" column="1" colspan="2">
-        <widget class="QComboBox" name="cbTestCarType"/>
-       </item>
-       <item row="20" column="1" colspan="2">
-        <widget class="QCheckBox" name="ckMillionPlus">
-         <property name="text">
-          <string>Million Plus</string>
-         </property>
-        </widget>
-       </item>
-       <item row="3" column="0" colspan="4">
-        <widget class="Line" name="line">
-         <property name="orientation">
-          <enum>Qt::Horizontal</enum>
-         </property>
-        </widget>
-       </item>
-       <item row="12" column="2">
-        <widget class="QCheckBox" name="ckLUOWallWireframe">
-         <property name="text">
-          <string/>
-         </property>
-        </widget>
-       </item>
-       <item row="4" column="1">
-        <widget class="QLabel" name="label">
-         <property name="text">
-          <string>Surface</string>
-         </property>
-        </widget>
-       </item>
-       <item row="16" column="1">
-        <widget class="QCheckBox" name="ckOWallFloorSurface">
-         <property name="text">
-          <string/>
-         </property>
-        </widget>
-       </item>
-       <item row="8" column="1">
-        <widget class="QCheckBox" name="ckRShoulderSurface">
-         <property name="text">
-          <string/>
-         </property>
-        </widget>
-       </item>
-       <item row="5" column="2">
-        <widget class="QCheckBox" name="ckAllWireframe">
-         <property name="text">
-          <string/>
-         </property>
-        </widget>
-       </item>
-       <item row="13" column="2">
-        <widget class="QCheckBox" name="ckLLOWallWireframe">
-         <property name="text">
-          <string/>
-         </property>
-        </widget>
-       </item>
-       <item row="9" column="2">
-        <widget class="QCheckBox" name="ckLWallWireframe">
-         <property name="text">
-          <string/>
-         </property>
-        </widget>
-       </item>
-       <item row="4" column="0">
-        <widget class="QLabel" name="label_16">
-         <property name="font">
-          <font>
-           <weight>75</weight>
-           <bold>true</bold>
-          </font>
-         </property>
-         <property name="text">
-          <string>Show</string>
-         </property>
-         <property name="alignment">
-          <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-         </property>
-        </widget>
-       </item>
        <item row="15" column="2">
         <widget class="QCheckBox" name="ckRLOWallWireframe">
          <property name="text">
           <string/>
-         </property>
-        </widget>
-       </item>
-       <item row="19" column="1" colspan="2">
-        <widget class="QComboBox" name="cbTestCarPos"/>
-       </item>
-       <item row="7" column="1">
-        <widget class="QCheckBox" name="ckLShoulderSurface">
-         <property name="text">
-          <string/>
-         </property>
-        </widget>
-       </item>
-       <item row="14" column="2">
-        <widget class="QCheckBox" name="ckRUOWallWireframe">
-         <property name="text">
-          <string/>
-         </property>
-        </widget>
-       </item>
-       <item row="11" column="2">
-        <widget class="QCheckBox" name="ckRoofWireframe">
-         <property name="text">
-          <string/>
-         </property>
-        </widget>
-       </item>
-       <item row="4" column="2">
-        <widget class="QLabel" name="label_2">
-         <property name="text">
-          <string>Wireframe</string>
          </property>
         </widget>
        </item>
@@ -520,39 +582,168 @@
          </property>
         </widget>
        </item>
-       <item row="6" column="0">
-        <widget class="QLabel" name="lblLLane">
-         <property name="text">
-          <string>Center</string>
-         </property>
-         <property name="alignment">
-          <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-         </property>
-        </widget>
-       </item>
-       <item row="19" column="0">
-        <widget class="QLabel" name="label_3">
-         <property name="text">
-          <string>Position</string>
-         </property>
-         <property name="alignment">
-          <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
-         </property>
-        </widget>
-       </item>
-       <item row="14" column="1">
-        <widget class="QCheckBox" name="ckRUOWallSurface">
-         <property name="text">
-          <string/>
-         </property>
-        </widget>
-       </item>
-       <item row="15" column="1">
-        <widget class="QCheckBox" name="ckRLOWallSurface">
-         <property name="text">
-          <string/>
-         </property>
-        </widget>
+       <item row="25" column="0" colspan="4">
+        <layout class="QGridLayout" name="gridLayout_3">
+         <item row="1" column="1">
+          <widget class="QDoubleSpinBox" name="dsbRefPitch">
+           <property name="wrapping">
+            <bool>true</bool>
+           </property>
+           <property name="minimum">
+            <double>0.000000000000000</double>
+           </property>
+           <property name="maximum">
+            <double>360.000000000000000</double>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="3">
+          <spacer name="horizontalSpacer_4">
+           <property name="orientation">
+            <enum>Qt::Horizontal</enum>
+           </property>
+           <property name="sizeHint" stdset="0">
+            <size>
+             <width>40</width>
+             <height>20</height>
+            </size>
+           </property>
+          </spacer>
+         </item>
+         <item row="2" column="2">
+          <widget class="QLabel" name="lblRefZ">
+           <property name="text">
+            <string>Z</string>
+           </property>
+          </widget>
+         </item>
+         <item row="0" column="2">
+          <widget class="QLabel" name="lblRefRoll">
+           <property name="text">
+            <string>Roll</string>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="2">
+          <widget class="QDoubleSpinBox" name="dsbRefRoll">
+           <property name="wrapping">
+            <bool>true</bool>
+           </property>
+           <property name="minimum">
+            <double>0.000000000000000</double>
+           </property>
+           <property name="maximum">
+            <double>360.000000000000000</double>
+           </property>
+          </widget>
+         </item>
+         <item row="0" column="0">
+          <widget class="QLabel" name="lblRefYaw">
+           <property name="text">
+            <string>Yaw</string>
+           </property>
+          </widget>
+         </item>
+         <item row="2" column="1">
+          <widget class="QLabel" name="lblRefY">
+           <property name="text">
+            <string>Y</string>
+           </property>
+          </widget>
+         </item>
+         <item row="0" column="1">
+          <widget class="QLabel" name="lblRefPitch">
+           <property name="text">
+            <string>Pitch</string>
+           </property>
+          </widget>
+         </item>
+         <item row="3" column="2">
+          <widget class="QSpinBox" name="sbRefZ">
+           <property name="minimum">
+            <number>-65535</number>
+           </property>
+           <property name="maximum">
+            <number>65535</number>
+           </property>
+           <property name="singleStep">
+            <number>100</number>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="0">
+          <widget class="QDoubleSpinBox" name="dsbRefYaw">
+           <property name="wrapping">
+            <bool>true</bool>
+           </property>
+           <property name="minimum">
+            <double>0.000000000000000</double>
+           </property>
+           <property name="maximum">
+            <double>360.000000000000000</double>
+           </property>
+          </widget>
+         </item>
+         <item row="3" column="0">
+          <widget class="QSpinBox" name="sbRefX">
+           <property name="minimum">
+            <number>-65535</number>
+           </property>
+           <property name="maximum">
+            <number>65535</number>
+           </property>
+           <property name="singleStep">
+            <number>100</number>
+           </property>
+          </widget>
+         </item>
+         <item row="2" column="0">
+          <widget class="QLabel" name="lblRefX">
+           <property name="text">
+            <string>X</string>
+           </property>
+          </widget>
+         </item>
+         <item row="4" column="0">
+          <widget class="QLabel" name="lblRefScale">
+           <property name="text">
+            <string>Scale</string>
+           </property>
+          </widget>
+         </item>
+         <item row="3" column="1">
+          <widget class="QSpinBox" name="sbRefY">
+           <property name="minimum">
+            <number>-65535</number>
+           </property>
+           <property name="maximum">
+            <number>65535</number>
+           </property>
+           <property name="singleStep">
+            <number>100</number>
+           </property>
+          </widget>
+         </item>
+         <item row="5" column="0" colspan="2">
+          <widget class="QDoubleSpinBox" name="dsbRefScale">
+           <property name="wrapping">
+            <bool>true</bool>
+           </property>
+           <property name="decimals">
+            <number>6</number>
+           </property>
+           <property name="minimum">
+            <double>0.000000000000000</double>
+           </property>
+           <property name="maximum">
+            <double>10000.000000000000000</double>
+           </property>
+           <property name="value">
+            <double>1.000000000000000</double>
+           </property>
+          </widget>
+         </item>
+        </layout>
        </item>
       </layout>
      </widget>
