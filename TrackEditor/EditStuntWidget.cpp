@@ -19,8 +19,8 @@ CEditStuntWidget::CEditStuntWidget(QWidget *pParent)
   connect(sbChunkCount    , SIGNAL(valueChanged(int)), this, SLOT(ChunkCountChanged(int)));
   connect(sbNumTicks      , SIGNAL(valueChanged(int)), this, SLOT(NumTicksChanged(int)));
   connect(sbTickStartIdx  , SIGNAL(valueChanged(int)), this, SLOT(TickStartIdxChanged(int)));
-  connect(rbGroup1        , SIGNAL(toggled(bool))    , this, SLOT(TimingGroupChanged()));
-  connect(rbGroup2        , SIGNAL(toggled(bool))    , this, SLOT(TimingGroupChanged()));
+  connect(rbGroup1        , SIGNAL(toggled(bool))    , this, SLOT(Group1Toggled(bool)));
+  connect(rbGroup2        , SIGNAL(toggled(bool))    , this, SLOT(Group2Toggled(bool)));
   connect(sbHeight        , SIGNAL(valueChanged(int)), this, SLOT(HeightChanged(int)));
   connect(sbTimeBulging   , SIGNAL(valueChanged(int)), this, SLOT(TimeBulgingChanged(int)));
   connect(sbTimeFlat      , SIGNAL(valueChanged(int)), this, SLOT(TimeFlatChanged(int)));
