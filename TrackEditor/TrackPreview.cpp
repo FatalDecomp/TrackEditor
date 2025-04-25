@@ -27,6 +27,7 @@
 #include "qfile.h"
 #include "qtextstream.h"
 #include <fstream>
+#include <glm.hpp>
 //-------------------------------------------------------------------------------------------------
 #if defined(_DEBUG) && defined(IS_WINDOWS)
 #define new new(_CLIENT_BLOCK, __FILE__, __LINE__)
@@ -1086,7 +1087,16 @@ bool CTrackPreview::SaveTrack_Internal(const QString &sFilename)
 
 void CTrackPreview::UpdateReferenceModelPos_Internal()
 {
+  if (!p->m_pRefModel)
+    return;
 
+  glm::mat4 yawMat = glm::rotate(glm::radians((float)m_dRefYaw), glm::vec3(0, 1, 0));
+  glm::mat4 pitchMat = glm::rotate(glm::radians((float)m_dRefPitch), glm::vec3(1, 0, 0));
+  glm::mat4 rollMat = glm::rotate(glm::radians((float)m_dRefRoll), glm::vec3(0, 0, 1));
+  glm::mat4 translateMat = glm::translate(glm::vec3(m_iRefX, m_iRefY, m_iRefZ));
+  glm::mat4 scaleMat = glm::scale(glm::mat4(1), glm::vec3(m_dRefScale, m_dRefScale, m_dRefScale));
+  p->m_pRefModel->m_modelToWorldMatrix = translateMat * rollMat * pitchMat * yawMat * scaleMat;
+  repaint();
 }
 
 //-------------------------------------------------------------------------------------------------
