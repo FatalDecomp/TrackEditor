@@ -87,6 +87,9 @@ CDisplaySettings::CDisplaySettings(QWidget *pParent)
   connect(ckAttachLast, &QCheckBox::toggled, this, &CDisplaySettings::AttachLastCheckedSig);
   connect(sbCameraSpeed, SIGNAL(valueChanged(int)), this, SLOT(OnCameraSpeedChanged(int)));
 
+  connect(ckRefModel, &QCheckBox::toggled, this, &CDisplaySettings::UpdatePreviewSelection);
+  connect(pbRefBrowse, &QPushButton::pressed, this, &CDisplaySettings::OpenReferenceModelSig);
+
   UpdateAllSurface();
   UpdateAllWireframe();
 }
@@ -132,6 +135,7 @@ uint32 CDisplaySettings::GetDisplaySettings(eWhipModel &carModel, eShapeSection 
   if (ckAudio->isChecked())               uiShowModels |= SHOW_AUDIO;
   if (ckStunts->isChecked())              uiShowModels |= SHOW_STUNTS;
   if (ckAnimateStunts->isChecked())       uiShowModels |= ANIMATE_STUNTS;
+  if (ckRefModel->isChecked())            uiShowModels |= SHOW_REF_MODEL;
 
   carModel = (eWhipModel)cbTestCarType->currentData().toInt();
   aiLine = (eShapeSection)cbTestCarPos->currentData().toInt();
@@ -174,6 +178,7 @@ void CDisplaySettings::SetDisplaySettings(uint32 uiShowModels, eWhipModel carMod
   BLOCK_SIG_AND_DO(ckAudio, setChecked(              uiShowModels & SHOW_AUDIO));
   BLOCK_SIG_AND_DO(ckStunts, setChecked(             uiShowModels & SHOW_STUNTS));
   BLOCK_SIG_AND_DO(ckAnimateStunts, setChecked(      uiShowModels & ANIMATE_STUNTS));
+  BLOCK_SIG_AND_DO(ckRefModel, setChecked(           uiShowModels & SHOW_REF_MODEL));
 
   BLOCK_SIG_AND_DO(cbTestCarType, setCurrentIndex(cbTestCarType->findData((int)carModel)));
   BLOCK_SIG_AND_DO(cbTestCarPos, setCurrentIndex(cbTestCarPos->findData((int)aiLine)));

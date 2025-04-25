@@ -81,6 +81,7 @@ protected slots:
   void OnDeleteChunkClicked();
   void OnAddChunkClicked();
   void OnAttachLast(bool bChecked);
+  void OnOpenReferenceModel();
   void OnUpdatePreview();
   void OnSaveHistoryTimer();
   void OnStuntTimer();

@@ -251,6 +251,9 @@
          <property name="text">
           <string>(none loaded)</string>
          </property>
+         <property name="wordWrap">
+          <bool>true</bool>
+         </property>
         </widget>
        </item>
        <item row="3" column="0" colspan="4">

@@ -232,6 +232,7 @@ CMainWindow::CMainWindow(const QString &sAppPath, float fDesktopScale)
 
   connect(p->m_pDisplaySettings, &CDisplaySettings::UpdatePreviewSig, this, &CMainWindow::OnUpdatePreview);
   connect(p->m_pDisplaySettings, &CDisplaySettings::AttachLastCheckedSig, this, &CMainWindow::OnAttachLast);
+  connect(p->m_pDisplaySettings, &CDisplaySettings::OpenReferenceModelSig, this, &CMainWindow::OnOpenReferenceModel);
 
   //open window
   LoadSettings();
@@ -1094,6 +1095,15 @@ void CMainWindow::OnAttachLast(bool bChecked)
   if (!GetCurrentPreview()) return;
 
   GetCurrentPreview()->AttachLast(bChecked);
+}
+
+//-------------------------------------------------------------------------------------------------
+
+void CMainWindow::OnOpenReferenceModel()
+{
+  if (!GetCurrentPreview()) return;
+
+  GetCurrentPreview()->OpenReferenceModel();
 }
 
 //-------------------------------------------------------------------------------------------------

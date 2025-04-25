@@ -1,5 +1,5 @@
-#ifndef _WHIPLIB_OBJEXPORTER_H
-#define _WHIPLIB_OBJEXPORTER_H
+#ifndef _WHIPLIB_OBJIMPORTER_H
+#define _WHIPLIB_OBJIMPORTER_H
 //-------------------------------------------------------------------------------------------------
 #include <string>
 //-------------------------------------------------------------------------------------------------

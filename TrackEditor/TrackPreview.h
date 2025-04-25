@@ -36,6 +36,7 @@ public:
   void ShowModels(uint32 uiShowModels);
   void UpdateCar(eWhipModel carModel, eShapeSection aiLine, bool bMillionPlus);
   void AttachLast(bool bAttachLast);
+  void OpenReferenceModel();
   CTrack *GetTrack();
   bool SaveChangesAndContinue();
   bool SaveTrack();
@@ -77,6 +78,7 @@ private:
   QString m_sTrackFile;
   QString m_sLastCarTex;
   int m_iHistoryIndex;
+  QString m_sReferenceModelFile;
 };
 
 //-------------------------------------------------------------------------------------------------

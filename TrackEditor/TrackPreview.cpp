@@ -15,6 +15,7 @@
 #include "Texture.h"
 #include "FBXExporter.h"
 #include "ObjExporter.h"
+#include "ObjImporter.h"
 #include "CarHelpers.h"
 #include "Entity.h"
 #include "NoclipComponent.h"
@@ -69,6 +70,7 @@ public:
     , m_pCar(NULL)
     , m_pTestNormals(NULL)
     , m_noclipComponent(true)
+    , m_pRefModel(NULL)
   {
     m_entity.Init();
     m_camera.Init();
@@ -101,6 +103,10 @@ public:
     if (m_pTestNormals) {
       delete m_pTestNormals;
       m_pTestNormals = NULL;
+    }
+    if (m_pRefModel) {
+      delete m_pRefModel;
+      m_pRefModel = NULL;
     }
   };
   void DeleteModels()
@@ -261,6 +267,7 @@ public:
   std::vector<CShapeData *> m_signAy;
   std::vector<CShapeData *> m_audioAy;
   std::vector<CShapeData *> m_stuntAy;
+  CShapeData *m_pRefModel;
 
   CShader *m_pShader;
   CTrack m_track;
@@ -289,6 +296,7 @@ CTrackPreview::CTrackPreview(QWidget *pParent, const QString &sTrackFile)
   , m_bToChecked(false)
   , m_sLastCarTex("")
   , m_iHistoryIndex(0)
+  , m_sReferenceModelFile("")
 {
   p = new CTrackPreviewPrivate;
 
@@ -527,6 +535,32 @@ void CTrackPreview::AttachLast(bool bAttachLast)
 
 //-------------------------------------------------------------------------------------------------
 
+void CTrackPreview::OpenReferenceModel()
+{
+  //get filename
+  QString sFilename = QDir::toNativeSeparators(QFileDialog::getOpenFileName(
+    this, "Load Reference Model", g_pMainWindow->m_sLastTrackFilesFolder, QString("OBJ Files (*.obj)")));
+  if (sFilename.isEmpty())
+    return;
+
+  //delete model if it already exists
+  if (p->m_pRefModel) {
+    delete p->m_pRefModel;
+    p->m_pRefModel = NULL;
+  }
+
+  //load new model
+  if (!CObjImporter::GetObjImporter().ImportObj(sFilename.toLatin1().constData(), &p->m_pRefModel, p->m_pShader, p->m_track.m_pTex))
+    return;
+
+  //update last used dir
+  g_pMainWindow->m_sLastTrackFilesFolder = sFilename.left(sFilename.lastIndexOf(QDir::separator()));
+
+  //update model position
+}
+
+//-------------------------------------------------------------------------------------------------
+
 void CTrackPreview::paintGL()
 {
   if (m_uiShowModels & SHOW_ENVIRONMENT)
@@ -630,6 +664,8 @@ void CTrackPreview::paintGL()
       (*it)->Draw(worldToProjectionMatrix, p->m_camera.GetPosition());
     }
   }
+  if (m_uiShowModels & SHOW_REF_MODEL && p->m_pRefModel)
+    p->m_pRefModel->Draw(worldToProjectionMatrix, p->m_camera.GetPosition());
   //if (p->m_pAxes)
   //  p->m_pAxes->Draw(worldToProjectionMatrix);
   //if (p->m_pTestNormals)

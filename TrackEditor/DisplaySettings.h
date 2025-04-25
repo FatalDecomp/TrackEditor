@@ -34,6 +34,7 @@
 #define SHOW_AUDIO                 0x08000000
 #define SHOW_STUNTS                0x10000000
 #define ANIMATE_STUNTS             0x20000000
+#define SHOW_REF_MODEL             0x40000000
 //-------------------------------------------------------------------------------------------------
 
 class CDisplaySettings : public QWidget, private Ui::DisplaySettings
@@ -60,6 +61,7 @@ protected slots:
 signals:
   void AttachLastCheckedSig(bool bChecked);
   void UpdatePreviewSig();
+  void OpenReferenceModelSig();
 };
 
 //-------------------------------------------------------------------------------------------------
