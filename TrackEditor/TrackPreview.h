@@ -48,12 +48,22 @@ public:
   void SaveHistory(const QString &sDescription);
   void Undo();
   void Redo();
-  const QString &GetReferenceModel() { return m_sReferenceModelFile; };
+  void UpdateReferenceModelPos(double dYaw, double dPitch, double dRoll,
+                               int iX, int iY, int iZ,
+                               double dScale);
 
   bool m_bUnsavedChanges;
   int m_iSelFrom;
   int m_iSelTo;
   bool m_bToChecked;
+  QString m_sReferenceModelFile;
+  double m_dRefYaw;
+  double m_dRefPitch;
+  double m_dRefRoll;
+  int m_iRefX;
+  int m_iRefY;
+  int m_iRefZ;
+  double m_dRefScale;
 
 protected:
   void initializeGL();
@@ -70,6 +80,7 @@ signals:
 private:
   void LoadHistory(const tTrackHistory *pHistory);
   bool SaveTrack_Internal(const QString &sFilename);
+  void UpdateReferenceModelPos_Internal();
 
   CTrackPreviewPrivate *p;
   uint32 m_uiShowModels;
@@ -82,7 +93,6 @@ private:
   QString m_sTrackFile;
   QString m_sLastCarTex;
   int m_iHistoryIndex;
-  QString m_sReferenceModelFile;
 };
 
 //-------------------------------------------------------------------------------------------------

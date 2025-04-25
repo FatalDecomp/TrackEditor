@@ -233,6 +233,7 @@ CMainWindow::CMainWindow(const QString &sAppPath, float fDesktopScale)
   connect(p->m_pDisplaySettings, &CDisplaySettings::UpdatePreviewSig, this, &CMainWindow::OnUpdatePreview);
   connect(p->m_pDisplaySettings, &CDisplaySettings::AttachLastCheckedSig, this, &CMainWindow::OnAttachLast);
   connect(p->m_pDisplaySettings, &CDisplaySettings::OpenReferenceModelSig, this, &CMainWindow::OnOpenReferenceModel);
+  connect(p->m_pDisplaySettings, &CDisplaySettings::RefModelPosSig, this, &CMainWindow::OnRefModelPos);
 
   //open window
   LoadSettings();
@@ -1009,7 +1010,10 @@ void CMainWindow::OnTabChanged(int iIndex)
   BLOCK_SIG_AND_DO(sbSelChunksFrom, setValue(p->m_previewAy[iIndex]->m_iSelFrom));
   BLOCK_SIG_AND_DO(sbSelChunksTo, setValue(p->m_previewAy[iIndex]->m_iSelTo));
   BLOCK_SIG_AND_DO(ckTo, setChecked(p->m_previewAy[iIndex]->m_bToChecked));
-  p->m_pDisplaySettings->SetReferenceModel(GetCurrentPreview()->GetReferenceModel());
+  p->m_pDisplaySettings->SetReferenceModel(p->m_previewAy[iIndex]->m_sReferenceModelFile,
+                                           p->m_previewAy[iIndex]->m_dRefYaw, p->m_previewAy[iIndex]->m_dRefPitch, p->m_previewAy[iIndex]->m_dRefRoll,
+                                           p->m_previewAy[iIndex]->m_iRefX,   p->m_previewAy[iIndex]->m_iRefY,     p->m_previewAy[iIndex]->m_iRefZ,
+                                           p->m_previewAy[iIndex]->m_dRefScale);
 
   UpdateWindow();
 }
@@ -1163,7 +1167,22 @@ void CMainWindow::OnReferenceModelChanged()
   if (!GetCurrentPreview())
     return;
 
-  p->m_pDisplaySettings->SetReferenceModel(GetCurrentPreview()->GetReferenceModel());
+  p->m_pDisplaySettings->SetReferenceModel(GetCurrentPreview()->m_sReferenceModelFile,
+                                           GetCurrentPreview()->m_dRefYaw, GetCurrentPreview()->m_dRefPitch, GetCurrentPreview()->m_dRefRoll,
+                                           GetCurrentPreview()->m_iRefX, GetCurrentPreview()->m_iRefY, GetCurrentPreview()->m_iRefZ,
+                                           GetCurrentPreview()->m_dRefScale);
+}
+
+//-------------------------------------------------------------------------------------------------
+
+void CMainWindow::OnRefModelPos(double dYaw, double dPitch, double dRoll,
+                                int iX, int iY, int iZ,
+                                double dScale)
+{
+  if (!GetCurrentPreview())
+    return;
+
+  GetCurrentPreview()->UpdateReferenceModelPos(dYaw, dPitch, dRoll, iX, iY, iZ, dScale);
 }
 
 //-------------------------------------------------------------------------------------------------

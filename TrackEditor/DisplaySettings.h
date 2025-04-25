@@ -51,18 +51,25 @@ public:
   void SetAttachLast(bool bAttachLast);
   int GetCameraSpeed();
   void SetCameraSpeed(int iSpeed);
-  void SetReferenceModel(const QString &sReferenceModel);
+  void SetReferenceModel(const QString &sFile,
+                         double dYaw, double dPitch, double dRoll,
+                         int iX, int iY, int iZ,
+                         double dScale);
 
 protected slots:
   void UpdateAllSurface();
   void UpdateAllWireframe();
   void UpdatePreviewSelection();
   void OnCameraSpeedChanged(int iSpeed);
+  void OnReferenceModelPosChanged();
 
 signals:
   void AttachLastCheckedSig(bool bChecked);
   void UpdatePreviewSig();
   void OpenReferenceModelSig();
+  void RefModelPosSig(double dYaw, double dPitch, double dRoll,
+                      int iX, int iY, int iZ,
+                      double dScale);
 };
 
 //-------------------------------------------------------------------------------------------------

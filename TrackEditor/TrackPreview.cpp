@@ -297,6 +297,13 @@ CTrackPreview::CTrackPreview(QWidget *pParent, const QString &sTrackFile)
   , m_sLastCarTex("")
   , m_iHistoryIndex(0)
   , m_sReferenceModelFile("")
+  , m_dRefYaw(0.0)
+  , m_dRefPitch(0.0)
+  , m_dRefRoll(0.0)
+  , m_iRefX(0)
+  , m_iRefY(0)
+  , m_iRefZ(0)
+  , m_dRefScale(1.0)
 {
   p = new CTrackPreviewPrivate;
 
@@ -474,6 +481,22 @@ void CTrackPreview::Redo()
 
 //-------------------------------------------------------------------------------------------------
 
+void CTrackPreview::UpdateReferenceModelPos(double dYaw, double dPitch, double dRoll,
+                                            int iX, int iY, int iZ,
+                                            double dScale)
+{
+  m_dRefYaw = dYaw;
+  m_dRefPitch = dPitch;
+  m_dRefRoll = dRoll;
+  m_iRefX = iX;
+  m_iRefY = iY;
+  m_iRefZ = iZ;
+  m_dRefScale = dScale;
+  UpdateReferenceModelPos_Internal();
+}
+
+//-------------------------------------------------------------------------------------------------
+
 void CTrackPreview::LoadHistory(const tTrackHistory *pHistory)
 {
   p->DeleteModels();
@@ -558,6 +581,7 @@ void CTrackPreview::OpenReferenceModel()
   g_pMainWindow->m_sLastTrackFilesFolder = sFilename.left(sFilename.lastIndexOf(QDir::separator()));
 
   //update model position
+  UpdateReferenceModelPos_Internal();
 
   //update ui
   emit ReferenceModelChanged();
@@ -1056,6 +1080,13 @@ bool CTrackPreview::SaveTrack_Internal(const QString &sFilename)
   }
 
   return true;
+}
+
+//-------------------------------------------------------------------------------------------------
+
+void CTrackPreview::UpdateReferenceModelPos_Internal()
+{
+
 }
 
 //-------------------------------------------------------------------------------------------------

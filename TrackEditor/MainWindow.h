@@ -87,6 +87,9 @@ protected slots:
   void OnStuntTimer();
   void OnZeroTimer();
   void OnReferenceModelChanged();
+  void OnRefModelPos(double dYaw, double dPitch, double dRoll,
+                     int iX, int iY, int iZ,
+                     double dScale);
 
 signals:
   void LogMsgSig(QString sMsg);

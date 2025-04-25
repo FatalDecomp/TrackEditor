@@ -89,6 +89,13 @@ CDisplaySettings::CDisplaySettings(QWidget *pParent)
 
   connect(ckRefModel, &QCheckBox::toggled, this, &CDisplaySettings::UpdatePreviewSelection);
   connect(pbRefBrowse, &QPushButton::pressed, this, &CDisplaySettings::OpenReferenceModelSig);
+  connect(dsbRefYaw, SIGNAL(valueChanged(double)), this, SLOT(OnReferenceModelPosChanged()));
+  connect(dsbRefPitch, SIGNAL(valueChanged(double)), this, SLOT(OnReferenceModelPosChanged()));
+  connect(dsbRefRoll, SIGNAL(valueChanged(double)), this, SLOT(OnReferenceModelPosChanged()));
+  connect(sbRefX, SIGNAL(valueChanged(int)), this, SLOT(OnReferenceModelPosChanged()));
+  connect(sbRefY, SIGNAL(valueChanged(int)), this, SLOT(OnReferenceModelPosChanged()));
+  connect(sbRefZ, SIGNAL(valueChanged(int)), this, SLOT(OnReferenceModelPosChanged()));
+  connect(dsbRefScale, SIGNAL(valueChanged(double)), this, SLOT(OnReferenceModelPosChanged()));
 
   UpdateAllSurface();
   UpdateAllWireframe();
@@ -217,12 +224,23 @@ void CDisplaySettings::SetCameraSpeed(int iSpeed)
 
 //-------------------------------------------------------------------------------------------------
 
-void CDisplaySettings::SetReferenceModel(const QString &sReferenceModel)
+void CDisplaySettings::SetReferenceModel(const QString &sFile,
+                                         double dYaw, double dPitch, double dRoll,
+                                         int iX, int iY, int iZ,
+                                         double dScale)
 {
-  if (sReferenceModel.isEmpty())
+  if (sFile.isEmpty())
     lblRefModelFile->setText("(none loaded)");
   else
-    lblRefModelFile->setText(sReferenceModel);
+    lblRefModelFile->setText(sFile);
+
+  BLOCK_SIG_AND_DO(dsbRefYaw, setValue(dYaw));
+  BLOCK_SIG_AND_DO(dsbRefPitch, setValue(dPitch));
+  BLOCK_SIG_AND_DO(dsbRefRoll, setValue(dRoll));
+  BLOCK_SIG_AND_DO(sbRefX, setValue(iX));
+  BLOCK_SIG_AND_DO(sbRefY, setValue(iY));
+  BLOCK_SIG_AND_DO(sbRefZ, setValue(iZ));
+  BLOCK_SIG_AND_DO(dsbRefScale, setValue(dScale));
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -303,6 +321,15 @@ void CDisplaySettings::UpdatePreviewSelection()
 void CDisplaySettings::OnCameraSpeedChanged(int iSpeed)
 {
   CNoclipComponent::s_fMovementSpeed = (float)iSpeed;
+}
+
+//-------------------------------------------------------------------------------------------------
+
+void CDisplaySettings::OnReferenceModelPosChanged()
+{
+  emit RefModelPosSig(dsbRefYaw->value(), dsbRefPitch->value(), dsbRefRoll->value(),
+                      sbRefX->value(), sbRefY->value(), sbRefZ->value(),
+                      dsbRefScale->value());
 }
 
 //-------------------------------------------------------------------------------------------------
