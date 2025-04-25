@@ -217,6 +217,16 @@ void CDisplaySettings::SetCameraSpeed(int iSpeed)
 
 //-------------------------------------------------------------------------------------------------
 
+void CDisplaySettings::SetReferenceModel(const QString &sReferenceModel)
+{
+  if (sReferenceModel.isEmpty())
+    lblRefModelFile->setText("(none loaded)");
+  else
+    lblRefModelFile->setText(sReferenceModel);
+}
+
+//-------------------------------------------------------------------------------------------------
+
 void CDisplaySettings::UpdateAllSurface()
 {
   BLOCK_SIG_AND_DO(ckCenterSurface, setChecked(ckAllSurface->isChecked()));

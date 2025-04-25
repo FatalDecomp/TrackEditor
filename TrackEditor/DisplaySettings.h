@@ -51,6 +51,7 @@ public:
   void SetAttachLast(bool bAttachLast);
   int GetCameraSpeed();
   void SetCameraSpeed(int iSpeed);
+  void SetReferenceModel(const QString &sReferenceModel);
 
 protected slots:
   void UpdateAllSurface();

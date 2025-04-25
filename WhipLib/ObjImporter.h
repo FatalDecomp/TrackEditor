@@ -17,7 +17,7 @@ public:
   void operator=(CObjImporter const &) = delete;
 
   //shader and texture come from track
-  bool ImportObj(const std::string &sFile, CShapeData **pShapeData, CShader *pShader, CTexture *pTexture);
+  bool ImportObj(const std::string &sFile, CShapeData **pShape, CShader *pShader, CTexture *pTexture);
 
 private:
   CObjImporter();

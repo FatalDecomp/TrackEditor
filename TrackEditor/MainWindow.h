@@ -86,6 +86,7 @@ protected slots:
   void OnSaveHistoryTimer();
   void OnStuntTimer();
   void OnZeroTimer();
+  void OnReferenceModelChanged();
 
 signals:
   void LogMsgSig(QString sMsg);

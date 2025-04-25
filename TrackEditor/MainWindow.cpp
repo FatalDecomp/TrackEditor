@@ -307,6 +307,7 @@ void CMainWindow::OnNewTrack()
   CNewTrackDialog dlg(this, ++m_iNewTrackNum);
   if (dlg.exec()) {
     CTrackPreview *pPreview = new CTrackPreview(this, dlg.GetFilename());
+    connect(pPreview, &CTrackPreview::ReferenceModelChanged, this, &CMainWindow::OnReferenceModelChanged);
     pPreview->GetTrack()->m_sBuildingFile = dlg.GetBld().toLatin1().constData();
     pPreview->GetTrack()->m_sTextureFile = dlg.GetTex().toLatin1().constData();
     pPreview->SaveHistory("New track created");
@@ -336,6 +337,7 @@ void CMainWindow::OnLoadTrack()
   }
 
   CTrackPreview *pPreview = new CTrackPreview(this);
+  connect(pPreview, &CTrackPreview::ReferenceModelChanged, this, &CMainWindow::OnReferenceModelChanged);
   if (!pPreview->LoadTrack(sFilename)) {
     //load failed
     delete pPreview;
@@ -1007,6 +1009,7 @@ void CMainWindow::OnTabChanged(int iIndex)
   BLOCK_SIG_AND_DO(sbSelChunksFrom, setValue(p->m_previewAy[iIndex]->m_iSelFrom));
   BLOCK_SIG_AND_DO(sbSelChunksTo, setValue(p->m_previewAy[iIndex]->m_iSelTo));
   BLOCK_SIG_AND_DO(ckTo, setChecked(p->m_previewAy[iIndex]->m_bToChecked));
+  p->m_pDisplaySettings->SetReferenceModel(GetCurrentPreview()->GetReferenceModel());
 
   UpdateWindow();
 }
@@ -1151,6 +1154,16 @@ void CMainWindow::OnZeroTimer()
   CGameInput::GetGameInput().Update();
   if (GetCurrentPreview())
     GetCurrentPreview()->UpdateCameraPos();
+}
+
+//-------------------------------------------------------------------------------------------------
+
+void CMainWindow::OnReferenceModelChanged()
+{
+  if (!GetCurrentPreview())
+    return;
+
+  p->m_pDisplaySettings->SetReferenceModel(GetCurrentPreview()->GetReferenceModel());
 }
 
 //-------------------------------------------------------------------------------------------------

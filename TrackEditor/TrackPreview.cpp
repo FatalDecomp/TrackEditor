@@ -553,10 +553,14 @@ void CTrackPreview::OpenReferenceModel()
   if (!CObjImporter::GetObjImporter().ImportObj(sFilename.toLatin1().constData(), &p->m_pRefModel, p->m_pShader, p->m_track.m_pTex))
     return;
 
-  //update last used dir
+  //update last used dir and model file
+  m_sReferenceModelFile = sFilename;
   g_pMainWindow->m_sLastTrackFilesFolder = sFilename.left(sFilename.lastIndexOf(QDir::separator()));
 
   //update model position
+
+  //update ui
+  emit ReferenceModelChanged();
 }
 
 //-------------------------------------------------------------------------------------------------

@@ -1,10 +1,19 @@
 #include "ObjImporter.h"
 #include "Logging.h"
 #include "Vertex.h"
+#include "Texture.h"
+#include "ShapeData.h"
+#include "VertexBuffer.h"
+#include "VertexArray.h"
+#include "IndexBuffer.h"
 #include <fstream>
 #include <sstream>
 #include <string.h>
 #include <vector>
+#include <glm.hpp>
+#include <glew.h>
+#include "gtc/matrix_transform.hpp"
+#include "gtx/transform.hpp"
 //-------------------------------------------------------------------------------------------------
 #if defined(_DEBUG) && defined(IS_WINDOWS)
 #define new new(_CLIENT_BLOCK, __FILE__, __LINE__)
@@ -32,7 +41,7 @@ CObjImporter::~CObjImporter()
 
 //-------------------------------------------------------------------------------------------------
 
-bool CObjImporter::ImportObj(const std::string &sFile, CShapeData **pShapeData, CShader *pShader, CTexture *pTexture)
+bool CObjImporter::ImportObj(const std::string &sFile, CShapeData **pShape, CShader *pShader, CTexture *pTexture)
 {
   if (sFile.empty()) {
     Logging::LogMessage("Reference model filename empty");
@@ -73,9 +82,9 @@ bool CObjImporter::ImportObj(const std::string &sFile, CShapeData **pShapeData, 
         bSuccess = false;
         break;
       }
-      double dX = std::stod(lineAy[1]);
-      double dY = std::stod(lineAy[2]);
-      double dZ = std::stod(lineAy[3]);
+      double dX = std::stod(lineAy[1]) * 100.0;
+      double dY = std::stod(lineAy[2]) * 100.0;
+      double dZ = std::stod(lineAy[3]) * 100.0;
       vAy.push_back(glm::vec3(dX, dY, dZ));
     } else if (lineAy[0].compare("vt") == 0) {
       //load tex coord line
@@ -122,9 +131,9 @@ bool CObjImporter::ImportObj(const std::string &sFile, CShapeData **pShapeData, 
           break;
         }
 
-        int ivIdx = std::stoi(polygonAy[0]);
-        int ivtIdx = std::stoi(polygonAy[1]);
-        int ivnIdx = std::stoi(polygonAy[2]);
+        int ivIdx = std::stoi(polygonAy[0]) - 1;
+        int ivtIdx = std::stoi(polygonAy[1]) - 1;
+        int ivnIdx = std::stoi(polygonAy[2]) - 1;
         if (ivIdx >= (int)vAy.size() || ivIdx < 0) {
           Logging::LogMessage("Vertex index out of bounds (%d in obj file %s)", iLineIndex, sFile.c_str());
           bSuccess = false;
@@ -143,7 +152,8 @@ bool CObjImporter::ImportObj(const std::string &sFile, CShapeData **pShapeData, 
 
         tVertex vertex;
         vertex.position = vAy[ivIdx];
-        vertex.texCoords = vtAy[ivtIdx];
+        //vertex.texCoords = vtAy[ivtIdx];
+        vertex.texCoords = pTexture->GetColorCenterCoordinates(0x8c); //light grey
         vertex.normal = vnAy[ivnIdx];
         vertexAy.push_back(vertex);
       }
@@ -151,6 +161,33 @@ bool CObjImporter::ImportObj(const std::string &sFile, CShapeData **pShapeData, 
     ++iLineIndex;
   }
   file.close();
+
+  //make shape
+  uint32 uiNumVerts = (uint32)vertexAy.size();
+  tVertex *vertices = new tVertex[uiNumVerts];
+  uint32 uiNumIndices = (uint32)vertexAy.size();
+  uint32 *indices = new uint32[uiNumIndices];
+  GLenum drawType = GL_TRIANGLES;
+  for (int i = 0; i < (int)uiNumVerts; ++i) {
+    vertices[i] = vertexAy[i];
+    indices[i] = i;
+  }
+
+  if (vertices && indices) {
+    if (!*pShape) {
+      CVertexBuffer *pVertexBuf = new CVertexBuffer(vertices, uiNumVerts, GL_DYNAMIC_DRAW);
+      CIndexBuffer *pIndexBuf = new CIndexBuffer(indices, uiNumIndices, GL_DYNAMIC_DRAW);
+      CVertexArray *pVertexArray = new CVertexArray(pVertexBuf);
+
+      *pShape = new CShapeData(pVertexBuf, pIndexBuf, pVertexArray, pShader, pTexture, drawType);
+    } else {
+      (*pShape)->m_pVertexBuf->Update(vertices, uiNumVerts);
+      (*pShape)->m_pIndexBuf->Update(indices, uiNumIndices);
+    }
+
+    delete[] vertices;
+    delete[] indices;
+  }
 
   return bSuccess;
 }

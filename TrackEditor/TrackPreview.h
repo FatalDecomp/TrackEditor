@@ -48,6 +48,7 @@ public:
   void SaveHistory(const QString &sDescription);
   void Undo();
   void Redo();
+  const QString &GetReferenceModel() { return m_sReferenceModelFile; };
 
   bool m_bUnsavedChanges;
   int m_iSelFrom;
@@ -62,6 +63,9 @@ protected:
   void mouseMoveEvent(QMouseEvent *pEvent) override;
   void keyPressEvent(QKeyEvent *pEvent) override;
   void keyReleaseEvent(QKeyEvent *pEvent) override;
+
+signals:
+  void ReferenceModelChanged();
 
 private:
   void LoadHistory(const tTrackHistory *pHistory);

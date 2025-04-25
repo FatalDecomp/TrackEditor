@@ -246,16 +246,6 @@
          </property>
         </widget>
        </item>
-       <item row="23" column="0">
-        <widget class="QLabel" name="lblRefModelFile">
-         <property name="text">
-          <string>(none loaded)</string>
-         </property>
-         <property name="wordWrap">
-          <bool>true</bool>
-         </property>
-        </widget>
-       </item>
        <item row="3" column="0" colspan="4">
         <widget class="Line" name="line">
          <property name="orientation">
@@ -747,6 +737,16 @@
           </widget>
          </item>
         </layout>
+       </item>
+       <item row="23" column="0" colspan="4">
+        <widget class="QLabel" name="lblRefModelFile">
+         <property name="text">
+          <string>(none loaded)</string>
+         </property>
+         <property name="wordWrap">
+          <bool>true</bool>
+         </property>
+        </widget>
        </item>
       </layout>
      </widget>
