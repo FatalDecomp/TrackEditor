@@ -32,8 +32,7 @@ Whiplash/Fatal Racing track editor, OBJ and FBX resource converter, and DLL for 
 ![alt text](https://github.com/Zizin13/Roller/blob/master/WhipLib/images/unreal.png)
 
 ## External dependencies used:
-* Qt 5.15.2 (Windows): https://download.qt.io/archive/qt/5.15/5.15.2/single/qt-everywhere-src-5.15.2.zip.mirrorlist
-* Qt 5.15.16 (Linux): https://download.qt.io/archive/qt/5.15/5.15.16/single/
+* Qt 5.15.16: https://download.qt.io/archive/qt/5.15/5.15.16/single/
 * imgui 1.91.4: https://github.com/ocornut/imgui
 * Glew 2.1.0: https://sourceforge.net/projects/glew/files/glew/2.1.0/
 * GLM 1.0.1: https://github.com/g-truc/glm
