@@ -18,18 +18,18 @@ Whiplash/Fatal Racing track editor, OBJ and FBX resource converter, and DLL for 
 * Fine control over Copy/Paste behavior
 * Toggle display of each individual section of track
 
-![alt text](https://github.com/Zizin13/Roller/blob/master/TrackEditor/images/screenshot.png)
+![alt text](https://github.com/Zizin13/RollerTrackEditor/blob/master/TrackEditor/images/screenshot.png)
 
 ## ModelExporter Features:
 * Included with Track Editor releases
 * Exports all Whiplash tracks and cars to OBJ or FBX format
 
-![alt text](https://github.com/Zizin13/Roller/blob/master/ModelExporter/images/blender.png)
+![alt text](https://github.com/Zizin13/RollerTrackEditor/blob/master/ModelExporter/images/blender.png)
 
 ## WhipLib DLL Features:
 * Loads Whiplash textures and models for use in other applications
 
-![alt text](https://github.com/Zizin13/Roller/blob/master/WhipLib/images/unreal.png)
+![alt text](https://github.com/Zizin13/RollerTrackEditor/blob/master/WhipLib/images/unreal.png)
 
 ## External dependencies used:
 * Qt 5.15.16: https://download.qt.io/archive/qt/5.15/5.15.16/single/
