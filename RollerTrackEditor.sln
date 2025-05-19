@@ -27,6 +27,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "TrackAnalyzer", "TrackAnaly
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ModelExporter", "ModelExporter\ModelExporter.vcxproj", "{24AA1AFA-11C3-47D7-B36C-0B5CE25B7804}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Utils", "Utils", "{02EA681E-C7D8-13C7-8484-4AC65E1B71E8}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug_DLL|x64 = Debug_DLL|x64
@@ -112,6 +114,11 @@ Global
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{2D4EFE3E-1FF1-465C-A4A2-2D3A0CB54305} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
+		{AA65CDB8-27A0-4AC3-810B-B901B323F7D2} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
+		{24AA1AFA-11C3-47D7-B36C-0B5CE25B7804} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {B1714566-C84D-47FE-B4FF-A2EF804AE603}
