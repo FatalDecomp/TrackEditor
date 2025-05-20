@@ -1,4 +1,4 @@
-# Roller
+# Roller Track Editor
 Whiplash/Fatal Racing track editor, OBJ and FBX resource converter, and DLL for loading Whiplash assets
 
 ## Track Editor Features: 
