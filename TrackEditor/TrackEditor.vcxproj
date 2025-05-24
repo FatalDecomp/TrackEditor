@@ -80,8 +80,8 @@
     </Link>
     <PostBuildEvent>
       <Command>echo Copying QT dlls...
-echo f | xcopy ..\external\Qt5\vc143-x64-mt-lib\bin\libEGLd.dll .\$(OutDir) /R /Y /d /i &gt; null
-echo f | xcopy ..\external\Qt5\vc143-x64-mt-lib\bin\libGLESv2d.dll .\$(OutDir) /R /Y /d /i &gt; null
+echo f | xcopy ..\external\Qt5\vc143-x64-mt-lib\bin\libEGLd.dll .\$(OutDir) /R /Y /d /i
+echo f | xcopy ..\external\Qt5\vc143-x64-mt-lib\bin\libGLESv2d.dll .\$(OutDir) /R /Y /d /i
 if %errorlevel% NEQ 0 goto Failed
 
 echo Copying Readme File...
@@ -89,19 +89,19 @@ echo f | xcopy ..\README.md .\$(OutDir) /R /Y /d /i &gt; null
 if %errorlevel% NEQ 0 goto Failed
 
 echo Copying License Files...
-echo f | xcopy ..\LICENSE.md .\$(OutDir) /R /Y /d /i &gt; null
-echo f | xcopy ..\LICENSE.GPLv3 .\$(OutDir) /R /Y /d /i &gt; null
-echo f | xcopy ..\external\Qt5\QT_License.txt .\$(OutDir) /R /Y /d /i &gt; null
-echo f | xcopy ..\external\glew\GLEW_License.txt .\$(OutDir)GLEW_License.txt /R /Y /d /i &gt; null
-echo f | xcopy ..\external\glm\copying.txt .\$(OutDir)GLM_License.txt /R /Y /d /i &gt; null
-echo f | xcopy ..\external\FBX\FBX_LICENSE.rtf .\$(OutDir)FBX_License.rtf /R /Y /d /i &gt; null
-echo f | xcopy ..\external\stb\LICENSE.txt .\$(OutDir)STB_License.txt /R /Y /d /i &gt; null
-echo f | xcopy ..\external\TrackEditor_LicensedLibs.txt .\$(OutDir)LicensedLibs.txt /R /Y /d /i &gt; null
+echo f | xcopy ..\LICENSE.md .\$(OutDir) /R /Y /d /i
+echo f | xcopy ..\LICENSE.GPLv3 .\$(OutDir) /R /Y /d /i
+echo f | xcopy ..\external\Qt5\QT_License.txt .\$(OutDir) /R /Y /d /i
+echo f | xcopy ..\external\glew\GLEW_License.txt .\$(OutDir)GLEW_License.txt /R /Y /d /i
+echo f | xcopy ..\external\glm\copying.txt .\$(OutDir)GLM_License.txt /R /Y /d /i
+echo f | xcopy ..\external\FBX\FBX_LICENSE.rtf .\$(OutDir)FBX_License.rtf /R /Y /d /i
+echo f | xcopy ..\external\stb\LICENSE.txt .\$(OutDir)STB_License.txt /R /Y /d /i
+echo f | xcopy ..\external\TrackEditor_LicensedLibs.txt .\$(OutDir)LicensedLibs.txt /R /Y /d /i
 if %errorlevel% NEQ 0 goto Failed
 
 echo Copying Shaders...
-echo f | xcopy ..\WhipLib\Shaders\WhiplashFragmentShader.glsl .\$(OutDir)Shaders\ /R /Y /d /i &gt; null
-echo f | xcopy ..\WhipLib\Shaders\WhiplashVertexShader.glsl .\$(OutDir)Shaders\ /R /Y /d /i &gt; null
+echo f | xcopy ..\WhipLib\Shaders\WhiplashFragmentShader.glsl .\$(OutDir)Shaders\ /R /Y /d /i
+echo f | xcopy ..\WhipLib\Shaders\WhiplashVertexShader.glsl .\$(OutDir)Shaders\ /R /Y /d /i
 if %errorlevel% NEQ 0 goto Failed
 
 echo Post-Build Step for $(ProjectName) completed successfully
@@ -141,28 +141,28 @@ exit 1</Command>
     </Link>
     <PostBuildEvent>
       <Command>echo Copying QT dlls...
-echo f | xcopy ..\external\Qt5\vc143-x64-mt-lib\bin\libEGL.dll .\$(OutDir) /R /Y /d /i &gt; null
-echo f | xcopy ..\external\Qt5\vc143-x64-mt-lib\bin\libGLESv2.dll .\$(OutDir) /R /Y /d /i &gt; null
+echo f | xcopy ..\external\Qt5\vc143-x64-mt-lib\bin\libEGL.dll .\$(OutDir) /R /Y /d /i
+echo f | xcopy ..\external\Qt5\vc143-x64-mt-lib\bin\libGLESv2.dll .\$(OutDir) /R /Y /d /i
 if %errorlevel% NEQ 0 goto Failed
 
 echo Copying Readme File...
-echo f | xcopy ..\README.md .\$(OutDir) /R /Y /d /i &gt; null
+echo f | xcopy ..\README.md .\$(OutDir) /R /Y /d /i
 if %errorlevel% NEQ 0 goto Failed
 
 echo Copying License Files...
-echo f | xcopy ..\LICENSE.md .\$(OutDir) /R /Y /d /i &gt; null
-echo f | xcopy ..\LICENSE.GPLv3 .\$(OutDir) /R /Y /d /i &gt; null
-echo f | xcopy ..\external\Qt5\QT_License.txt .\$(OutDir) /R /Y /d /i &gt; null
-echo f | xcopy ..\external\glew\GLEW_License.txt .\$(OutDir)GLEW_License.txt /R /Y /d /i &gt; null
-echo f | xcopy ..\external\glm\copying.txt .\$(OutDir)GLM_License.txt /R /Y /d /i &gt; null
-echo f | xcopy ..\external\FBX\FBX_LICENSE.rtf .\$(OutDir)FBX_License.rtf /R /Y /d /i &gt; null
-echo f | xcopy ..\external\stb\LICENSE.txt .\$(OutDir)STB_License.txt /R /Y /d /i &gt; null
-echo f | xcopy ..\external\TrackEditor_LicensedLibs.txt .\$(OutDir)LicensedLibs.txt /R /Y /d /i &gt; null
+echo f | xcopy ..\LICENSE.md .\$(OutDir) /R /Y /d /i
+echo f | xcopy ..\LICENSE.GPLv3 .\$(OutDir) /R /Y /d /i
+echo f | xcopy ..\external\Qt5\QT_License.txt .\$(OutDir) /R /Y /d /i
+echo f | xcopy ..\external\glew\GLEW_License.txt .\$(OutDir)GLEW_License.txt /R /Y /d /i
+echo f | xcopy ..\external\glm\copying.txt .\$(OutDir)GLM_License.txt /R /Y /d /i
+echo f | xcopy ..\external\FBX\FBX_LICENSE.rtf .\$(OutDir)FBX_License.rtf /R /Y /d /i
+echo f | xcopy ..\external\stb\LICENSE.txt .\$(OutDir)STB_License.txt /R /Y /d /i
+echo f | xcopy ..\external\TrackEditor_LicensedLibs.txt .\$(OutDir)LicensedLibs.txt /R /Y /d /i
 if %errorlevel% NEQ 0 goto Failed
 
 echo Copying Shaders...
-echo f | xcopy ..\WhipLib\Shaders\WhiplashFragmentShader.glsl .\$(OutDir)Shaders\ /R /Y /d /i &gt; null
-echo f | xcopy ..\WhipLib\Shaders\WhiplashVertexShader.glsl .\$(OutDir)Shaders\ /R /Y /d /i &gt; null
+echo f | xcopy ..\WhipLib\Shaders\WhiplashFragmentShader.glsl .\$(OutDir)Shaders\ /R /Y /d /i
+echo f | xcopy ..\WhipLib\Shaders\WhiplashVertexShader.glsl .\$(OutDir)Shaders\ /R /Y /d /i
 if %errorlevel% NEQ 0 goto Failed
 
 echo Post-Build Step for $(ProjectName) completed successfully
