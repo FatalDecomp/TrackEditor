@@ -291,7 +291,7 @@ void CEditSurfaceDialog::On18FlipVertChecked(bool bChecked)
 
 void CEditSurfaceDialog::On17NonSolidChecked(bool bChecked)
 {
-  UpdateValueHelper(SURFACE_FLAG_NON_SOLID, bChecked);
+  UpdateValueHelper(SURFACE_FLAG_SKIP_RENDER, bChecked);
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -312,14 +312,14 @@ void CEditSurfaceDialog::On15LiveryChecked(bool bChecked)
 
 void CEditSurfaceDialog::On14Checked(bool bChecked)
 {
-  UpdateValueHelper(SURFACE_FLAG_14, bChecked);
+  UpdateValueHelper(SURFACE_FLAG_CONCAVE, bChecked);
 }
 
 //-------------------------------------------------------------------------------------------------
 
 void CEditSurfaceDialog::On13MotionChecked(bool bChecked)
 {
-  UpdateValueHelper(SURFACE_FLAG_ANMS_MOTION, bChecked);
+  UpdateValueHelper(SURFACE_FLAG_FLIP_BACKFACE, bChecked);
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -598,11 +598,11 @@ void CEditSurfaceDialog::UpdateDialog()
   BLOCK_SIG_AND_DO(ck20Bounce           , setChecked(uiValue & SURFACE_FLAG_BOUNCE_20));
   BLOCK_SIG_AND_DO(ck19NonMagnetic      , setChecked(uiValue & SURFACE_FLAG_NON_MAGNETIC));
   BLOCK_SIG_AND_DO(ck18FlipVertically   , setChecked(uiValue & SURFACE_FLAG_FLIP_VERT));
-  BLOCK_SIG_AND_DO(ck17NonSolid         , setChecked(uiValue & SURFACE_FLAG_NON_SOLID));
+  BLOCK_SIG_AND_DO(ck17NonSolid         , setChecked(uiValue & SURFACE_FLAG_SKIP_RENDER));
   BLOCK_SIG_AND_DO(ck16TexturePair      , setChecked(uiValue & SURFACE_FLAG_TEXTURE_PAIR));
   BLOCK_SIG_AND_DO(ck15Livery           , setChecked(uiValue & SURFACE_FLAG_ANMS_LIVERY));
-  BLOCK_SIG_AND_DO(ck14                 , setChecked(uiValue & SURFACE_FLAG_14));
-  BLOCK_SIG_AND_DO(ck13Motion           , setChecked(uiValue & SURFACE_FLAG_ANMS_MOTION));
+  BLOCK_SIG_AND_DO(ck14                 , setChecked(uiValue & SURFACE_FLAG_CONCAVE));
+  BLOCK_SIG_AND_DO(ck13Motion           , setChecked(uiValue & SURFACE_FLAG_FLIP_BACKFACE));
   BLOCK_SIG_AND_DO(ck12FlipHorizontally , setChecked(uiValue & SURFACE_FLAG_FLIP_HORIZ));
   BLOCK_SIG_AND_DO(ck11Back             , setChecked(uiValue & SURFACE_FLAG_BACK));
   BLOCK_SIG_AND_DO(ck10PartialTrans     , setChecked(uiValue & SURFACE_FLAG_PARTIAL_TRANS));

@@ -78,11 +78,11 @@ bool SurfaceHasFlag(const int &iSurface, const std::string &sFlag)
     case 10: uiFlag = SURFACE_FLAG_PARTIAL_TRANS; break;
     case 11: uiFlag = SURFACE_FLAG_BACK; break;
     case 12: uiFlag = SURFACE_FLAG_FLIP_HORIZ; break;
-    case 13: uiFlag = SURFACE_FLAG_ANMS_MOTION; break;
-    case 14: uiFlag = SURFACE_FLAG_14; break;
+    case 13: uiFlag = SURFACE_FLAG_FLIP_BACKFACE; break;
+    case 14: uiFlag = SURFACE_FLAG_CONCAVE; break;
     case 15: uiFlag = SURFACE_FLAG_ANMS_LIVERY; break;
     case 16: uiFlag = SURFACE_FLAG_TEXTURE_PAIR; break;
-    case 17: uiFlag = SURFACE_FLAG_NON_SOLID; break;
+    case 17: uiFlag = SURFACE_FLAG_SKIP_RENDER; break;
     case 18: uiFlag = SURFACE_FLAG_FLIP_VERT; break;
     case 19: uiFlag = SURFACE_FLAG_NON_MAGNETIC; break;
     case 20: uiFlag = SURFACE_FLAG_BOUNCE_20; break;

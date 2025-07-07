@@ -553,7 +553,7 @@ bool CTrack::ShouldDrawSurfaceType(int iSurfaceType)
   if (iSurfaceType == -1 || iSurfaceType == 0)
     return false;
   uint32 uiSurfaceType = CTrack::GetSignedBitValueFromInt(iSurfaceType);
-  if (uiSurfaceType & SURFACE_FLAG_NON_SOLID)
+  if (uiSurfaceType & SURFACE_FLAG_SKIP_RENDER)
     return false;
   //if (!(uiSurfaceType & SURFACE_FLAG_TRANSPARENT)
   //    && !(uiSurfaceType & SURFACE_FLAG_APPLY_TEXTURE))
