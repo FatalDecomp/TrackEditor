@@ -26,9 +26,6 @@ Whiplash/Fatal Racing track editor, OBJ and FBX resource converter, and DLL for 
 
 ![alt text](https://github.com/Zizin13/RollerTrackEditor/blob/master/ModelExporter/images/blender.png)
 
-## WhipLib DLL Features:
-* Loads Whiplash textures and models for use in other applications
-
 ![alt text](https://github.com/Zizin13/RollerTrackEditor/blob/master/WhipLib/images/unreal.png)
 
 ## External dependencies used:
