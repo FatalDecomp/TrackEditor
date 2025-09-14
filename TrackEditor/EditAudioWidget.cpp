@@ -18,8 +18,9 @@ public:
   CEditAudioWidgetPrivate() {};
   ~CEditAudioWidgetPrivate() {};
 
-  QString audioAy[119] = {
-    "<none>"   ,//ENGINE in sound.ini, appears to mean none in track data
+  QString audioAy[120] = {
+    "<none>"   ,
+    "ENGINE"   ,
     "ENGINE2"  ,
     "BIGCRASH" ,
     "SKID1"    ,
