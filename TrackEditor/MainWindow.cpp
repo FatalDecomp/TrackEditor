@@ -500,6 +500,7 @@ void CMainWindow::OnPaste()
         p->m_clipBoard[i].iRLOuterWallHeight    = prevChunk.iRLOuterWallHeight;
         p->m_clipBoard[i].iRUOuterWallHeight    = prevChunk.iRUOuterWallHeight;
         p->m_clipBoard[i].iRoofHeight           = prevChunk.iRoofHeight;
+        p->m_clipBoard[i].iGroundHeight         = prevChunk.iGroundHeight;
     
       }
       if (!m_preferences.bPasteTextures) {
@@ -582,7 +583,6 @@ void CMainWindow::OnPaste()
         p->m_clipBoard[i].iEnvironmentFloorType = CTrack::GetIntValueFromSignedBit(uiEnvironmentFloorType);
       }
       if (!m_preferences.bPasteAIBehavior) {
-        p->m_clipBoard[i].iGroundHeight = prevChunk.iGroundHeight;
         p->m_clipBoard[i].iAIMaxSpeed = prevChunk.iAIMaxSpeed;
         p->m_clipBoard[i].iAILine1    = prevChunk.iAILine1;
         p->m_clipBoard[i].iAILine2    = prevChunk.iAILine2;
@@ -590,23 +590,23 @@ void CMainWindow::OnPaste()
         p->m_clipBoard[i].iAILine4    = prevChunk.iAILine4;
       }
       if (!m_preferences.bPasteDrawOrder) {
-        p->m_clipBoard[i].iNearForward         = 0;
-        p->m_clipBoard[i].iNearForwardExStart  = 0;
-        p->m_clipBoard[i].iNearForwardEx       = 0;
-        p->m_clipBoard[i].iLeftSubdivDist      = 0;
+        p->m_clipBoard[i].iNearForward           = 0;
+        p->m_clipBoard[i].iNearForwardExStart    = 0;
+        p->m_clipBoard[i].iNearForwardEx         = 0;
+        p->m_clipBoard[i].iLeftSubdivDist        = 0;
         p->m_clipBoard[i].iCenterSubdivDist      = 0;
-        p->m_clipBoard[i].iRightSubdivDist      = 0;
-        p->m_clipBoard[i].iLWallSubdivDist      = 0;
-        p->m_clipBoard[i].iRWallSubdivDist      = 0;
-        p->m_clipBoard[i].iRoofSubdivDist      = 0;
-        p->m_clipBoard[i].iLUOuterWallSubdivDist      = 0;
-        p->m_clipBoard[i].iLLOuterWallSubdivDist      = 0;
-        p->m_clipBoard[i].iOuterFloorSubdivDist      = 0;
-        p->m_clipBoard[i].iRLOuterWallSubdivDist      = 0;
-        p->m_clipBoard[i].iRUOuterWallSubdivDist      = 0;
-        p->m_clipBoard[i].iNearBackward        = 0;
-        p->m_clipBoard[i].iNearBackwardExStart = 0;
-        p->m_clipBoard[i].iNearBackwardEx      = 0;
+        p->m_clipBoard[i].iRightSubdivDist       = 0;
+        p->m_clipBoard[i].iLWallSubdivDist       = 0;
+        p->m_clipBoard[i].iRWallSubdivDist       = 0;
+        p->m_clipBoard[i].iRoofSubdivDist        = 0;
+        p->m_clipBoard[i].iLUOuterWallSubdivDist = 0;
+        p->m_clipBoard[i].iLLOuterWallSubdivDist = 0;
+        p->m_clipBoard[i].iOuterFloorSubdivDist  = 0;
+        p->m_clipBoard[i].iRLOuterWallSubdivDist = 0;
+        p->m_clipBoard[i].iRUOuterWallSubdivDist = 0;
+        p->m_clipBoard[i].iNearBackward          = 0;
+        p->m_clipBoard[i].iNearBackwardExStart   = 0;
+        p->m_clipBoard[i].iNearBackwardEx        = 0;
       }
       if (!m_preferences.bPasteAudio) {
         p->m_clipBoard[i].iAudioAboveTrigger = 0;

@@ -52,7 +52,7 @@ CEditGeometryWidget::CEditGeometryWidget(QWidget *pParent)
   connect(sbAILine2           , SIGNAL(valueChanged(int)), this, SLOT(AILine2Changed(int)));
   connect(sbAILine3           , SIGNAL(valueChanged(int)), this, SLOT(AILine3Changed(int)));
   connect(sbAILine4           , SIGNAL(valueChanged(int)), this, SLOT(AILine4Changed(int)));
-  connect(sbGroundHeight        , SIGNAL(valueChanged(int)), this, SLOT(GroundHeightChanged(int)));
+  connect(sbGroundHeight      , SIGNAL(valueChanged(int)), this, SLOT(GroundHeightChanged(int)));
 
   connect(pbEditCenter,     &QPushButton::clicked, this, &CEditGeometryWidget::EditCSurface);
   connect(pbEditLShoulder,  &QPushButton::clicked, this, &CEditGeometryWidget::EditLShoulder);
@@ -118,7 +118,7 @@ void CEditGeometryWidget::UpdateGeometrySelection(int iFrom, int iTo)
   BLOCK_SIG_AND_DO(sldLShoulderGrip, setValue(     g_pMainWindow->GetCurrentTrack()->m_chunkAy[iFrom].iLeftShoulderGrip));
   BLOCK_SIG_AND_DO(sldRShoulderGrip, setValue(     g_pMainWindow->GetCurrentTrack()->m_chunkAy[iFrom].iRightShoulderGrip);)
   BLOCK_SIG_AND_DO(sldAISpeed, setValue(           g_pMainWindow->GetCurrentTrack()->m_chunkAy[iFrom].iAIMaxSpeed / 10));
-  BLOCK_SIG_AND_DO(sbGroundHeight, setValue(         g_pMainWindow->GetCurrentTrack()->m_chunkAy[iFrom].iGroundHeight));
+  BLOCK_SIG_AND_DO(sbGroundHeight, setValue(       g_pMainWindow->GetCurrentTrack()->m_chunkAy[iFrom].iGroundHeight));
 
   lblCGrip->setText(        "(" + QString::number(g_pMainWindow->GetCurrentTrack()->m_chunkAy[iFrom].iTrackGrip) + ")");
   lblLShoulderGrip->setText("(" + QString::number(g_pMainWindow->GetCurrentTrack()->m_chunkAy[iFrom].iLeftShoulderGrip) + ")");
@@ -909,7 +909,7 @@ void CEditGeometryWidget::GroundHeightChanged(int iValue)
   for (int i = iFrom; i <= iTo; ++i) {
     g_pMainWindow->GetCurrentTrack()->m_chunkAy[i].iGroundHeight = iValue;
   }
-  g_pMainWindow->SaveHistory("Changed ai accuracy");
+  g_pMainWindow->SaveHistory("Changed ground height");
   g_pMainWindow->UpdateWindow();
 }
 
