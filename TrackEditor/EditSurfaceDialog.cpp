@@ -47,26 +47,26 @@ CEditSurfaceDialog::CEditSurfaceDialog(QWidget *pParent, eSurfaceField field,
   connect(ck31Wall,             &QCheckBox::toggled, this, &CEditSurfaceDialog::On31WallChecked);
   connect(ck30Bounce,           &QCheckBox::toggled, this, &CEditSurfaceDialog::On30BounceChecked);
   connect(ck29Echo,             &QCheckBox::toggled, this, &CEditSurfaceDialog::On29EchoChecked);
-  connect(ck28,                 &QCheckBox::toggled, this, &CEditSurfaceDialog::On28Checked);
-  connect(ck27PairNext,         &QCheckBox::toggled, this, &CEditSurfaceDialog::On27PairNextChecked);
-  connect(ck26,                 &QCheckBox::toggled, this, &CEditSurfaceDialog::On26Checked);
+  connect(ck28AIMaxSpeed,       &QCheckBox::toggled, this, &CEditSurfaceDialog::On28AIMaxSpeedChecked);
+  connect(ck27NoSpawn,          &QCheckBox::toggled, this, &CEditSurfaceDialog::On27NoSpawnChecked);
+  connect(ck26PitBox,           &QCheckBox::toggled, this, &CEditSurfaceDialog::On26PitBoxChecked);
   connect(ck25Pit,              &QCheckBox::toggled, this, &CEditSurfaceDialog::On25PitChecked);
-  connect(ck24Yellow,           &QCheckBox::toggled, this, &CEditSurfaceDialog::On24YellowMapChecked);
-  connect(ck23,                 &QCheckBox::toggled, this, &CEditSurfaceDialog::On23Checked);
+  connect(ck24PitZone,          &QCheckBox::toggled, this, &CEditSurfaceDialog::On24PitZoneChecked);
+  connect(ck23AIFastZone,       &QCheckBox::toggled, this, &CEditSurfaceDialog::On23AIFastZoneChecked);
   connect(ck22Wall,             &QCheckBox::toggled, this, &CEditSurfaceDialog::On22WallChecked);
   connect(ck21Transparent,      &QCheckBox::toggled, this, &CEditSurfaceDialog::On21TransparentChecked);
-  connect(ck20Bounce,           &QCheckBox::toggled, this, &CEditSurfaceDialog::On20BounceChecked);
+  connect(ck20FallOff,          &QCheckBox::toggled, this, &CEditSurfaceDialog::On20FallOffChecked);
   connect(ck19NonMagnetic,      &QCheckBox::toggled, this, &CEditSurfaceDialog::On19NonMagneticChecked);
   connect(ck18FlipVertically,   &QCheckBox::toggled, this, &CEditSurfaceDialog::On18FlipVertChecked);
-  connect(ck17NonSolid,         &QCheckBox::toggled, this, &CEditSurfaceDialog::On17NonSolidChecked);
+  connect(ck17SkipRender,       &QCheckBox::toggled, this, &CEditSurfaceDialog::On17SkipRenderChecked);
   connect(ck16TexturePair,      &QCheckBox::toggled, this, &CEditSurfaceDialog::On16TexturePairChecked);
-  connect(ck15Livery,           &QCheckBox::toggled, this, &CEditSurfaceDialog::On15LiveryChecked);
-  connect(ck14,                 &QCheckBox::toggled, this, &CEditSurfaceDialog::On14Checked);
-  connect(ck13Motion,           &QCheckBox::toggled, this, &CEditSurfaceDialog::On13MotionChecked);
+  connect(ck15PreventJump,      &QCheckBox::toggled, this, &CEditSurfaceDialog::On15PreventJumpChecked);
+  connect(ck14Concave,          &QCheckBox::toggled, this, &CEditSurfaceDialog::On14ConcaveChecked);
+  connect(ck13FlipBackface,     &QCheckBox::toggled, this, &CEditSurfaceDialog::On13FlipBackfaceChecked);
   connect(ck12FlipHorizontally, &QCheckBox::toggled, this, &CEditSurfaceDialog::On12FlipHorizChecked);
   connect(ck11Back,             &QCheckBox::toggled, this, &CEditSurfaceDialog::On11BackChecked);
   connect(ck10PartialTrans,     &QCheckBox::toggled, this, &CEditSurfaceDialog::On10PartialTransChecked);
-  connect(ck9AnmsLookup,        &QCheckBox::toggled, this, &CEditSurfaceDialog::On9AnmsLookupChecked);
+  connect(ck9NoExtras,          &QCheckBox::toggled, this, &CEditSurfaceDialog::On9NoExtrasChecked);
   connect(ck8ApplyTexture,      &QCheckBox::toggled, this, &CEditSurfaceDialog::On8ApplyTextureChecked);
   connect(pbTexture1,           &QPushButton::clicked, this, &CEditSurfaceDialog::OnTextureClicked);
   connect(cbTransparency, SIGNAL(currentIndexChanged(int)), this, SLOT(OnTransparencyTypeChanged(int)));
@@ -162,7 +162,7 @@ void CEditSurfaceDialog::On31WallChecked(bool bChecked)
 
 void CEditSurfaceDialog::On30BounceChecked(bool bChecked)
 {
-  UpdateValueHelper(SURFACE_FLAG_BOUNCE_30, bChecked);
+  UpdateValueHelper(SURFACE_FLAG_BOUNCE, bChecked);
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -174,23 +174,23 @@ void CEditSurfaceDialog::On29EchoChecked(bool bChecked)
 
 //-------------------------------------------------------------------------------------------------
 
-void CEditSurfaceDialog::On28Checked(bool bChecked)
+void CEditSurfaceDialog::On28AIMaxSpeedChecked(bool bChecked)
 {
-  UpdateValueHelper(SURFACE_FLAG_28, bChecked);
+  UpdateValueHelper(SURFACE_FLAG_AI_MAX_SPEED, bChecked);
 }
 
 //-------------------------------------------------------------------------------------------------
 
-void CEditSurfaceDialog::On27PairNextChecked(bool bChecked)
+void CEditSurfaceDialog::On27NoSpawnChecked(bool bChecked)
 {
-  UpdateValueHelper(SURFACE_FLAG_27, bChecked);
+  UpdateValueHelper(SURFACE_FLAG_NO_SPAWN, bChecked);
 }
 
 //-------------------------------------------------------------------------------------------------
 
-void CEditSurfaceDialog::On26Checked(bool bChecked)
+void CEditSurfaceDialog::On26PitBoxChecked(bool bChecked)
 {
-  UpdateValueHelper(SURFACE_FLAG_26, bChecked);
+  UpdateValueHelper(SURFACE_FLAG_PIT_BOX, bChecked);
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -202,16 +202,16 @@ void CEditSurfaceDialog::On25PitChecked(bool bChecked)
 
 //-------------------------------------------------------------------------------------------------
 
-void CEditSurfaceDialog::On24YellowMapChecked(bool bChecked)
+void CEditSurfaceDialog::On24PitZoneChecked(bool bChecked)
 {
-  UpdateValueHelper(SURFACE_FLAG_YELLOW_MAP, bChecked);
+  UpdateValueHelper(SURFACE_FLAG_PIT_ZONE, bChecked);
 }
 
 //-------------------------------------------------------------------------------------------------
 
-void CEditSurfaceDialog::On23Checked(bool bChecked)
+void CEditSurfaceDialog::On23AIFastZoneChecked(bool bChecked)
 {
-  UpdateValueHelper(SURFACE_FLAG_23, bChecked);
+  UpdateValueHelper(SURFACE_FLAG_AI_FAST_STRAT, bChecked);
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -268,9 +268,9 @@ void CEditSurfaceDialog::On21TransparentChecked(bool bChecked)
 
 //-------------------------------------------------------------------------------------------------
 
-void CEditSurfaceDialog::On20BounceChecked(bool bChecked)
+void CEditSurfaceDialog::On20FallOffChecked(bool bChecked)
 {
-  UpdateValueHelper(SURFACE_FLAG_BOUNCE_20, bChecked);
+  UpdateValueHelper(SURFACE_FLAG_FALL_OFF, bChecked);
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -289,7 +289,7 @@ void CEditSurfaceDialog::On18FlipVertChecked(bool bChecked)
 
 //-------------------------------------------------------------------------------------------------
 
-void CEditSurfaceDialog::On17NonSolidChecked(bool bChecked)
+void CEditSurfaceDialog::On17SkipRenderChecked(bool bChecked)
 {
   UpdateValueHelper(SURFACE_FLAG_SKIP_RENDER, bChecked);
 }
@@ -303,21 +303,21 @@ void CEditSurfaceDialog::On16TexturePairChecked(bool bChecked)
 
 //-------------------------------------------------------------------------------------------------
 
-void CEditSurfaceDialog::On15LiveryChecked(bool bChecked)
+void CEditSurfaceDialog::On15PreventJumpChecked(bool bChecked)
 {
-  UpdateValueHelper(SURFACE_FLAG_ANMS_LIVERY, bChecked);
+  UpdateValueHelper(SURFACE_FLAG_PREVENT_JUMP, bChecked);
 }
 
 //-------------------------------------------------------------------------------------------------
 
-void CEditSurfaceDialog::On14Checked(bool bChecked)
+void CEditSurfaceDialog::On14ConcaveChecked(bool bChecked)
 {
   UpdateValueHelper(SURFACE_FLAG_CONCAVE, bChecked);
 }
 
 //-------------------------------------------------------------------------------------------------
 
-void CEditSurfaceDialog::On13MotionChecked(bool bChecked)
+void CEditSurfaceDialog::On13FlipBackfaceChecked(bool bChecked)
 {
   UpdateValueHelper(SURFACE_FLAG_FLIP_BACKFACE, bChecked);
 }
@@ -345,9 +345,9 @@ void CEditSurfaceDialog::On10PartialTransChecked(bool bChecked)
 
 //-------------------------------------------------------------------------------------------------
 
-void CEditSurfaceDialog::On9AnmsLookupChecked(bool bChecked)
+void CEditSurfaceDialog::On9NoExtrasChecked(bool bChecked)
 {
-  UpdateValueHelper(SURFACE_FLAG_ANMS_LOOKUP, bChecked);
+  UpdateValueHelper(SURFACE_FLAG_NO_EXTRAS, bChecked);
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -585,28 +585,28 @@ void CEditSurfaceDialog::UpdateDialog()
   BLOCK_SIG_AND_DO(ckDisable            , setChecked(iValue == -1));
   BLOCK_SIG_AND_DO(ckDisableAttach      , setChecked(iValue == -2));
   BLOCK_SIG_AND_DO(ck31Wall             , setChecked(uiValue & SURFACE_FLAG_WALL_31));
-  BLOCK_SIG_AND_DO(ck30Bounce           , setChecked(uiValue & SURFACE_FLAG_BOUNCE_30));
+  BLOCK_SIG_AND_DO(ck30Bounce           , setChecked(uiValue & SURFACE_FLAG_BOUNCE));
   BLOCK_SIG_AND_DO(ck29Echo             , setChecked(uiValue & SURFACE_FLAG_ECHO));
-  BLOCK_SIG_AND_DO(ck28                 , setChecked(uiValue & SURFACE_FLAG_28));
-  BLOCK_SIG_AND_DO(ck27PairNext         , setChecked(uiValue & SURFACE_FLAG_27));
-  BLOCK_SIG_AND_DO(ck26                 , setChecked(uiValue & SURFACE_FLAG_26));
+  BLOCK_SIG_AND_DO(ck28AIMaxSpeed       , setChecked(uiValue & SURFACE_FLAG_AI_MAX_SPEED));
+  BLOCK_SIG_AND_DO(ck27NoSpawn          , setChecked(uiValue & SURFACE_FLAG_NO_SPAWN));
+  BLOCK_SIG_AND_DO(ck26PitBox           , setChecked(uiValue & SURFACE_FLAG_PIT_BOX));
   BLOCK_SIG_AND_DO(ck25Pit              , setChecked(uiValue & SURFACE_FLAG_PIT));
-  BLOCK_SIG_AND_DO(ck24Yellow           , setChecked(uiValue & SURFACE_FLAG_YELLOW_MAP));
-  BLOCK_SIG_AND_DO(ck23                 , setChecked(uiValue & SURFACE_FLAG_23));
+  BLOCK_SIG_AND_DO(ck24PitZone          , setChecked(uiValue & SURFACE_FLAG_PIT_ZONE));
+  BLOCK_SIG_AND_DO(ck23AIFastZone       , setChecked(uiValue & SURFACE_FLAG_AI_FAST_STRAT));
   BLOCK_SIG_AND_DO(ck22Wall             , setChecked(uiValue & SURFACE_FLAG_WALL_22));
   BLOCK_SIG_AND_DO(ck21Transparent      , setChecked(uiValue & SURFACE_FLAG_TRANSPARENT));
-  BLOCK_SIG_AND_DO(ck20Bounce           , setChecked(uiValue & SURFACE_FLAG_BOUNCE_20));
+  BLOCK_SIG_AND_DO(ck20FallOff          , setChecked(uiValue & SURFACE_FLAG_FALL_OFF));
   BLOCK_SIG_AND_DO(ck19NonMagnetic      , setChecked(uiValue & SURFACE_FLAG_NON_MAGNETIC));
   BLOCK_SIG_AND_DO(ck18FlipVertically   , setChecked(uiValue & SURFACE_FLAG_FLIP_VERT));
-  BLOCK_SIG_AND_DO(ck17NonSolid         , setChecked(uiValue & SURFACE_FLAG_SKIP_RENDER));
+  BLOCK_SIG_AND_DO(ck17SkipRender       , setChecked(uiValue & SURFACE_FLAG_SKIP_RENDER));
   BLOCK_SIG_AND_DO(ck16TexturePair      , setChecked(uiValue & SURFACE_FLAG_TEXTURE_PAIR));
-  BLOCK_SIG_AND_DO(ck15Livery           , setChecked(uiValue & SURFACE_FLAG_ANMS_LIVERY));
-  BLOCK_SIG_AND_DO(ck14                 , setChecked(uiValue & SURFACE_FLAG_CONCAVE));
-  BLOCK_SIG_AND_DO(ck13Motion           , setChecked(uiValue & SURFACE_FLAG_FLIP_BACKFACE));
+  BLOCK_SIG_AND_DO(ck15PreventJump      , setChecked(uiValue & SURFACE_FLAG_PREVENT_JUMP));
+  BLOCK_SIG_AND_DO(ck14Concave          , setChecked(uiValue & SURFACE_FLAG_CONCAVE));
+  BLOCK_SIG_AND_DO(ck13FlipBackface     , setChecked(uiValue & SURFACE_FLAG_FLIP_BACKFACE));
   BLOCK_SIG_AND_DO(ck12FlipHorizontally , setChecked(uiValue & SURFACE_FLAG_FLIP_HORIZ));
   BLOCK_SIG_AND_DO(ck11Back             , setChecked(uiValue & SURFACE_FLAG_BACK));
   BLOCK_SIG_AND_DO(ck10PartialTrans     , setChecked(uiValue & SURFACE_FLAG_PARTIAL_TRANS));
-  BLOCK_SIG_AND_DO(ck9AnmsLookup        , setChecked(uiValue & SURFACE_FLAG_ANMS_LOOKUP));
+  BLOCK_SIG_AND_DO(ck9NoExtras          , setChecked(uiValue & SURFACE_FLAG_NO_EXTRAS));
   BLOCK_SIG_AND_DO(ck8ApplyTexture      , setChecked(uiValue & SURFACE_FLAG_APPLY_TEXTURE));
 
   bool bEnableSurface = true;
@@ -618,26 +618,26 @@ void CEditSurfaceDialog::UpdateDialog()
   ck31Wall             ->setEnabled(bEnableSurface);
   ck30Bounce           ->setEnabled(bEnableSurface);
   ck29Echo             ->setEnabled(bEnableSurface);
-  ck28                 ->setEnabled(bEnableSurface);
-  ck27PairNext         ->setEnabled(bEnableSurface);
-  ck26                 ->setEnabled(bEnableSurface);
+  ck28AIMaxSpeed       ->setEnabled(bEnableSurface);
+  ck27NoSpawn          ->setEnabled(bEnableSurface);
+  ck26PitBox           ->setEnabled(bEnableSurface);
   ck25Pit              ->setEnabled(bEnableSurface);
-  ck24Yellow           ->setEnabled(bEnableSurface);
-  ck23                 ->setEnabled(bEnableSurface);
+  ck24PitZone          ->setEnabled(bEnableSurface);
+  ck23AIFastZone       ->setEnabled(bEnableSurface);
   ck22Wall             ->setEnabled(bEnableSurface);
   ck21Transparent      ->setEnabled(bEnableSurface);
-  ck20Bounce           ->setEnabled(bEnableSurface);
+  ck20FallOff          ->setEnabled(bEnableSurface);
   ck19NonMagnetic      ->setEnabled(bEnableSurface);
   ck18FlipVertically   ->setEnabled(bEnableSurface);
-  ck17NonSolid         ->setEnabled(bEnableSurface);
+  ck17SkipRender       ->setEnabled(bEnableSurface);
   ck16TexturePair      ->setEnabled(bEnableSurface);
-  ck15Livery           ->setEnabled(bEnableSurface);
-  ck14                 ->setEnabled(bEnableSurface);
-  ck13Motion           ->setEnabled(bEnableSurface);
+  ck15PreventJump      ->setEnabled(bEnableSurface);
+  ck14Concave          ->setEnabled(bEnableSurface);
+  ck13FlipBackface     ->setEnabled(bEnableSurface);
   ck12FlipHorizontally ->setEnabled(bEnableSurface);
   ck11Back             ->setEnabled(bEnableSurface);
   ck10PartialTrans     ->setEnabled(bEnableSurface);
-  ck9AnmsLookup        ->setEnabled(bEnableSurface);
+  ck9NoExtras          ->setEnabled(bEnableSurface);
   ck8ApplyTexture      ->setEnabled(bEnableSurface);
   pbTexture1           ->setEnabled(bEnableSurface);
 

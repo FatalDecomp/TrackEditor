@@ -57,7 +57,7 @@ protected slots:
   void LGripChanged(int iValue);
   void RGripChanged(int iValue);
   void AISpeedChanged(int iValue);
-  void AIAccuracyChanged(int iValue);
+  void GroundHeightChanged(int iValue);
 };
 
 //-------------------------------------------------------------------------------------------------

@@ -50,7 +50,7 @@ void tGeometryChunk::Clear()
   iLeftShoulderGrip = 0;
   iRightShoulderGrip = 0;
   iAIMaxSpeed = 0;
-  iAIAccuracy = 0;
+  iGroundHeight = 0;
   iAudioAboveTrigger = 0;
   iAudioTriggerSpeed = 0;
   iAudioBelowTrigger = 0;
@@ -87,23 +87,23 @@ void tGeometryChunk::Clear()
   iRLOuterWallHeight = 0;
   iRUOuterWallHeight = 0;
   iRoofHeight = 0;
-  iDrawOrder1 = 0;
-  iDrawOrder2 = 0;
-  iDrawOrder3 = 0;
-  iUnk37 = 0;
-  iUnk38 = 0;
-  iUnk39 = 0;
-  iUnk40 = 0;
-  iUnk41 = 0;
-  iUnk42 = 0;
-  iUnk43 = 0;
-  iUnk44 = 0;
-  iUnk45 = 0;
-  iUnk46 = 0;
-  iUnk47 = 0;
-  iUnk48 = 0;
-  iUnk49 = 0;
-  iUnk50 = 0;
+  iNearForward = 0;
+  iNearForwardExStart = 0;
+  iNearForwardEx = 0;
+  iLeftSubdivDist = 0;
+  iCenterSubdivDist = 0;
+  iRightSubdivDist = 0;
+  iLWallSubdivDist = 0;
+  iRWallSubdivDist = 0;
+  iRoofSubdivDist = 0;
+  iLUOuterWallSubdivDist = 0;
+  iLLOuterWallSubdivDist = 0;
+  iOuterFloorSubdivDist = 0;
+  iRLOuterWallSubdivDist = 0;
+  iRUOuterWallSubdivDist = 0;
+  iNearBackward = 0;
+  iNearBackwardExStart = 0;
+  iNearBackwardEx = 0;
 
   //additional data
   iSignTexture = 0;
@@ -353,7 +353,7 @@ bool CTrack::ProcessTrackData(const uint8 *pData, size_t length)
             if (lineAy.size() > 15) currChunk.iLeftShoulderGrip     = std::stoi(lineAy[15]);
             if (lineAy.size() > 16) currChunk.iRightShoulderGrip    = std::stoi(lineAy[16]);
             if (lineAy.size() > 17) currChunk.iAIMaxSpeed           = std::stoi(lineAy[17]);
-            if (lineAy.size() > 18) currChunk.iAIAccuracy           = std::stoi(lineAy[18]);
+            if (lineAy.size() > 18) currChunk.iGroundHeight         = std::stoi(lineAy[18]);
             if (lineAy.size() > 19) currChunk.iAudioAboveTrigger    = std::stoi(lineAy[19]);
             if (lineAy.size() > 20) currChunk.iAudioTriggerSpeed    = std::stoi(lineAy[20]);
             if (lineAy.size() > 21) currChunk.iAudioBelowTrigger    = std::stoi(lineAy[21]);
@@ -398,23 +398,23 @@ bool CTrack::ProcessTrackData(const uint8 *pData, size_t length)
           if (lineAy.size() > 10) currChunk.iRLOuterWallHeight  = std::stoi(lineAy[10]);
           if (lineAy.size() > 11) currChunk.iRUOuterWallHeight  = std::stoi(lineAy[11]);
           if (lineAy.size() > 12) currChunk.iRoofHeight         = std::stoi(lineAy[12]);
-          if (lineAy.size() > 13) currChunk.iDrawOrder1         = std::stoi(lineAy[13]);
-          if (lineAy.size() > 14) currChunk.iDrawOrder2         = std::stoi(lineAy[14]);
-          if (lineAy.size() > 15) currChunk.iDrawOrder3         = std::stoi(lineAy[15]);
-          if (lineAy.size() > 16) currChunk.iUnk37              = std::stoi(lineAy[16]);
-          if (lineAy.size() > 17) currChunk.iUnk38              = std::stoi(lineAy[17]);
-          if (lineAy.size() > 18) currChunk.iUnk39              = std::stoi(lineAy[18]);
-          if (lineAy.size() > 19) currChunk.iUnk40              = std::stoi(lineAy[19]);
-          if (lineAy.size() > 20) currChunk.iUnk41              = std::stoi(lineAy[20]);
-          if (lineAy.size() > 21) currChunk.iUnk42              = std::stoi(lineAy[21]);
-          if (lineAy.size() > 22) currChunk.iUnk43              = std::stoi(lineAy[22]);
-          if (lineAy.size() > 23) currChunk.iUnk44              = std::stoi(lineAy[23]);
-          if (lineAy.size() > 24) currChunk.iUnk45              = std::stoi(lineAy[24]);
-          if (lineAy.size() > 25) currChunk.iUnk46              = std::stoi(lineAy[25]);
-          if (lineAy.size() > 26) currChunk.iUnk47              = std::stoi(lineAy[26]);
-          if (lineAy.size() > 27) currChunk.iUnk48              = std::stoi(lineAy[27]);
-          if (lineAy.size() > 28) currChunk.iUnk49              = std::stoi(lineAy[28]);
-          if (lineAy.size() > 29) currChunk.iUnk50              = std::stoi(lineAy[29]);
+          if (lineAy.size() > 13) currChunk.iNearForward        = std::stoi(lineAy[13]);
+          if (lineAy.size() > 14) currChunk.iNearForwardExStart         = std::stoi(lineAy[14]);
+          if (lineAy.size() > 15) currChunk.iNearForwardEx         = std::stoi(lineAy[15]);
+          if (lineAy.size() > 16) currChunk.iLeftSubdivDist              = std::stoi(lineAy[16]);
+          if (lineAy.size() > 17) currChunk.iCenterSubdivDist              = std::stoi(lineAy[17]);
+          if (lineAy.size() > 18) currChunk.iRightSubdivDist              = std::stoi(lineAy[18]);
+          if (lineAy.size() > 19) currChunk.iLWallSubdivDist              = std::stoi(lineAy[19]);
+          if (lineAy.size() > 20) currChunk.iRWallSubdivDist              = std::stoi(lineAy[20]);
+          if (lineAy.size() > 21) currChunk.iRoofSubdivDist              = std::stoi(lineAy[21]);
+          if (lineAy.size() > 22) currChunk.iLUOuterWallSubdivDist              = std::stoi(lineAy[22]);
+          if (lineAy.size() > 23) currChunk.iLLOuterWallSubdivDist              = std::stoi(lineAy[23]);
+          if (lineAy.size() > 24) currChunk.iOuterFloorSubdivDist              = std::stoi(lineAy[24]);
+          if (lineAy.size() > 25) currChunk.iRLOuterWallSubdivDist              = std::stoi(lineAy[25]);
+          if (lineAy.size() > 26) currChunk.iRUOuterWallSubdivDist              = std::stoi(lineAy[26]);
+          if (lineAy.size() > 27) currChunk.iNearBackward              = std::stoi(lineAy[27]);
+          if (lineAy.size() > 28) currChunk.iNearBackwardExStart              = std::stoi(lineAy[28]);
+          if (lineAy.size() > 29) currChunk.iNearBackwardEx              = std::stoi(lineAy[29]);
           //chunk is complete, add to array and reset index
           m_chunkAy.push_back(currChunk);
           iChunkLine = 0;
@@ -789,7 +789,7 @@ void CTrack::GenerateChunkString(tGeometryChunk &chunk, char *szBuf, int iSize)
            , chunk.iLeftShoulderGrip
            , chunk.iRightShoulderGrip
            , chunk.iAIMaxSpeed
-           , chunk.iAIAccuracy
+           , chunk.iGroundHeight
            , chunk.iAudioAboveTrigger
            , chunk.iAudioTriggerSpeed
            , chunk.iAudioBelowTrigger
@@ -824,23 +824,23 @@ void CTrack::GenerateChunkString(tGeometryChunk &chunk, char *szBuf, int iSize)
            , chunk.iRLOuterWallHeight
            , chunk.iRUOuterWallHeight
            , chunk.iRoofHeight
-           , chunk.iDrawOrder1
-           , chunk.iDrawOrder2
-           , chunk.iDrawOrder3
-           , chunk.iUnk37
-           , chunk.iUnk38
-           , chunk.iUnk39
-           , chunk.iUnk40
-           , chunk.iUnk41
-           , chunk.iUnk42
-           , chunk.iUnk43
-           , chunk.iUnk44
-           , chunk.iUnk45
-           , chunk.iUnk46
-           , chunk.iUnk47
-           , chunk.iUnk48
-           , chunk.iUnk49
-           , chunk.iUnk50);
+           , chunk.iNearForward
+           , chunk.iNearForwardExStart
+           , chunk.iNearForwardEx
+           , chunk.iLeftSubdivDist
+           , chunk.iCenterSubdivDist
+           , chunk.iRightSubdivDist
+           , chunk.iLWallSubdivDist
+           , chunk.iRWallSubdivDist
+           , chunk.iRoofSubdivDist
+           , chunk.iLUOuterWallSubdivDist
+           , chunk.iLLOuterWallSubdivDist
+           , chunk.iOuterFloorSubdivDist
+           , chunk.iRLOuterWallSubdivDist
+           , chunk.iRUOuterWallSubdivDist
+           , chunk.iNearBackward
+           , chunk.iNearBackwardExStart
+           , chunk.iNearBackwardEx);
 }
 
 //-------------------------------------------------------------------------------------------------

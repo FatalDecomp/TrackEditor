@@ -74,28 +74,28 @@ bool SurfaceHasFlag(const int &iSurface, const std::string &sFlag)
   int iFlagNum = std::stoi(sFlag);
   switch (iFlagNum) {
     case 8:  uiFlag = SURFACE_FLAG_APPLY_TEXTURE; break;
-    case 9:  uiFlag = SURFACE_FLAG_ANMS_LOOKUP; break;
+    case 9:  uiFlag = SURFACE_FLAG_NO_EXTRAS; break;
     case 10: uiFlag = SURFACE_FLAG_PARTIAL_TRANS; break;
     case 11: uiFlag = SURFACE_FLAG_BACK; break;
     case 12: uiFlag = SURFACE_FLAG_FLIP_HORIZ; break;
     case 13: uiFlag = SURFACE_FLAG_FLIP_BACKFACE; break;
     case 14: uiFlag = SURFACE_FLAG_CONCAVE; break;
-    case 15: uiFlag = SURFACE_FLAG_ANMS_LIVERY; break;
+    case 15: uiFlag = SURFACE_FLAG_PREVENT_JUMP; break;
     case 16: uiFlag = SURFACE_FLAG_TEXTURE_PAIR; break;
     case 17: uiFlag = SURFACE_FLAG_SKIP_RENDER; break;
     case 18: uiFlag = SURFACE_FLAG_FLIP_VERT; break;
     case 19: uiFlag = SURFACE_FLAG_NON_MAGNETIC; break;
-    case 20: uiFlag = SURFACE_FLAG_BOUNCE_20; break;
+    case 20: uiFlag = SURFACE_FLAG_FALL_OFF; break;
     case 21: uiFlag = SURFACE_FLAG_TRANSPARENT; break;
     case 22: uiFlag = SURFACE_FLAG_WALL_22; break;
-    case 23: uiFlag = SURFACE_FLAG_23; break;
-    case 24: uiFlag = SURFACE_FLAG_YELLOW_MAP; break;
+    case 23: uiFlag = SURFACE_FLAG_AI_FAST_STRAT; break;
+    case 24: uiFlag = SURFACE_FLAG_PIT_ZONE; break;
     case 25: uiFlag = SURFACE_FLAG_PIT; break;
-    case 26: uiFlag = SURFACE_FLAG_26; break;
-    case 27: uiFlag = SURFACE_FLAG_27; break;
-    case 28: uiFlag = SURFACE_FLAG_28; break;
+    case 26: uiFlag = SURFACE_FLAG_PIT_BOX; break;
+    case 27: uiFlag = SURFACE_FLAG_NO_SPAWN; break;
+    case 28: uiFlag = SURFACE_FLAG_AI_MAX_SPEED; break;
     case 29: uiFlag = SURFACE_FLAG_ECHO; break;
-    case 30: uiFlag = SURFACE_FLAG_BOUNCE_30; break;
+    case 30: uiFlag = SURFACE_FLAG_BOUNCE; break;
     case 31: uiFlag = SURFACE_FLAG_WALL_31; break;
   }
   return uiSurface & uiFlag;

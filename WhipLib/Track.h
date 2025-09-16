@@ -94,7 +94,7 @@ struct tGeometryChunk
   int iLeftShoulderGrip;
   int iRightShoulderGrip;
   int iAIMaxSpeed;
-  int iAIAccuracy;
+  int iGroundHeight;
   int iAudioAboveTrigger;
   int iAudioTriggerSpeed;
   int iAudioBelowTrigger;
@@ -131,23 +131,23 @@ struct tGeometryChunk
   int iRLOuterWallHeight;
   int iRUOuterWallHeight;
   int iRoofHeight;
-  int iDrawOrder1;
-  int iDrawOrder2;
-  int iDrawOrder3;
-  int iUnk37; //todo
-  int iUnk38; //todo
-  int iUnk39; //todo
-  int iUnk40; //todo
-  int iUnk41; //todo
-  int iUnk42; //todo
-  int iUnk43; //todo
-  int iUnk44; //todo
-  int iUnk45; //todo
-  int iUnk46; //todo
-  int iUnk47; //todo
-  int iUnk48; //todo
-  int iUnk49; //todo
-  int iUnk50; //todo
+  int iNearForward;
+  int iNearForwardExStart;
+  int iNearForwardEx;
+  int iLeftSubdivDist;
+  int iCenterSubdivDist;
+  int iRightSubdivDist;
+  int iLWallSubdivDist;
+  int iRWallSubdivDist;
+  int iRoofSubdivDist;
+  int iLUOuterWallSubdivDist;
+  int iLLOuterWallSubdivDist;
+  int iOuterFloorSubdivDist;
+  int iRLOuterWallSubdivDist;
+  int iRUOuterWallSubdivDist;
+  int iNearBackward;
+  int iNearBackwardExStart;
+  int iNearBackwardEx;
 
   //additional data
   int iSignTexture;

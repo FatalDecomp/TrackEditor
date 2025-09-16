@@ -141,9 +141,9 @@
       </layout>
      </item>
      <item row="8" column="0">
-      <widget class="QCheckBox" name="ck24Yellow">
+      <widget class="QCheckBox" name="ck24PitZone">
        <property name="text">
-        <string>Yellow on track map</string>
+        <string>Pit zone</string>
        </property>
       </widget>
      </item>
@@ -162,16 +162,16 @@
       </widget>
      </item>
      <item row="9" column="0">
-      <widget class="QCheckBox" name="ck23">
+      <widget class="QCheckBox" name="ck23AIFastZone">
        <property name="text">
-        <string>Bit 23</string>
+        <string>AI fast zone</string>
        </property>
       </widget>
      </item>
      <item row="6" column="0">
-      <widget class="QCheckBox" name="ck26">
+      <widget class="QCheckBox" name="ck26PitBox">
        <property name="text">
-        <string>Bit 26</string>
+        <string>Pit box</string>
        </property>
       </widget>
      </item>
@@ -183,16 +183,16 @@
       </widget>
      </item>
      <item row="5" column="0">
-      <widget class="QCheckBox" name="ck27PairNext">
+      <widget class="QCheckBox" name="ck27NoSpawn">
        <property name="text">
-        <string>Bit 27</string>
+        <string>Disallow spawn</string>
        </property>
       </widget>
      </item>
      <item row="15" column="0">
-      <widget class="QCheckBox" name="ck17NonSolid">
+      <widget class="QCheckBox" name="ck17SkipRender">
        <property name="text">
-        <string>Non-solid</string>
+        <string>Skip render</string>
        </property>
       </widget>
      </item>
@@ -211,16 +211,16 @@
       </widget>
      </item>
      <item row="7" column="1">
-      <widget class="QCheckBox" name="ck9AnmsLookup">
+      <widget class="QCheckBox" name="ck9NoExtras">
        <property name="text">
-        <string>(Cars only) Lookup in anms array</string>
+        <string>No extras</string>
        </property>
       </widget>
      </item>
      <item row="12" column="0">
-      <widget class="QCheckBox" name="ck20Bounce">
+      <widget class="QCheckBox" name="ck20FallOff">
        <property name="text">
-        <string>Bounce off walls</string>
+        <string>Fall off</string>
        </property>
       </widget>
      </item>
@@ -253,23 +253,23 @@
       </widget>
      </item>
      <item row="3" column="1">
-      <widget class="QCheckBox" name="ck13Motion">
+      <widget class="QCheckBox" name="ck13FlipBackface">
        <property name="text">
-        <string>(Cars only) Animate motion</string>
+        <string>Flip backface</string>
        </property>
       </widget>
      </item>
      <item row="0" column="1">
-      <widget class="QCheckBox" name="ck15Livery">
+      <widget class="QCheckBox" name="ck15PreventJump">
        <property name="text">
-        <string>(Cars only) Change livery</string>
+        <string>Prevent jump</string>
        </property>
       </widget>
      </item>
      <item row="1" column="1">
-      <widget class="QCheckBox" name="ck14">
+      <widget class="QCheckBox" name="ck14Concave">
        <property name="text">
-        <string>Bit 14</string>
+        <string>Concave</string>
        </property>
       </widget>
      </item>
@@ -301,9 +301,9 @@
       </widget>
      </item>
      <item row="4" column="0">
-      <widget class="QCheckBox" name="ck28">
+      <widget class="QCheckBox" name="ck28AIMaxSpeed">
        <property name="text">
-        <string>Bit 28</string>
+        <string>AI max speed</string>
        </property>
       </widget>
      </item>

@@ -287,12 +287,12 @@ tVertex *CShapeFactory::MakeModelVerts(uint32 &numVertices, CTexture *pTexture, 
     }
 
     uint32 uiUseTex = GetPols(model)[i].uiTex;
-    if (uiUseTex & SURFACE_FLAG_ANMS_LOOKUP && GetAnms(model)) {
+    if (uiUseTex & CAR_FLAG_ANMS_LOOKUP && GetAnms(model)) {
       uiUseTex = GetAnms(model)[uiUseTex & SURFACE_MASK_TEXTURE_INDEX].framesAy[0];
     }
     if (IsSign(model)) {
       if (GetSignTypeFromModel(model).bCanHaveTexture) {
-        if (GetPols(model)[i].uiTex &SURFACE_FLAG_ANMS_LOOKUP) {
+        if (GetPols(model)[i].uiTex & CAR_FLAG_ANMS_LOOKUP) {
           uint32 uiSignSurfaceType = CTrack::GetSignedBitValueFromInt(iSignSurfaceType);
           uiUseTex = uiSignSurfaceType;
         } else {
