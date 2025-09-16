@@ -51,7 +51,7 @@
          <item row="5" column="2">
           <widget class="QLineEdit" name="leRoll">
            <property name="enabled">
-            <bool>false</bool>
+            <bool>true</bool>
            </property>
            <property name="readOnly">
             <bool>true</bool>
@@ -71,7 +71,7 @@
          <item row="9" column="0">
           <widget class="QLineEdit" name="leTrackGrip">
            <property name="enabled">
-            <bool>false</bool>
+            <bool>true</bool>
            </property>
            <property name="toolTip">
             <string>0 = full grip, 12 = ice</string>
@@ -84,7 +84,7 @@
          <item row="5" column="1">
           <widget class="QLineEdit" name="lePitch">
            <property name="enabled">
-            <bool>false</bool>
+            <bool>true</bool>
            </property>
            <property name="readOnly">
             <bool>true</bool>
@@ -101,7 +101,7 @@
          <item row="3" column="0">
           <widget class="QLineEdit" name="leLShoulderHeight">
            <property name="enabled">
-            <bool>false</bool>
+            <bool>true</bool>
            </property>
            <property name="readOnly">
             <bool>true</bool>
@@ -111,7 +111,7 @@
          <item row="5" column="0">
           <widget class="QLineEdit" name="leYaw">
            <property name="enabled">
-            <bool>false</bool>
+            <bool>true</bool>
            </property>
            <property name="readOnly">
             <bool>true</bool>
@@ -131,7 +131,7 @@
          <item row="7" column="1">
           <widget class="QLineEdit" name="leAILine2">
            <property name="enabled">
-            <bool>false</bool>
+            <bool>true</bool>
            </property>
            <property name="toolTip">
             <string>&gt;0 = left, 0 = center, &lt;0 = right</string>
@@ -144,7 +144,7 @@
          <item row="9" column="1">
           <widget class="QLineEdit" name="leLeftShoulderGrip">
            <property name="enabled">
-            <bool>false</bool>
+            <bool>true</bool>
            </property>
            <property name="toolTip">
             <string>0 = full grip, 12 = ice</string>
@@ -157,7 +157,7 @@
          <item row="1" column="2">
           <widget class="QLineEdit" name="leRLaneWidth">
            <property name="enabled">
-            <bool>false</bool>
+            <bool>true</bool>
            </property>
            <property name="readOnly">
             <bool>true</bool>
@@ -167,7 +167,7 @@
          <item row="1" column="1">
           <widget class="QLineEdit" name="leLLaneWidth">
            <property name="enabled">
-            <bool>false</bool>
+            <bool>true</bool>
            </property>
            <property name="readOnly">
             <bool>true</bool>
@@ -187,7 +187,7 @@
          <item row="1" column="3">
           <widget class="QLineEdit" name="leRShoulderWidth">
            <property name="enabled">
-            <bool>false</bool>
+            <bool>true</bool>
            </property>
            <property name="readOnly">
             <bool>true</bool>
@@ -204,7 +204,7 @@
          <item row="7" column="2">
           <widget class="QLineEdit" name="leAILine3">
            <property name="enabled">
-            <bool>false</bool>
+            <bool>true</bool>
            </property>
            <property name="toolTip">
             <string>&gt;0 = left, 0 = center, &lt;0 = right</string>
@@ -217,7 +217,7 @@
          <item row="7" column="0">
           <widget class="QLineEdit" name="leAILine1">
            <property name="enabled">
-            <bool>false</bool>
+            <bool>true</bool>
            </property>
            <property name="toolTip">
             <string>&gt;0 = left, 0 = center, &lt;0 = right</string>
@@ -240,7 +240,7 @@
          <item row="1" column="0">
           <widget class="QLineEdit" name="leLShoulderWidth">
            <property name="enabled">
-            <bool>false</bool>
+            <bool>true</bool>
            </property>
            <property name="sizePolicy">
             <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
@@ -263,7 +263,7 @@
          <item row="7" column="3">
           <widget class="QLineEdit" name="leAILine4">
            <property name="enabled">
-            <bool>false</bool>
+            <bool>true</bool>
            </property>
            <property name="toolTip">
             <string>&gt;0 = left, 0 = center, &lt;0 = right</string>
@@ -276,7 +276,7 @@
          <item row="9" column="2">
           <widget class="QLineEdit" name="leRShoulderGrip">
            <property name="enabled">
-            <bool>false</bool>
+            <bool>true</bool>
            </property>
            <property name="toolTip">
             <string>0 = full grip, 12 = ice</string>
@@ -303,7 +303,7 @@
          <item row="3" column="1">
           <widget class="QLineEdit" name="leRShoulderHeight">
            <property name="enabled">
-            <bool>false</bool>
+            <bool>true</bool>
            </property>
            <property name="readOnly">
             <bool>true</bool>
@@ -337,7 +337,7 @@
          <item row="3" column="2">
           <widget class="QLineEdit" name="leLength">
            <property name="enabled">
-            <bool>false</bool>
+            <bool>true</bool>
            </property>
            <property name="readOnly">
             <bool>true</bool>
@@ -381,7 +381,7 @@
          <item row="11" column="0">
           <widget class="QLineEdit" name="leAIMaxSpeed">
            <property name="enabled">
-            <bool>false</bool>
+            <bool>true</bool>
            </property>
            <property name="readOnly">
             <bool>true</bool>
@@ -398,7 +398,7 @@
          <item row="11" column="1">
           <widget class="QLineEdit" name="leGroundHeight">
            <property name="enabled">
-            <bool>false</bool>
+            <bool>true</bool>
            </property>
            <property name="readOnly">
             <bool>true</bool>
@@ -415,7 +415,7 @@
          <item row="13" column="0">
           <widget class="QLineEdit" name="leAudioAboveTrigger">
            <property name="enabled">
-            <bool>false</bool>
+            <bool>true</bool>
            </property>
            <property name="readOnly">
             <bool>true</bool>
@@ -432,7 +432,7 @@
          <item row="13" column="1">
           <widget class="QLineEdit" name="leAudioTriggerSpeed">
            <property name="enabled">
-            <bool>false</bool>
+            <bool>true</bool>
            </property>
            <property name="readOnly">
             <bool>true</bool>
@@ -449,7 +449,7 @@
          <item row="13" column="2">
           <widget class="QLineEdit" name="leAudioBelowTrigger">
            <property name="enabled">
-            <bool>false</bool>
+            <bool>true</bool>
            </property>
            <property name="readOnly">
             <bool>true</bool>
@@ -512,7 +512,7 @@
          <item row="11" column="1">
           <widget class="QLineEdit" name="leRUOuterWallType">
            <property name="enabled">
-            <bool>false</bool>
+            <bool>true</bool>
            </property>
            <property name="readOnly">
             <bool>true</bool>
@@ -578,7 +578,7 @@
          <item row="4" column="1">
           <widget class="QLineEdit" name="leRWallType">
            <property name="enabled">
-            <bool>false</bool>
+            <bool>true</bool>
            </property>
            <property name="readOnly">
             <bool>true</bool>
@@ -654,7 +654,7 @@
          <item row="15" column="1">
           <widget class="QLineEdit" name="leSignHorizOffset">
            <property name="enabled">
-            <bool>false</bool>
+            <bool>true</bool>
            </property>
            <property name="readOnly">
             <bool>true</bool>
@@ -755,7 +755,7 @@
          <item row="2" column="1">
           <widget class="QLineEdit" name="leRightSurfaceType">
            <property name="enabled">
-            <bool>false</bool>
+            <bool>true</bool>
            </property>
            <property name="toolTip">
             <string>524703 590082 590082 appears to define a moving ramp or at least a surface the car can fly off of vertically</string>
@@ -768,7 +768,7 @@
          <item row="15" column="2">
           <widget class="QLineEdit" name="leSignVertOffset">
            <property name="enabled">
-            <bool>false</bool>
+            <bool>true</bool>
            </property>
            <property name="readOnly">
             <bool>true</bool>
@@ -778,7 +778,7 @@
          <item row="8" column="1">
           <widget class="QLineEdit" name="leLLOuterWallType">
            <property name="enabled">
-            <bool>false</bool>
+            <bool>true</bool>
            </property>
            <property name="readOnly">
             <bool>true</bool>
@@ -808,7 +808,7 @@
          <item row="19" column="0">
           <widget class="QLineEdit" name="leSignYaw">
            <property name="enabled">
-            <bool>false</bool>
+            <bool>true</bool>
            </property>
            <property name="readOnly">
             <bool>true</bool>
@@ -882,7 +882,7 @@ type</string>
          <item row="3" column="1">
           <widget class="QLineEdit" name="leLWallType">
            <property name="enabled">
-            <bool>false</bool>
+            <bool>true</bool>
            </property>
            <property name="readOnly">
             <bool>true</bool>
@@ -902,7 +902,7 @@ type</string>
          <item row="19" column="2">
           <widget class="QLineEdit" name="leSignRoll">
            <property name="enabled">
-            <bool>false</bool>
+            <bool>true</bool>
            </property>
            <property name="readOnly">
             <bool>true</bool>
@@ -912,7 +912,7 @@ type</string>
          <item row="15" column="0">
           <widget class="QLineEdit" name="leSignType">
            <property name="enabled">
-            <bool>false</bool>
+            <bool>true</bool>
            </property>
            <property name="toolTip">
             <string>sign type setting below</string>
@@ -1016,7 +1016,7 @@ type</string>
          <item row="5" column="1">
           <widget class="QLineEdit" name="leRoofType">
            <property name="enabled">
-            <bool>false</bool>
+            <bool>true</bool>
            </property>
            <property name="readOnly">
             <bool>true</bool>
@@ -1033,7 +1033,7 @@ type</string>
          <item row="12" column="1">
           <widget class="QLineEdit" name="leEnvironmentFloorType">
            <property name="enabled">
-            <bool>false</bool>
+            <bool>true</bool>
            </property>
            <property name="readOnly">
             <bool>true</bool>
@@ -1043,7 +1043,7 @@ type</string>
          <item row="10" column="1">
           <widget class="QLineEdit" name="leRLOuterWallType">
            <property name="enabled">
-            <bool>false</bool>
+            <bool>true</bool>
            </property>
            <property name="readOnly">
             <bool>true</bool>
@@ -1053,7 +1053,7 @@ type</string>
          <item row="6" column="1">
           <widget class="QLineEdit" name="leLUOuterWallType">
            <property name="enabled">
-            <bool>false</bool>
+            <bool>true</bool>
            </property>
            <property name="readOnly">
             <bool>true</bool>
@@ -1154,7 +1154,7 @@ type</string>
          <item row="9" column="1">
           <widget class="QLineEdit" name="leOuterFloorType">
            <property name="enabled">
-            <bool>false</bool>
+            <bool>true</bool>
            </property>
            <property name="readOnly">
             <bool>true</bool>
@@ -1230,7 +1230,7 @@ type</string>
          <item row="19" column="1">
           <widget class="QLineEdit" name="leSignPitch">
            <property name="enabled">
-            <bool>false</bool>
+            <bool>true</bool>
            </property>
            <property name="readOnly">
             <bool>true</bool>
@@ -1240,7 +1240,7 @@ type</string>
          <item row="0" column="1">
           <widget class="QLineEdit" name="leLeftSurfaceType">
            <property name="enabled">
-            <bool>false</bool>
+            <bool>true</bool>
            </property>
            <property name="toolTip">
             <string>524703 590082 590082 appears to define a moving ramp or at least a surface the car can fly off of vertically</string>
@@ -1253,7 +1253,7 @@ type</string>
          <item row="1" column="1">
           <widget class="QLineEdit" name="leCenterSurfaceType">
            <property name="enabled">
-            <bool>false</bool>
+            <bool>true</bool>
            </property>
            <property name="toolTip">
             <string>524703 590082 590082 appears to define a moving ramp or at least a surface the car can fly off of vertically</string>
@@ -1342,7 +1342,7 @@ wall horiz offset</string>
          <item row="6" column="3">
           <widget class="QLineEdit" name="leRUOuterWallHeight">
            <property name="enabled">
-            <bool>false</bool>
+            <bool>true</bool>
            </property>
            <property name="readOnly">
             <bool>true</bool>
@@ -1360,7 +1360,7 @@ wall horiz offset</string>
          <item row="14" column="2">
           <widget class="QLineEdit" name="leRUOuterWallSubdivDist">
            <property name="enabled">
-            <bool>false</bool>
+            <bool>true</bool>
            </property>
            <property name="readOnly">
             <bool>true</bool>
@@ -1410,7 +1410,7 @@ wall height</string>
          <item row="12" column="2">
           <widget class="QLineEdit" name="leLUOuterWallSubdivDist">
            <property name="enabled">
-            <bool>false</bool>
+            <bool>true</bool>
            </property>
            <property name="readOnly">
             <bool>true</bool>
@@ -1444,7 +1444,7 @@ wall horiz offset</string>
          <item row="8" column="2">
           <widget class="QLineEdit" name="leNearForwardExStart">
            <property name="enabled">
-            <bool>false</bool>
+            <bool>true</bool>
            </property>
            <property name="readOnly">
             <bool>true</bool>
@@ -1462,7 +1462,7 @@ wall horiz offset</string>
          <item row="16" column="1">
           <widget class="QLineEdit" name="leNearBackwardEx">
            <property name="enabled">
-            <bool>false</bool>
+            <bool>true</bool>
            </property>
            <property name="readOnly">
             <bool>true</bool>
@@ -1472,7 +1472,7 @@ wall horiz offset</string>
          <item row="10" column="1">
           <widget class="QLineEdit" name="leCenterSubdivDist">
            <property name="enabled">
-            <bool>false</bool>
+            <bool>true</bool>
            </property>
            <property name="readOnly">
             <bool>true</bool>
@@ -1482,7 +1482,7 @@ wall horiz offset</string>
          <item row="6" column="0">
           <widget class="QLineEdit" name="leLOuterFloorHeight">
            <property name="enabled">
-            <bool>false</bool>
+            <bool>true</bool>
            </property>
            <property name="readOnly">
             <bool>true</bool>
@@ -1492,7 +1492,7 @@ wall horiz offset</string>
          <item row="8" column="0">
           <widget class="QLineEdit" name="leRoofHeight">
            <property name="enabled">
-            <bool>false</bool>
+            <bool>true</bool>
            </property>
            <property name="readOnly">
             <bool>true</bool>
@@ -1502,7 +1502,7 @@ wall horiz offset</string>
          <item row="8" column="3">
           <widget class="QLineEdit" name="leNearForwardEx">
            <property name="enabled">
-            <bool>false</bool>
+            <bool>true</bool>
            </property>
            <property name="readOnly">
             <bool>true</bool>
@@ -1512,7 +1512,7 @@ wall horiz offset</string>
          <item row="14" column="1">
           <widget class="QLineEdit" name="leRLOuterWallSubdivDist">
            <property name="enabled">
-            <bool>false</bool>
+            <bool>true</bool>
            </property>
            <property name="readOnly">
             <bool>true</bool>
@@ -1522,7 +1522,7 @@ wall horiz offset</string>
          <item row="4" column="1">
           <widget class="QLineEdit" name="leRUOuterWallHOffset">
            <property name="enabled">
-            <bool>false</bool>
+            <bool>true</bool>
            </property>
            <property name="readOnly">
             <bool>true</bool>
@@ -1540,7 +1540,7 @@ wall horiz offset</string>
          <item row="1" column="0">
           <widget class="QLineEdit" name="leLUOuterWallHOffset">
            <property name="enabled">
-            <bool>false</bool>
+            <bool>true</bool>
            </property>
            <property name="readOnly">
             <bool>true</bool>
@@ -1550,7 +1550,7 @@ wall horiz offset</string>
          <item row="10" column="2">
           <widget class="QLineEdit" name="leRightSubdivDist">
            <property name="enabled">
-            <bool>false</bool>
+            <bool>true</bool>
            </property>
            <property name="readOnly">
             <bool>true</bool>
@@ -1560,7 +1560,7 @@ wall horiz offset</string>
          <item row="4" column="3">
           <widget class="QLineEdit" name="leLLOuterWallHeight">
            <property name="enabled">
-            <bool>false</bool>
+            <bool>true</bool>
            </property>
            <property name="readOnly">
             <bool>true</bool>
@@ -1570,7 +1570,7 @@ wall horiz offset</string>
          <item row="8" column="1">
           <widget class="QLineEdit" name="leNearForward">
            <property name="enabled">
-            <bool>false</bool>
+            <bool>true</bool>
            </property>
            <property name="readOnly">
             <bool>true</bool>
@@ -1588,7 +1588,7 @@ wall horiz offset</string>
          <item row="1" column="1">
           <widget class="QLineEdit" name="leLLOuterWallHOffset">
            <property name="enabled">
-            <bool>false</bool>
+            <bool>true</bool>
            </property>
            <property name="styleSheet">
             <string notr="true"/>
@@ -1609,7 +1609,7 @@ wall horiz offset</string>
          <item row="12" column="0">
           <widget class="QLineEdit" name="leRWallSubdivDist">
            <property name="enabled">
-            <bool>false</bool>
+            <bool>true</bool>
            </property>
            <property name="readOnly">
             <bool>true</bool>
@@ -1619,7 +1619,7 @@ wall horiz offset</string>
          <item row="6" column="1">
           <widget class="QLineEdit" name="leROuterFloorHeight">
            <property name="enabled">
-            <bool>false</bool>
+            <bool>true</bool>
            </property>
            <property name="readOnly">
             <bool>true</bool>
@@ -1645,7 +1645,7 @@ horiz offset</string>
          <item row="12" column="3">
           <widget class="QLineEdit" name="leLLOuterWallSubdivDist">
            <property name="enabled">
-            <bool>false</bool>
+            <bool>true</bool>
            </property>
            <property name="readOnly">
             <bool>true</bool>
@@ -1655,7 +1655,7 @@ horiz offset</string>
          <item row="1" column="2">
           <widget class="QLineEdit" name="leLOuterFloorHOffset">
            <property name="enabled">
-            <bool>false</bool>
+            <bool>true</bool>
            </property>
            <property name="readOnly">
             <bool>true</bool>
@@ -1665,7 +1665,7 @@ horiz offset</string>
          <item row="10" column="3">
           <widget class="QLineEdit" name="leLWallSubdivDist">
            <property name="enabled">
-            <bool>false</bool>
+            <bool>true</bool>
            </property>
            <property name="readOnly">
             <bool>true</bool>
@@ -1675,7 +1675,7 @@ horiz offset</string>
          <item row="14" column="0">
           <widget class="QLineEdit" name="leOuterFloorSubdivDist">
            <property name="enabled">
-            <bool>false</bool>
+            <bool>true</bool>
            </property>
            <property name="readOnly">
             <bool>true</bool>
@@ -1685,7 +1685,7 @@ horiz offset</string>
          <item row="14" column="3">
           <widget class="QLineEdit" name="leNearBackward">
            <property name="enabled">
-            <bool>false</bool>
+            <bool>true</bool>
            </property>
            <property name="readOnly">
             <bool>true</bool>
@@ -1695,7 +1695,7 @@ horiz offset</string>
          <item row="6" column="2">
           <widget class="QLineEdit" name="leRLOuterWallHeight">
            <property name="enabled">
-            <bool>false</bool>
+            <bool>true</bool>
            </property>
            <property name="readOnly">
             <bool>true</bool>
@@ -1777,7 +1777,7 @@ wall height</string>
          <item row="1" column="3">
           <widget class="QLineEdit" name="leROuterFloorHOffset">
            <property name="enabled">
-            <bool>false</bool>
+            <bool>true</bool>
            </property>
            <property name="readOnly">
             <bool>true</bool>
@@ -1795,7 +1795,7 @@ wall height</string>
          <item row="4" column="2">
           <widget class="QLineEdit" name="leLUOuterWallHeight">
            <property name="enabled">
-            <bool>false</bool>
+            <bool>true</bool>
            </property>
            <property name="readOnly">
             <bool>true</bool>
@@ -1805,7 +1805,7 @@ wall height</string>
          <item row="4" column="0">
           <widget class="QLineEdit" name="leRLOuterWallHOffset">
            <property name="enabled">
-            <bool>false</bool>
+            <bool>true</bool>
            </property>
            <property name="readOnly">
             <bool>true</bool>
@@ -1815,7 +1815,7 @@ wall height</string>
          <item row="12" column="1">
           <widget class="QLineEdit" name="leRoofSubdivDist">
            <property name="enabled">
-            <bool>false</bool>
+            <bool>true</bool>
            </property>
            <property name="readOnly">
             <bool>true</bool>
@@ -1825,7 +1825,7 @@ wall height</string>
          <item row="16" column="0">
           <widget class="QLineEdit" name="leNearBackwardExStart">
            <property name="enabled">
-            <bool>false</bool>
+            <bool>true</bool>
            </property>
            <property name="readOnly">
             <bool>true</bool>
@@ -1843,7 +1843,7 @@ height</string>
          <item row="10" column="0">
           <widget class="QLineEdit" name="leLeftSubdivDist">
            <property name="enabled">
-            <bool>false</bool>
+            <bool>true</bool>
            </property>
            <property name="readOnly">
             <bool>true</bool>
