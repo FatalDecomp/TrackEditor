@@ -105,6 +105,7 @@ void CDebugChunkData::UpdateGeometrySelection(int iFrom, int iTo)
   leNearBackward         ->setText(QString::number(g_pMainWindow->GetCurrentTrack()->m_chunkAy[iFrom].iNearBackward));
   leNearBackwardExStart  ->setText(QString::number(g_pMainWindow->GetCurrentTrack()->m_chunkAy[iFrom].iNearBackwardExStart));
   leNearBackwardEx       ->setText(QString::number(g_pMainWindow->GetCurrentTrack()->m_chunkAy[iFrom].iNearBackwardEx));
+  leSign                 ->setText(QString::number(g_pMainWindow->GetCurrentTrack()->m_chunkAy[iFrom].iSignTexture));
 
   UpdateTextures(leLeftSurfaceType, lblLSurfaceTex1, lblLSurfaceTex2);
   UpdateTextures(leCenterSurfaceType, lblCSurfaceTex1, lblCSurfaceTex2);
@@ -118,6 +119,7 @@ void CDebugChunkData::UpdateGeometrySelection(int iFrom, int iTo)
   UpdateTextures(leRLOuterWallType, lblRLOuterWallTex1, lblRLOuterWallTex2);
   UpdateTextures(leRUOuterWallType, lblRUOuterWallTex1, lblRUOuterWallTex2);
   UpdateTextures(leEnvironmentFloorType, lblEnvirFloorTex1, lblEnvirFloorTex2);
+  UpdateSignTexture(leSign, lblSignTex1);
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -151,6 +153,31 @@ void CDebugChunkData::UpdateTextures(QLineEdit *pLineEdit, QLabel *pTex1, QLabel
   } else {
     pTex1->setPixmap(QPixmap());
     pTex2->setPixmap(QPixmap());
+  }
+}
+
+//-------------------------------------------------------------------------------------------------
+
+void CDebugChunkData::UpdateSignTexture(QLineEdit *pLineEdit, QLabel *pTex1)
+{
+  if (!g_pMainWindow->GetCurrentTrack() || !g_pMainWindow->GetCurrentTrack()->m_pBld)
+    return;
+
+  //textures
+  QPixmap pixmap;
+  int iIndex;
+  if (pLineEdit->text().compare("-1") == 0) {
+    pTex1->setPixmap(QPixmap());
+  } else if (!pLineEdit->text().isEmpty()) {
+    int iValue = pLineEdit->text().toInt();
+    unsigned int uiSignedBitVal = CTrack::GetSignedBitValueFromInt(iValue);
+    iIndex = CTrack::GetIntValueFromSignedBit(uiSignedBitVal & SURFACE_MASK_TEXTURE_INDEX);
+    if (iIndex < g_pMainWindow->GetCurrentTrack()->m_pBld->GetNumTiles()) {
+      pixmap.convertFromImage(QtHelpers::GetQImageFromTile(g_pMainWindow->GetCurrentTrack()->m_pBld->m_pTileAy[iIndex]));
+      pTex1->setPixmap(pixmap);
+    }
+  } else {
+    pTex1->setPixmap(QPixmap());
   }
 }
 

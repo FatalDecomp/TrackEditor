@@ -18,6 +18,7 @@ protected slots:
 
 private:
   void UpdateTextures(QLineEdit *pLineEdit, QLabel *pTex1, QLabel *pTex2);
+  void UpdateSignTexture(QLineEdit *pLineEdit, QLabel *pTex1);
 };
 
 //-------------------------------------------------------------------------------------------------
