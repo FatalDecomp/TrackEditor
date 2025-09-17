@@ -58,6 +58,12 @@ protected slots:
   void RGripChanged(int iValue);
   void AISpeedChanged(int iValue);
   void GroundHeightChanged(int iValue);
+  void NearForwardChanged(int iValue);
+  void NearForwardExStartChanged(int iValue);
+  void NearForwardExChanged(int iValue);
+  void NearBackwardChanged(int iValue);
+  void NearBackwardExStartChanged(int iValue);
+  void NearBackwardExChanged(int iValue);
 };
 
 //-------------------------------------------------------------------------------------------------

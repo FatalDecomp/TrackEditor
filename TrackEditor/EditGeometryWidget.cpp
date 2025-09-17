@@ -53,6 +53,12 @@ CEditGeometryWidget::CEditGeometryWidget(QWidget *pParent)
   connect(sbAILine3           , SIGNAL(valueChanged(int)), this, SLOT(AILine3Changed(int)));
   connect(sbAILine4           , SIGNAL(valueChanged(int)), this, SLOT(AILine4Changed(int)));
   connect(sbGroundHeight      , SIGNAL(valueChanged(int)), this, SLOT(GroundHeightChanged(int)));
+  connect(sbNearForward       , SIGNAL(valueChanged(int)), this, SLOT(NearForwardChanged(int)));
+  connect(sbNearForwardExStart, SIGNAL(valueChanged(int)), this, SLOT(NearForwardExStartChanged(int)));
+  connect(sbNearForwardEx     , SIGNAL(valueChanged(int)), this, SLOT(NearForwardExChanged(int)));
+  connect(sbNearBackward       , SIGNAL(valueChanged(int)), this, SLOT(NearForwardChanged(int)));
+  connect(sbNearBackwardExStart, SIGNAL(valueChanged(int)), this, SLOT(NearForwardExStartChanged(int)));
+  connect(sbNearBackwardEx     , SIGNAL(valueChanged(int)), this, SLOT(NearForwardExChanged(int)));
 
   connect(pbEditCenter,     &QPushButton::clicked, this, &CEditGeometryWidget::EditCSurface);
   connect(pbEditLShoulder,  &QPushButton::clicked, this, &CEditGeometryWidget::EditLShoulder);
@@ -119,6 +125,12 @@ void CEditGeometryWidget::UpdateGeometrySelection(int iFrom, int iTo)
   BLOCK_SIG_AND_DO(sldRShoulderGrip, setValue(     g_pMainWindow->GetCurrentTrack()->m_chunkAy[iFrom].iRightShoulderGrip);)
   BLOCK_SIG_AND_DO(sldAISpeed, setValue(           g_pMainWindow->GetCurrentTrack()->m_chunkAy[iFrom].iAIMaxSpeed / 10));
   BLOCK_SIG_AND_DO(sbGroundHeight, setValue(       g_pMainWindow->GetCurrentTrack()->m_chunkAy[iFrom].iGroundHeight));
+  BLOCK_SIG_AND_DO(sbNearForward, setValue(        g_pMainWindow->GetCurrentTrack()->m_chunkAy[iFrom].iNearForward));
+  BLOCK_SIG_AND_DO(sbNearForwardExStart, setValue( g_pMainWindow->GetCurrentTrack()->m_chunkAy[iFrom].iNearForwardExStart));
+  BLOCK_SIG_AND_DO(sbNearForwardEx, setValue(      g_pMainWindow->GetCurrentTrack()->m_chunkAy[iFrom].iNearForwardEx));
+  BLOCK_SIG_AND_DO(sbNearBackward, setValue(       g_pMainWindow->GetCurrentTrack()->m_chunkAy[iFrom].iNearBackward));
+  BLOCK_SIG_AND_DO(sbNearBackwardExStart, setValue(g_pMainWindow->GetCurrentTrack()->m_chunkAy[iFrom].iNearBackwardExStart));
+  BLOCK_SIG_AND_DO(sbNearBackwardEx, setValue(     g_pMainWindow->GetCurrentTrack()->m_chunkAy[iFrom].iNearBackwardEx));
 
   lblCGrip->setText(        "(" + QString::number(g_pMainWindow->GetCurrentTrack()->m_chunkAy[iFrom].iTrackGrip) + ")");
   lblLShoulderGrip->setText("(" + QString::number(g_pMainWindow->GetCurrentTrack()->m_chunkAy[iFrom].iLeftShoulderGrip) + ")");
@@ -910,6 +922,120 @@ void CEditGeometryWidget::GroundHeightChanged(int iValue)
     g_pMainWindow->GetCurrentTrack()->m_chunkAy[i].iGroundHeight = iValue;
   }
   g_pMainWindow->SaveHistory("Changed ground height");
+  g_pMainWindow->UpdateWindow();
+}
+
+//-------------------------------------------------------------------------------------------------
+
+void CEditGeometryWidget::NearForwardChanged(int iValue)
+{
+  int iFrom = g_pMainWindow->GetSelFrom();
+  int iTo = g_pMainWindow->GetSelTo();
+
+  if (!g_pMainWindow->GetCurrentTrack()
+      || iFrom >= (int)g_pMainWindow->GetCurrentTrack()->m_chunkAy.size()
+      || iTo >= (int)g_pMainWindow->GetCurrentTrack()->m_chunkAy.size())
+    return;
+
+  for (int i = iFrom; i <= iTo; ++i) {
+    g_pMainWindow->GetCurrentTrack()->m_chunkAy[i].iNearForward = iValue;
+  }
+  g_pMainWindow->SaveHistory("Changed forward main chunks");
+  g_pMainWindow->UpdateWindow();
+}
+
+//-------------------------------------------------------------------------------------------------
+
+void CEditGeometryWidget::NearForwardExStartChanged(int iValue)
+{
+  int iFrom = g_pMainWindow->GetSelFrom();
+  int iTo = g_pMainWindow->GetSelTo();
+
+  if (!g_pMainWindow->GetCurrentTrack()
+      || iFrom >= (int)g_pMainWindow->GetCurrentTrack()->m_chunkAy.size()
+      || iTo >= (int)g_pMainWindow->GetCurrentTrack()->m_chunkAy.size())
+    return;
+
+  for (int i = iFrom; i <= iTo; ++i) {
+    g_pMainWindow->GetCurrentTrack()->m_chunkAy[i].iNearForwardExStart = iValue;
+  }
+  g_pMainWindow->SaveHistory("Changed forward extra chunks start");
+  g_pMainWindow->UpdateWindow();
+}
+
+//-------------------------------------------------------------------------------------------------
+
+void CEditGeometryWidget::NearForwardExChanged(int iValue)
+{
+  int iFrom = g_pMainWindow->GetSelFrom();
+  int iTo = g_pMainWindow->GetSelTo();
+
+  if (!g_pMainWindow->GetCurrentTrack()
+      || iFrom >= (int)g_pMainWindow->GetCurrentTrack()->m_chunkAy.size()
+      || iTo >= (int)g_pMainWindow->GetCurrentTrack()->m_chunkAy.size())
+    return;
+
+  for (int i = iFrom; i <= iTo; ++i) {
+    g_pMainWindow->GetCurrentTrack()->m_chunkAy[i].iNearForwardEx = iValue;
+  }
+  g_pMainWindow->SaveHistory("Changed forward extra chunks");
+  g_pMainWindow->UpdateWindow();
+}
+
+//-------------------------------------------------------------------------------------------------
+
+void CEditGeometryWidget::NearBackwardChanged(int iValue)
+{
+  int iFrom = g_pMainWindow->GetSelFrom();
+  int iTo = g_pMainWindow->GetSelTo();
+
+  if (!g_pMainWindow->GetCurrentTrack()
+      || iFrom >= (int)g_pMainWindow->GetCurrentTrack()->m_chunkAy.size()
+      || iTo >= (int)g_pMainWindow->GetCurrentTrack()->m_chunkAy.size())
+    return;
+
+  for (int i = iFrom; i <= iTo; ++i) {
+    g_pMainWindow->GetCurrentTrack()->m_chunkAy[i].iNearBackward = iValue;
+  }
+  g_pMainWindow->SaveHistory("Changed backward main chunks");
+  g_pMainWindow->UpdateWindow();
+}
+
+//-------------------------------------------------------------------------------------------------
+
+void CEditGeometryWidget::NearBackwardExStartChanged(int iValue)
+{
+  int iFrom = g_pMainWindow->GetSelFrom();
+  int iTo = g_pMainWindow->GetSelTo();
+
+  if (!g_pMainWindow->GetCurrentTrack()
+      || iFrom >= (int)g_pMainWindow->GetCurrentTrack()->m_chunkAy.size()
+      || iTo >= (int)g_pMainWindow->GetCurrentTrack()->m_chunkAy.size())
+    return;
+
+  for (int i = iFrom; i <= iTo; ++i) {
+    g_pMainWindow->GetCurrentTrack()->m_chunkAy[i].iNearBackwardExStart = iValue;
+  }
+  g_pMainWindow->SaveHistory("Changed backward extra chunks start");
+  g_pMainWindow->UpdateWindow();
+}
+
+//-------------------------------------------------------------------------------------------------
+
+void CEditGeometryWidget::NearBackwardExChanged(int iValue)
+{
+  int iFrom = g_pMainWindow->GetSelFrom();
+  int iTo = g_pMainWindow->GetSelTo();
+
+  if (!g_pMainWindow->GetCurrentTrack()
+      || iFrom >= (int)g_pMainWindow->GetCurrentTrack()->m_chunkAy.size()
+      || iTo >= (int)g_pMainWindow->GetCurrentTrack()->m_chunkAy.size())
+    return;
+
+  for (int i = iFrom; i <= iTo; ++i) {
+    g_pMainWindow->GetCurrentTrack()->m_chunkAy[i].iNearBackwardEx = iValue;
+  }
+  g_pMainWindow->SaveHistory("Changed backward extra chunks");
   g_pMainWindow->UpdateWindow();
 }
 
