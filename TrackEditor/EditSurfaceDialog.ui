@@ -145,12 +145,18 @@
        <property name="text">
         <string>Pit zone</string>
        </property>
+       <property name="toolTip">
+        <string>Center lane only for all effects, any lane turns track map yellow</string>
+       </property>
       </widget>
      </item>
      <item row="7" column="0">
       <widget class="QCheckBox" name="ck25Pit">
        <property name="text">
         <string>Pit</string>
+       </property>
+       <property name="toolTip">
+        <string>Pit work area</string>
        </property>
       </widget>
      </item>
@@ -166,12 +172,18 @@
        <property name="text">
         <string>AI fast zone</string>
        </property>
+       <property name="toolTip">
+        <string>Center lane only, forces fast strategy</string>
+       </property>
       </widget>
      </item>
      <item row="6" column="0">
       <widget class="QCheckBox" name="ck26PitBox">
        <property name="text">
         <string>Pit box</string>
+       </property>
+       <property name="toolTip">
+        <string>Center lane only, AI pit targets and respawn points, min 1 for AI to pit, max 10</string>
        </property>
       </widget>
      </item>
@@ -187,6 +199,9 @@
        <property name="text">
         <string>Disallow spawn</string>
        </property>
+       <property name="toolTip">
+        <string>Prevents placing a car on this lane (grid, respawn, flip/fall)</string>
+       </property>
       </widget>
      </item>
      <item row="15" column="0">
@@ -200,6 +215,9 @@
       <widget class="QCheckBox" name="ck19NonMagnetic">
        <property name="text">
         <string>Non-magnetic</string>
+       </property>
+       <property name="toolTip">
+        <string>Cars are not glued to the road</string>
        </property>
       </widget>
      </item>
@@ -215,6 +233,9 @@
        <property name="text">
         <string>No extras</string>
        </property>
+       <property name="toolTip">
+        <string>Center lane only, excludes the designated extra chunks as possible chunks to land on after a jump</string>
+       </property>
       </widget>
      </item>
      <item row="12" column="0">
@@ -222,12 +243,18 @@
        <property name="text">
         <string>Fall off</string>
        </property>
+       <property name="toolTip">
+        <string>Left/right lanes only, allows falling off the track</string>
+       </property>
       </widget>
      </item>
      <item row="3" column="0">
       <widget class="QCheckBox" name="ck29Echo">
        <property name="text">
         <string>Echo</string>
+       </property>
+       <property name="toolTip">
+        <string>Tunnel effect</string>
        </property>
       </widget>
      </item>
@@ -250,6 +277,9 @@
        <property name="text">
         <string>Partial transparency</string>
        </property>
+       <property name="toolTip">
+        <string>Toggles transparency on textures that contain transparent sections</string>
+       </property>
       </widget>
      </item>
      <item row="3" column="1">
@@ -264,12 +294,18 @@
        <property name="text">
         <string>Prevent jump</string>
        </property>
+       <property name="toolTip">
+        <string>Prevents jumping/falling off non-magnetic chunks with speeds of at least ~80 mph</string>
+       </property>
       </widget>
      </item>
      <item row="1" column="1">
       <widget class="QCheckBox" name="ck14Concave">
        <property name="text">
         <string>Concave</string>
+       </property>
+       <property name="toolTip">
+        <string>Renders as concave polygon</string>
        </property>
       </widget>
      </item>
@@ -304,6 +340,9 @@
       <widget class="QCheckBox" name="ck28AIMaxSpeed">
        <property name="text">
         <string>AI max speed</string>
+       </property>
+       <property name="toolTip">
+        <string>Center lane only, AI uses max speed regardless of strategy/difficulty/target</string>
        </property>
       </widget>
      </item>
