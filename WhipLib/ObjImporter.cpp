@@ -109,13 +109,13 @@ bool CObjImporter::ImportObj(const std::string &sFile, CShapeData **pShape, CSha
       vnAy.push_back(glm::vec3(dX, dY, dZ));
     } else if (lineAy[0].compare("f") == 0) {
       //load polygon line
-      if (lineAy.size() != 4) {
+      if (lineAy.size() != 4 && lineAy.size() != 5) {
         Logging::LogMessage("Invalid polygon line (%d in obj file %s)", iLineIndex, sFile.c_str());
         bSuccess = false;
         break;
       }
 
-      for (int i = 1; i < 4; ++i) {
+      for (int i = 1; i < lineAy.size(); ++i) {
         std::vector<std::string> polygonAy;
         std::stringstream ssPol(lineAy[i]);
         while (ssPol.good()) {
@@ -125,37 +125,50 @@ bool CObjImporter::ImportObj(const std::string &sFile, CShapeData **pShape, CSha
             polygonAy.push_back(sIndex);
         }
 
-        if (polygonAy.size() != 3) {
+        if (polygonAy.size() < 1 || polygonAy.size() > 3) {
           Logging::LogMessage("Polygon has wrong number of indices (%d in obj file %s)", iLineIndex, sFile.c_str());
           bSuccess = false;
           break;
         }
 
         int ivIdx = std::stoi(polygonAy[0]) - 1;
-        int ivtIdx = std::stoi(polygonAy[1]) - 1;
-        int ivnIdx = std::stoi(polygonAy[2]) - 1;
+        int ivtIdx = -1;
+        int ivnIdx = -1;
         if (ivIdx >= (int)vAy.size() || ivIdx < 0) {
           Logging::LogMessage("Vertex index out of bounds (%d in obj file %s)", iLineIndex, sFile.c_str());
           bSuccess = false;
           break;
         }
-        if (ivtIdx >= (int)vtAy.size() || ivtIdx < 0) {
-          Logging::LogMessage("Tex coord index out of bounds (%d in obj file %s)", iLineIndex, sFile.c_str());
-          bSuccess = false;
-          break;
+        if (polygonAy.size() > 1) {
+          ivtIdx = std::stoi(polygonAy[1]) - 1;
+          if (ivtIdx >= (int)vtAy.size() || ivtIdx < 0) {
+            Logging::LogMessage("Tex coord index out of bounds (%d in obj file %s)", iLineIndex, sFile.c_str());
+            bSuccess = false;
+            break;
+          }
         }
-        if (ivnIdx >= (int)vnAy.size() || ivnIdx < 0) {
-          Logging::LogMessage("Normal index out of bounds (%d in obj file %s)", iLineIndex, sFile.c_str());
-          bSuccess = false;
-          break;
+        if (polygonAy.size() > 2) {
+          ivnIdx = std::stoi(polygonAy[2]) - 1;
+          if (ivnIdx >= (int)vnAy.size() || ivnIdx < 0) {
+            Logging::LogMessage("Normal index out of bounds (%d in obj file %s)", iLineIndex, sFile.c_str());
+            bSuccess = false;
+            break;
+          }
         }
 
         tVertex vertex;
         vertex.position = vAy[ivIdx];
         //vertex.texCoords = vtAy[ivtIdx];
         vertex.texCoords = pTexture->GetColorCenterCoordinates(0x8c); //light grey
-        vertex.normal = vnAy[ivnIdx];
+        if(ivnIdx >= 0)
+          vertex.normal = vnAy[ivnIdx];
         vertexAy.push_back(vertex);
+      }
+
+      // it's a quad, so complete a second triangle
+      if (lineAy.size() == 5) {
+        vertexAy.push_back(vertexAy[vertexAy.size() - 4]);
+        vertexAy.push_back(vertexAy[vertexAy.size() - 3]);
       }
     }
     ++iLineIndex;
