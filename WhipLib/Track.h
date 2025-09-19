@@ -74,6 +74,7 @@ struct tChunkMath
 struct tGeometryChunk
 {
   void Clear();
+  void Default();
 
   //line 1
   int iLeftShoulderWidth;

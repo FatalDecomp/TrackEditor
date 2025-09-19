@@ -1081,7 +1081,7 @@ void CMainWindow::OnAddChunkClicked()
   if (iSelPos < GetCurrentTrack()->m_chunkAy.size())
     newChunk = GetCurrentTrack()->m_chunkAy[iSelPos];
   else
-    memset(&newChunk, 0, sizeof(newChunk));
+    newChunk.Default();
 
   if (GetCurrentTrack()->m_chunkAy.empty())
     GetCurrentTrack()->m_chunkAy.push_back(newChunk);

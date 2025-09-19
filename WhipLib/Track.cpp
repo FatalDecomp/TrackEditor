@@ -111,6 +111,88 @@ void tGeometryChunk::Clear()
 
 //-------------------------------------------------------------------------------------------------
 
+void tGeometryChunk::Default()
+{
+  //line 1
+  iLeftShoulderWidth = 1000;
+  iLeftLaneWidth = 1000;
+  iRightLaneWidth = 1000;
+  iRightShoulderWidth = 1000;
+  iLeftShoulderHeight = 0;
+  iRightShoulderHeight = 0;
+  iLength = 1000;
+  dYaw = 0.0;
+  dPitch = 0.0;
+  dRoll = 0.0;
+  iAILine1 = 0;
+  iAILine2 = 0;
+  iAILine3 = 0;
+  iAILine4 = 0;
+  iTrackGrip = 0;
+  iLeftShoulderGrip = 0;
+  iRightShoulderGrip = 0;
+  iAIMaxSpeed = 1000;
+  iGroundHeight = 0;
+  iAudioAboveTrigger = 0;
+  iAudioTriggerSpeed = 0;
+  iAudioBelowTrigger = 0;
+  //line 2
+  iLeftSurfaceType = 96;
+  iCenterSurfaceType = 26;
+  iRightSurfaceType = 100;
+  iLeftWallType = -1;
+  iRightWallType = -1;
+  iRoofType = -1;
+  iLUOuterWallType = -1;
+  iLLOuterWallType = -1;
+  iOuterFloorType = -1;
+  iRLOuterWallType = -1;
+  iRUOuterWallType = -1;
+  iEnvironmentFloorType = 267;
+  iSignType = -1;
+  iSignHorizOffset = 0;
+  iSignVertOffset = 0;
+  dSignYaw = 0.0;
+  dSignPitch = 0.0;
+  dSignRoll = 0.0;
+  //line 3
+  iLUOuterWallHOffset = 0;
+  iLLOuterWallHOffset = 0;
+  iLOuterFloorHOffset = 0;
+  iROuterFloorHOffset = 0;
+  iRLOuterWallHOffset = 0;
+  iRUOuterWallHOffset = 0;
+  iLUOuterWallHeight = 0;
+  iLLOuterWallHeight = 0;
+  iLOuterFloorHeight = 0;
+  iROuterFloorHeight = 0;
+  iRLOuterWallHeight = 0;
+  iRUOuterWallHeight = 0;
+  iRoofHeight = 0;
+  iNearForward = 32;
+  iNearForwardExStart = -1;
+  iNearForwardEx = 0;
+  iLeftSubdivDist = 20;
+  iCenterSubdivDist = 20;
+  iRightSubdivDist = 20;
+  iLWallSubdivDist = 20;
+  iRWallSubdivDist = 20;
+  iRoofSubdivDist = 20;
+  iLUOuterWallSubdivDist = 1;
+  iLLOuterWallSubdivDist = 20;
+  iOuterFloorSubdivDist = 1;
+  iRLOuterWallSubdivDist = 20;
+  iRUOuterWallSubdivDist = 1;
+  iNearBackward = 32;
+  iNearBackwardExStart = -1;
+  iNearBackwardEx = 0;
+
+  //additional data
+  iSignTexture = 0;
+}
+
+//-------------------------------------------------------------------------------------------------
+
 CTrack::CTrack()
   : m_iAILineHeight(100)
   , m_pPal(NULL)
