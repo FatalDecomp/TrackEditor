@@ -96,6 +96,7 @@ CDisplaySettings::CDisplaySettings(QWidget *pParent)
   connect(sbRefY, SIGNAL(valueChanged(int)), this, SLOT(OnReferenceModelPosChanged()));
   connect(sbRefZ, SIGNAL(valueChanged(int)), this, SLOT(OnReferenceModelPosChanged()));
   connect(dsbRefScale, SIGNAL(valueChanged(double)), this, SLOT(OnReferenceModelPosChanged()));
+  connect(ckRefModelWireframe, &QCheckBox::toggled, this, &CDisplaySettings::UpdatePreviewSelection);
 
   UpdateAllSurface();
   UpdateAllWireframe();
@@ -143,6 +144,7 @@ uint32 CDisplaySettings::GetDisplaySettings(eWhipModel &carModel, eShapeSection 
   if (ckStunts->isChecked())              uiShowModels |= SHOW_STUNTS;
   if (ckAnimateStunts->isChecked())       uiShowModels |= ANIMATE_STUNTS;
   if (ckRefModel->isChecked())            uiShowModels |= SHOW_REF_MODEL;
+  if (ckRefModelWireframe->isChecked())   uiShowModels |= SHOW_REF_WIRE_MODEL;
 
   carModel = (eWhipModel)cbTestCarType->currentData().toInt();
   aiLine = (eShapeSection)cbTestCarPos->currentData().toInt();
@@ -186,6 +188,7 @@ void CDisplaySettings::SetDisplaySettings(uint32 uiShowModels, eWhipModel carMod
   BLOCK_SIG_AND_DO(ckStunts, setChecked(             uiShowModels & SHOW_STUNTS));
   BLOCK_SIG_AND_DO(ckAnimateStunts, setChecked(      uiShowModels & ANIMATE_STUNTS));
   BLOCK_SIG_AND_DO(ckRefModel, setChecked(           uiShowModels & SHOW_REF_MODEL));
+  BLOCK_SIG_AND_DO(ckRefModelWireframe, setChecked(  uiShowModels & SHOW_REF_WIRE_MODEL));
 
   BLOCK_SIG_AND_DO(cbTestCarType, setCurrentIndex(cbTestCarType->findData((int)carModel)));
   BLOCK_SIG_AND_DO(cbTestCarPos, setCurrentIndex(cbTestCarPos->findData((int)aiLine)));

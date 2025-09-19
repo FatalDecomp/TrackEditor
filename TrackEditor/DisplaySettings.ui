@@ -126,7 +126,7 @@
          </property>
         </widget>
        </item>
-       <item row="26" column="2">
+       <item row="27" column="2">
         <spacer name="verticalSpacer">
          <property name="orientation">
           <enum>Qt::Vertical</enum>
@@ -745,6 +745,13 @@
          </property>
          <property name="wordWrap">
           <bool>true</bool>
+         </property>
+        </widget>
+       </item>
+       <item row="26">
+        <widget class="QCheckBox" name="ckRefModelWireframe">
+         <property name="text">
+          <string>Show Wireframe</string>
          </property>
         </widget>
        </item>
