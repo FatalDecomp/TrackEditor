@@ -710,8 +710,17 @@ void CTrackPreview::paintGL()
       (*it)->Draw(worldToProjectionMatrix, p->m_camera.GetPosition());
     }
   }
-  if (m_uiShowModels & SHOW_REF_MODEL && p->m_pRefModel)
+  if (m_uiShowModels & SHOW_REF_MODEL && p->m_pRefModel) {
     p->m_pRefModel->Draw(worldToProjectionMatrix, p->m_camera.GetPosition());
+    if (m_uiShowModels & SHOW_REF_WIRE_MODEL) {
+      // set GLSL flag for color inversion and mode for line drawing
+      p->m_pShader->SetUniform1i("wireframe", 1);
+      glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+      p->m_pRefModel->Draw(worldToProjectionMatrix, p->m_camera.GetPosition());
+      glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+      p->m_pShader->SetUniform1i("wireframe", 0);
+    }
+  }
   //if (p->m_pAxes)
   //  p->m_pAxes->Draw(worldToProjectionMatrix);
   //if (p->m_pTestNormals)
