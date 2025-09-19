@@ -90,6 +90,10 @@ void CNewTrackDialog::UpdateDialog()
     sNext = sNext.right(sNext.size() - iPos - 1);
     cbBld->addItem(sNext);
     cbTex->addItem(sNext);
+    if (sNext.compare("BUILDING.DRH", Qt::CaseInsensitive) == 0)
+      cbBld->setCurrentIndex(cbBld->count() - 1);
+    else if (sNext.compare("TRACK1.DRH", Qt::CaseInsensitive) == 0)
+      cbTex->setCurrentIndex(cbTex->count() - 1);
   }
   QFileInfo palFile(leDir->text() + QDir::separator() + "PALETTE.PAL");
 
