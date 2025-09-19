@@ -51,6 +51,7 @@ public:
   void UpdateReferenceModelPos(double dYaw, double dPitch, double dRoll,
                                int iX, int iY, int iZ,
                                double dScale);
+  void UpdateReferenceModelTexture();
 
   bool m_bUnsavedChanges;
   int m_iSelFrom;

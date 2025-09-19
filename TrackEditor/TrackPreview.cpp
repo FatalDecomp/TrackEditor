@@ -498,6 +498,23 @@ void CTrackPreview::UpdateReferenceModelPos(double dYaw, double dPitch, double d
 
 //-------------------------------------------------------------------------------------------------
 
+void CTrackPreview::UpdateReferenceModelTexture()
+{
+  if (p->m_pRefModel) {
+    p->m_pRefModel->m_pTexture = p->m_track.m_pTex;
+
+    // set tex coords for all verts for color in new texture
+    int numVerts = p->m_pRefModel->m_uiNumVerts;
+    tVertex *vertices = p->m_pRefModel->m_vertices;
+    for (int i = 0; i < numVerts; i++) {
+      (&(vertices)[i])->texCoords = p->m_pRefModel->m_pTexture->GetColorCenterCoordinates(0x8c); //light grey
+    }
+    p->m_pRefModel->m_pVertexBuf->Update(vertices, numVerts);
+  }
+}
+
+//-------------------------------------------------------------------------------------------------
+
 void CTrackPreview::LoadHistory(const tTrackHistory *pHistory)
 {
   p->DeleteModels();

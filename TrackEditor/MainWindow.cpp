@@ -1376,8 +1376,10 @@ void CMainWindow::UpdateWindow(bool bUpdatingTextures)
     GetCurrentTrack()->GenerateTrackMath();
 
   if (GetCurrentPreview()) {
-    if (bUpdatingTextures)
+    if (bUpdatingTextures) {
+      GetCurrentPreview()->UpdateReferenceModelTexture();
       GetCurrentPreview()->DeleteEnvirFloor();
+    }
     GetCurrentPreview()->UpdateTrack();
 
     BLOCK_SIG_AND_DO(sbSelChunksFrom, setRange(0, (int)GetCurrentTrack()->m_chunkAy.size() - 1));

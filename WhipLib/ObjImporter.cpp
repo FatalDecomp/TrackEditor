@@ -198,7 +198,9 @@ bool CObjImporter::ImportObj(const std::string &sFile, CShapeData **pShape, CSha
       (*pShape)->m_pIndexBuf->Update(indices, uiNumIndices);
     }
 
-    delete[] vertices;
+    (*pShape)->m_vertices = vertices;
+    (*pShape)->m_uiNumVerts = uiNumVerts;
+
     delete[] indices;
   }
 
