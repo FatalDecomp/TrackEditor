@@ -56,9 +56,9 @@ CEditGeometryWidget::CEditGeometryWidget(QWidget *pParent)
   connect(sbNearForward       , SIGNAL(valueChanged(int)), this, SLOT(NearForwardChanged(int)));
   connect(sbNearForwardExStart, SIGNAL(valueChanged(int)), this, SLOT(NearForwardExStartChanged(int)));
   connect(sbNearForwardEx     , SIGNAL(valueChanged(int)), this, SLOT(NearForwardExChanged(int)));
-  connect(sbNearBackward       , SIGNAL(valueChanged(int)), this, SLOT(NearForwardChanged(int)));
-  connect(sbNearBackwardExStart, SIGNAL(valueChanged(int)), this, SLOT(NearForwardExStartChanged(int)));
-  connect(sbNearBackwardEx     , SIGNAL(valueChanged(int)), this, SLOT(NearForwardExChanged(int)));
+  connect(sbNearBackward       , SIGNAL(valueChanged(int)), this, SLOT(NearBackwardChanged(int)));
+  connect(sbNearBackwardExStart, SIGNAL(valueChanged(int)), this, SLOT(NearBackwardExStartChanged(int)));
+  connect(sbNearBackwardEx     , SIGNAL(valueChanged(int)), this, SLOT(NearBackwardExChanged(int)));
 
   connect(pbEditCenter,     &QPushButton::clicked, this, &CEditGeometryWidget::EditCSurface);
   connect(pbEditLShoulder,  &QPushButton::clicked, this, &CEditGeometryWidget::EditLShoulder);
