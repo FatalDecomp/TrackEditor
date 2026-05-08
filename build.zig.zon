@@ -1,0 +1,13 @@
+.{
+    .name = .roller_track_editor,
+    .version = "0.0.0",
+    .fingerprint = 0x14fcfb7861a850c3,
+    .minimum_zig_version = "0.15.2",
+    .dependencies = .{},
+    .paths = .{
+        "build.zig",
+        "build.zig.zon",
+        "WhipLib",
+        "external",
+    },
+}

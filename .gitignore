@@ -363,6 +363,11 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+
+# Zig build artifacts
+zig-out/
+.zig-cache/
+
 /TrackEditor/resource.cpp
 /TrackEditor/null
 /TrackEditor/ui

@@ -1,0 +1,14 @@
+[tools]
+zig = "0.15.2"
+
+[tasks.build]
+description = "Build all configured Zig targets (WhipLib + tools)"
+run = "zig build"
+
+[tasks.clean]
+description = "Clean Zig build artifacts"
+run = "rm -rf zig-out .zig-cache"
+
+[tasks.test]
+description = "Run zig build tests (none yet — placeholder)"
+run = "zig build test"
