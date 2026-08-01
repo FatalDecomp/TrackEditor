@@ -286,8 +286,21 @@ public:
 
 //-------------------------------------------------------------------------------------------------
 
+static QGLFormat CreateTrackPreviewFormat()
+{
+  QGLFormat format(QGL::SampleBuffers);
+#if defined(__APPLE__)
+  format.setVersion(4, 1);
+  format.setProfile(QGLFormat::CoreProfile);
+#endif
+  return format;
+}
+
+//-------------------------------------------------------------------------------------------------
+
+
 CTrackPreview::CTrackPreview(QWidget *pParent, const QString &sTrackFile)
-  : QGLWidget(QGLFormat(QGL::SampleBuffers), pParent)
+  : QGLWidget(CreateTrackPreviewFormat(), pParent)
   , m_uiShowModels(0)
   , m_carModel(eWhipModel::CAR_XZIZIN)
   , m_carAILine(eShapeSection::AILINE1)
@@ -619,7 +632,8 @@ void CTrackPreview::paintGL()
   else
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
   glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
-  glViewport(0, 0, width(), height());
+  const qreal pixelRatio = devicePixelRatioF();
+  glViewport(0, 0, width() * pixelRatio, height() * pixelRatio);
 
   glm::mat4 viewToProjectionMatrix = glm::perspective(glm::radians(60.0f), ((float)width()) / height(), 100.0f, 500000.0f);
   glm::mat4 worldToViewMatrix = p->m_camera.GetWorldToViewMatrix();
@@ -1029,8 +1043,10 @@ void CTrackPreview::initializeGL()
   if (glewInit() != GLEW_OK)
     assert(0);
 
-  glEnable(GL_DEBUG_OUTPUT);
-  glDebugMessageCallback(GLErrorCb, 0);
+  if (GLEW_KHR_debug && glDebugMessageCallback) {
+    glEnable(GL_DEBUG_OUTPUT);
+    glDebugMessageCallback(GLErrorCb, 0);
+  }
   glEnable(GL_DEPTH_TEST);
   glEnable(GL_CULL_FACE);
   glEnable(GL_BLEND);

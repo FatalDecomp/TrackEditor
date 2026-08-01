@@ -56,4 +56,8 @@ cd TrackEditor
 ENABLE_FBX="$ENABLE_FBX" FBX_LIB_DIR="$FBX_LIB_DIR" "$QT_QMAKE" TrackEditor.macos.pro -spec macx-clang
 make -j "$(sysctl -n hw.ncpu)"
 
+rm -rf "$ROOT/bin/TrackEditor/TrackEditor.app/Contents/MacOS/Shaders"
+cp -R "$ROOT/WhipLib/Shaders" "$ROOT/bin/TrackEditor/TrackEditor.app/Contents/MacOS/Shaders"
+find "$ROOT/bin/TrackEditor/TrackEditor.app/Contents/MacOS/Shaders" -name '*.glsl' -type f -exec perl -0pi -e 's/#version 430/#version 410/g; s/in layout\(([^)]*)\)/layout($1) in/g' {} +
+
 echo "Built macOS artifacts in $ROOT/bin/TrackEditor"

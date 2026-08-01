@@ -23,6 +23,8 @@ Outputs are written to:
 - `bin/TrackEditor/ModelExporter`
 - `bin/TrackEditor/TrackEditor.app`
 
+The build script also copies `WhipLib/Shaders` into `TrackEditor.app/Contents/MacOS/Shaders`, matching the existing runtime shader lookup based on the executable directory.
+
 ## FBX support
 
 Autodesk FBX SDK libraries are not vendored here. If the script cannot find `libfbxsdk.a`, it builds with `WHIPLIB_ENABLE_FBX=0` so the OBJ exporter and editor can compile on macOS without adding large binary dependencies.
