@@ -1269,13 +1269,13 @@ void CShapeFactory::MakeTrackSurface(CShapeData **pShape, CTrack *pTrack, eShape
 {
   uint32 uiNumVerts;
   struct tVertex *vertices = NULL;
-  vertices = MakeVerts(uiNumVerts, section, pTrack, pTrack->m_pTex, backModeling);
+  vertices = MakeVerts(uiNumVerts, section, pTrack, pTrack->m_assets.GetMainTexture(), backModeling);
   if (!vertices)
     return;
 
   if (bWireframe) {
     for (uint32 i = 0; i < uiNumVerts; ++i) {
-      vertices[i].texCoords = pTrack->m_pTex->GetColorCenterCoordinates(0xCF);
+      vertices[i].texCoords = pTrack->m_assets.GetMainTexture()->GetColorCenterCoordinates(0xCF);
     }
   }
 
@@ -1294,7 +1294,7 @@ void CShapeFactory::MakeTrackSurface(CShapeData **pShape, CTrack *pTrack, eShape
 
   if (!(*pShape)) {
     (*pShape) = new CShapeData(vertices, uiNumVerts, indices, uiNumIndices,
-                               pTrack->m_pTex, drawType);
+                               pTrack->m_assets.GetMainTexture(), drawType);
   } else {
     (*pShape)->ReplaceGeometry(vertices, uiNumVerts, indices, uiNumIndices);
     (*pShape)->m_drawType = drawType;
@@ -1307,7 +1307,7 @@ void CShapeFactory::MakeEnvirFloor(CShapeData **pShape, CTrack *pTrack, int iInd
 {
   uint32 uiNumVerts;
   struct tVertex *vertices = NULL;
-  vertices = MakeVertsEnvirFloor(uiNumVerts, pTrack, pTrack->m_pTex, iIndex);
+  vertices = MakeVertsEnvirFloor(uiNumVerts, pTrack, pTrack->m_assets.GetMainTexture(), iIndex);
   if (!vertices)
     return;
 
@@ -1315,7 +1315,7 @@ void CShapeFactory::MakeEnvirFloor(CShapeData **pShape, CTrack *pTrack, int iInd
   uint32 *indices = MakeIndicesEnvirFloor(uiNumIndices);
   if (!(*pShape)) {
     (*pShape) = new CShapeData(vertices, uiNumVerts, indices, uiNumIndices,
-                               pTrack->m_pTex, eShapePrimitive::TRIANGLES);
+                               pTrack->m_assets.GetMainTexture(), eShapePrimitive::TRIANGLES);
   } else {
     (*pShape)->ReplaceGeometry(vertices, uiNumVerts, indices, uiNumIndices);
   }
@@ -1326,30 +1326,30 @@ void CShapeFactory::MakeEnvirFloor(CShapeData **pShape, CTrack *pTrack, int iInd
 void CShapeFactory::MakeAILine(CShapeData **pShape, CTrack *pTrack, eShapeSection section, bool bAttachLast)
 {
   uint32 uiNumVerts;
-  struct tVertex *vertices = MakeVerts(uiNumVerts, section, pTrack, pTrack->m_pTex);
+  struct tVertex *vertices = MakeVerts(uiNumVerts, section, pTrack, pTrack->m_assets.GetMainTexture());
   if (!vertices)
     return;
 
   for (uint32 i = 0; i < uiNumVerts; ++i) {
     switch (section) {
       case eShapeSection::CENTERLINE:
-        vertices[i].texCoords = pTrack->m_pTex->GetColorCenterCoordinates(0xAB);
+        vertices[i].texCoords = pTrack->m_assets.GetMainTexture()->GetColorCenterCoordinates(0xAB);
         break;
       case eShapeSection::AILINE1:
       case eShapeSection::CARLINE1:
-        vertices[i].texCoords = pTrack->m_pTex->GetColorCenterCoordinates(0xE6);
+        vertices[i].texCoords = pTrack->m_assets.GetMainTexture()->GetColorCenterCoordinates(0xE6);
         break;
       case eShapeSection::AILINE2:
       case eShapeSection::CARLINE2:
-        vertices[i].texCoords = pTrack->m_pTex->GetColorCenterCoordinates(0xFF);
+        vertices[i].texCoords = pTrack->m_assets.GetMainTexture()->GetColorCenterCoordinates(0xFF);
         break;
       case eShapeSection::AILINE3:
       case eShapeSection::CARLINE3:
-        vertices[i].texCoords = pTrack->m_pTex->GetColorCenterCoordinates(0xF3);
+        vertices[i].texCoords = pTrack->m_assets.GetMainTexture()->GetColorCenterCoordinates(0xF3);
         break;
       case eShapeSection::AILINE4:
       case eShapeSection::CARLINE4:
-        vertices[i].texCoords = pTrack->m_pTex->GetColorCenterCoordinates(0xCF);
+        vertices[i].texCoords = pTrack->m_assets.GetMainTexture()->GetColorCenterCoordinates(0xCF);
         break;
     }
   }
@@ -1358,7 +1358,7 @@ void CShapeFactory::MakeAILine(CShapeData **pShape, CTrack *pTrack, eShapeSectio
   uint32 *indices = MakeIndicesCenterline(uiNumIndices, pTrack, bAttachLast);
   if (!(*pShape)) {
     (*pShape) = new CShapeData(vertices, uiNumVerts, indices, uiNumIndices,
-                               pTrack->m_pTex, eShapePrimitive::LINES);
+                               pTrack->m_assets.GetMainTexture(), eShapePrimitive::LINES);
   } else {
     (*pShape)->ReplaceGeometry(vertices, uiNumVerts, indices, uiNumIndices);
   }
@@ -1369,19 +1369,19 @@ void CShapeFactory::MakeAILine(CShapeData **pShape, CTrack *pTrack, eShapeSectio
 void CShapeFactory::MakeSelectedChunks(CShapeData **pShape, CTrack *pTrack, int iStart, int iEnd)
 {
   uint32 uiNumVerts;
-  struct tVertex *vertices = MakeVerts(uiNumVerts, eShapeSection::SELECTED, pTrack, pTrack->m_pTex);
+  struct tVertex *vertices = MakeVerts(uiNumVerts, eShapeSection::SELECTED, pTrack, pTrack->m_assets.GetMainTexture());
   if (!vertices)
     return;
 
   for (uint32 i = 0; i < uiNumVerts; ++i) {
-    vertices[i].texCoords = pTrack->m_pTex->GetColorCenterCoordinates(0xDA);
+    vertices[i].texCoords = pTrack->m_assets.GetMainTexture()->GetColorCenterCoordinates(0xDA);
   }
 
   uint32 uiNumIndices;
   uint32 *indices = MakeIndicesSelectedChunks(uiNumIndices, iStart, iEnd, pTrack);
   if (!(*pShape)) {
     (*pShape) = new CShapeData(vertices, uiNumVerts, indices, uiNumIndices,
-                               pTrack->m_pTex, eShapePrimitive::LINES);
+                               pTrack->m_assets.GetMainTexture(), eShapePrimitive::LINES);
   } else {
     (*pShape)->ReplaceGeometry(vertices, uiNumVerts, indices, uiNumIndices);
   }
@@ -1397,7 +1397,7 @@ void CShapeFactory::MakeSigns(CTrack *pTrack, std::vector<CShapeData *> &signAy,
 
     //make sign
     CShapeData *pNewSign = NULL;
-    MakeModel(&pNewSign, pTrack->m_pBld, g_signAy[pTrack->m_chunkAy[i].iSignType].modelType, pTrack->m_chunkAy[i].iSignTexture, backModeling);
+    MakeModel(&pNewSign, pTrack->m_assets.GetSignTexture(), g_signAy[pTrack->m_chunkAy[i].iSignType].modelType, pTrack->m_chunkAy[i].iSignTexture, backModeling);
     if (!pNewSign)
       continue;
 
@@ -1449,7 +1449,7 @@ void CShapeFactory::MakeAudio(CTrack *pTrack, std::vector<CShapeData *> &audioAy
 
     //make marker
     CShapeData *pNewMarker = NULL;
-    MakeAudioMarker(&pNewMarker, pTrack->m_pTex);
+    MakeAudioMarker(&pNewMarker, pTrack->m_assets.GetMainTexture());
 
     float fHeight = (float)1000.0f * -1.0f;
     glm::mat4 translateMat = glm::translate(pTrack->m_chunkMathAy[i].centerStunt);
@@ -1479,7 +1479,7 @@ void CShapeFactory::MakeStunts(CTrack *pTrack, std::vector<CShapeData *> &stuntA
 
     //make marker
     CShapeData *pNewMarker = NULL;
-    MakeStuntMarker(&pNewMarker, pTrack->m_pTex);
+    MakeStuntMarker(&pNewMarker, pTrack->m_assets.GetMainTexture());
 
     float fHeight = (float)1000.0f * -1.0f;
     glm::mat4 translateMat = glm::translate(pTrack->m_chunkMathAy[it->first].centerStunt);

@@ -19,18 +19,18 @@ CAssignBacksDialog::CAssignBacksDialog(QWidget *pParent, CTrack *pTrack)
   connect(pbCancel, &QPushButton::clicked, this, &CAssignBacksDialog::reject);
   connect(pbApply, &QPushButton::clicked, this, &CAssignBacksDialog::OnApplyClicked);
   
-  if (pTrack && pTrack->m_pTex) {
-    lblNotLoaded->setVisible(pTrack->m_pTex->GetNumTiles() == 0);
+  if (pTrack && pTrack->m_assets.GetMainTexture()) {
+    lblNotLoaded->setVisible(pTrack->m_assets.GetMainTexture()->GetNumTiles() == 0);
     int iButtonSize = 90;
     int iTilesPerLine = (width() - 256) / (iButtonSize + 6);
     int i = 0;
-    for (; i < pTrack->m_pTex->GetNumTiles(); ++i) {
+    for (; i < pTrack->m_assets.GetMainTexture()->GetNumTiles(); ++i) {
       int iBack = -1;
       CSignMap::iterator it = pTrack->m_backsMap.find(i);
       if (it != pTrack->m_backsMap.end())
         iBack = it->second;
 
-      CBackWidget *pBackWidget = new CBackWidget(this, i, pTrack->m_pTex, pTrack->m_pPal, iBack);
+      CBackWidget *pBackWidget = new CBackWidget(this, i, pTrack->m_assets.GetMainTexture(), pTrack->m_assets.GetPalette(), iBack);
       backsLayout->addWidget(pBackWidget);
       m_backWidgetAy.push_back(pBackWidget); //don't need to delete these, they will be cleaned up by the layout
     }

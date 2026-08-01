@@ -177,10 +177,14 @@ WLFUNC int wlLoadTrack(const char *szTrack)
 {
   tTrackData *pNewTrack = new tTrackData();
 
-  bool bSuccess = pNewTrack->track.LoadTrack(szTrack);
-  bSuccess |= pNewTrack->track.LoadTextures();
+  const bool bTrackLoaded = pNewTrack->track.LoadTrack(szTrack);
+  const bool bAssetsLoaded = bTrackLoaded
+      && pNewTrack->track.m_assets.LoadFromDocument(
+          pNewTrack->track.m_sTrackFileFolder,
+          pNewTrack->track.m_sTextureFile,
+          pNewTrack->track.m_sBuildingFile);
 
-  if (bSuccess) {
+  if (bTrackLoaded && bAssetsLoaded) {
     pNewTrack->pTrackShape = NULL;
     CShapeFactory::GetShapeFactory().MakeTrackSurface(&pNewTrack->pTrackShape, &pNewTrack->track, eShapeSection::EXPORT, true, false);
     CShapeFactory::GetShapeFactory().MakeSigns(&pNewTrack->track, pNewTrack->signAy);
@@ -229,11 +233,11 @@ WLFUNC int wlGetTrackTex(int iTrackId, uint8 *pDataBuf, int iBufSize)
   if (it == s_trackMap.end())
     return iBmpSize;
 
-  if (!it->second->track.m_pTex)
+  if (!it->second->track.m_assets.GetMainTexture())
     return iBmpSize;
 
   //generate bmp
-  uint8 *pBmpData = it->second->track.m_pTex->GenerateBitmapData(iBmpSize);
+  uint8 *pBmpData = it->second->track.m_assets.GetMainTexture()->GenerateBitmapData(iBmpSize);
 
   //fill buffer
   if (iBmpSize <= iBufSize) {
@@ -256,11 +260,11 @@ WLFUNC int wlGetTrackBld(int iTrackId, uint8 *pDataBuf, int iBufSize)
   if (it == s_trackMap.end())
     return iBmpSize;
 
-  if (!it->second->track.m_pBld)
+  if (!it->second->track.m_assets.GetSignTexture())
     return iBmpSize;
 
   //generate bmp
-  uint8 *pBmpData = it->second->track.m_pBld->GenerateBitmapData(iBmpSize);
+  uint8 *pBmpData = it->second->track.m_assets.GetSignTexture()->GenerateBitmapData(iBmpSize);
 
   //fill buffer
   if (iBmpSize <= iBufSize) {

@@ -4,10 +4,8 @@ set(whiplib_sources
     MathHelpers.cpp
     ObjExporter.cpp
     ObjImporter.cpp
-    Palette.cpp
     ShapeData.cpp
     ShapeFactory.cpp
-    Texture.cpp
     Track.cpp
     WhipLib.cpp)
 
@@ -37,7 +35,9 @@ target_include_directories(WhipLib
         "${CMAKE_CURRENT_SOURCE_DIR}/CarPlans"
         "${CMAKE_CURRENT_SOURCE_DIR}/SignPlans")
 
-target_link_libraries(WhipLib PUBLIC TrackEditor::track-model)
+target_link_libraries(WhipLib PUBLIC
+    TrackEditor::track-assets
+    TrackEditor::track-model)
 
 if(WIN32)
     target_link_libraries(WhipLib PRIVATE Shlwapi)

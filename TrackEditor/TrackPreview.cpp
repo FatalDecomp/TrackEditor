@@ -144,6 +144,10 @@ bool CTrackPreview::LoadTrack(const QString &sFilename)
   const QByteArray EncodedFilename = QFile::encodeName(sFilename);
   bool bSuccess = p->m_track.LoadTrack(EncodedFilename.constData());
   if (bSuccess) {
+    p->m_track.m_assets.LoadFromDocument(
+        p->m_track.m_sTrackFileFolder,
+        p->m_track.m_sTextureFile,
+        p->m_track.m_sBuildingFile);
     p->m_track.GenerateTrackMath();
     if (!p->m_track.m_chunkAy.empty()) {
       const glm::vec3 &Center = p->m_track.m_chunkMathAy.front().center;
@@ -211,16 +215,26 @@ void CTrackPreview::SaveHistory(const QString &sDescription, bool bDocumentEdit)
 
 void CTrackPreview::Undo()
 {
-  if (p->m_history.Undo(p->m_track))
+  if (p->m_history.Undo(p->m_track)) {
+    p->m_track.m_assets.LoadFromDocument(
+        p->m_track.m_sTrackFileFolder,
+        p->m_track.m_sTextureFile,
+        p->m_track.m_sBuildingFile);
     MarkDocumentEdited();
+  }
 }
 
 //-------------------------------------------------------------------------------------------------
 
 void CTrackPreview::Redo()
 {
-  if (p->m_history.Redo(p->m_track))
+  if (p->m_history.Redo(p->m_track)) {
+    p->m_track.m_assets.LoadFromDocument(
+        p->m_track.m_sTrackFileFolder,
+        p->m_track.m_sTextureFile,
+        p->m_track.m_sBuildingFile);
     MarkDocumentEdited();
+  }
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -576,17 +590,22 @@ bool CTrackPreview::Export(eExportType exportType)
   }
   QString sFilename = QDir::toNativeSeparators(QFileDialog::getSaveFileName(
     this, "Export Track As", p->m_track.m_sTrackFileFolder.c_str(), sFilter));
+  if (sFilename.isEmpty())
+    return false;
   QString sFolder = sFilename.left(sFilename.lastIndexOf(QDir::separator()));
   QString sName = sFilename.right(sFilename.size() - sFilename.lastIndexOf(QDir::separator()) - 1);
   sName = sName.left(sName.lastIndexOf('.'));
 
   //make texture file
-  QString sTexFile = sFolder + "\\" + sName + ".png";
-  p->m_track.m_pTex->ExportToPngFile(sTexFile.toLatin1().constData());
+  QString sTexFile = QDir(sFolder).filePath(sName + ".png");
 
   //make sign texture file
-  QString sSignTexFile = sFolder + "\\" + sName + "_BLD.png";
-  p->m_track.m_pBld->ExportToPngFile(sSignTexFile.toLatin1().constData());
+  QString sSignTexFile = QDir(sFolder).filePath(sName + "_BLD.png");
+  if (!p->m_track.m_assets.ExportTextures(
+          QFile::encodeName(sTexFile).constData(),
+          QFile::encodeName(sSignTexFile).constData())) {
+    return false;
+  }
 
   //main models will have fronts only if backs are separate only
   eBackModeling backModeling = eBackModeling::FRONTS_AND_BACKS;

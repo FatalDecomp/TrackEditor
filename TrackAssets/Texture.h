@@ -1,10 +1,10 @@
-#ifndef _WHIPLIB_TEXTURE_H
-#define _WHIPLIB_TEXTURE_H
+#ifndef _TRACKEDITOR_TEXTURE_H
+#define _TRACKEDITOR_TEXTURE_H
 //-------------------------------------------------------------------------------------------------
-#include <vector>
+#include <cstddef>
+#include <cstdint>
 #include <string>
 #include "glm.hpp"
-#include "Types.h"
 //-------------------------------------------------------------------------------------------------
 #define TILE_WIDTH 64
 #define TILE_HEIGHT TILE_WIDTH
@@ -44,7 +44,7 @@ struct tVertex;
 //-------------------------------------------------------------------------------------------------
 struct tTile
 {
-  glm::vec<4, uint8> data[TILE_WIDTH][TILE_HEIGHT];
+  glm::vec<4, std::uint8_t> data[TILE_WIDTH][TILE_HEIGHT];
 };
 //-------------------------------------------------------------------------------------------------
 
@@ -56,12 +56,13 @@ public:
 
   void ClearData();
   bool LoadTexture(const std::string &sFilename, CPalette *pPalette);
-  void GetTextureCoordinates(uint32 uiSurfaceType,
+  void GetTextureCoordinates(std::uint32_t uiSurfaceType,
                              tVertex &topLeft, tVertex &topRight, tVertex &bottomLeft, tVertex &bottomRight);
-  glm::vec2 GetColorCenterCoordinates(uint32 uiColor);
-  uint8 *GenerateBitmapData(int &iSize);
-  bool ExportToPngFile(const std::string &sFilename);
-  int GetNumTiles();
+  glm::vec2 GetColorCenterCoordinates(std::uint32_t uiColor);
+  std::uint8_t *GenerateBitmapData(int &iSize) const;
+  bool ExportToPngFile(const std::string &sFilename) const;
+  int GetNumTiles() const;
+  bool IsLoaded() const { return m_pTileAy && m_iNumTiles > 2; }
 
   tTile *m_pTileAy;
 
@@ -69,25 +70,25 @@ public:
   static glm::vec4 ColorBytesToFloat(const glm::vec3 &color);
 
 private:
-  bool ProcessTextureData(const uint8 *pData, size_t length);
-  void FlipTileLines(tTile *pSource, tTile *pDest, int iNumTiles);
+  bool ProcessTextureData(const std::uint8_t *pData, size_t length);
+  void FlipTileLines(const tTile *pSource, tTile *pDest, int iNumTiles) const;
   void ApplyTexCoords(glm::vec2 &topLeft,
                       glm::vec2 &topRight,
                       glm::vec2 &bottomLeft,
                       glm::vec2 &bottomRight,
-                      uint32 uiTexIndex, uint32 uiTexIncVal,
+                      std::uint32_t uiTexIndex, std::uint32_t uiTexIncVal,
                       bool bFlipHoriz, bool bFlipVert);
   void ApplyColor(glm::vec2 &topLeft,
                   glm::vec2 &topRight,
                   glm::vec2 &bottomLeft,
                   glm::vec2 &bottomRight,
-                  uint32 uiTexIndex);
+                  std::uint32_t uiTexIndex);
   void ApplyTransparency(glm::vec2 &topLeft,
                          glm::vec2 &topRight,
                          glm::vec2 &bottomLeft,
                          glm::vec2 &bottomRight,
-                         uint32 uiTexIndex);
-  glm::vec<4, uint8> GetTranspColor(int iTranspIndex);
+                         std::uint32_t uiTexIndex);
+  glm::vec<4, std::uint8_t> GetTranspColor(int iTranspIndex);
 
   CPalette *m_pPalette; //not owned by this class
   int m_iNumTiles;

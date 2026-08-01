@@ -110,7 +110,9 @@ void CGlobalTrackSettings::OnApplyInfoClicked()
   g_pMainWindow->GetCurrentTrack()->m_header.iFloorDepth = leFloorDepth->text().toInt();
 
   g_pMainWindow->SaveHistory("Applied global track settings");
-  g_pMainWindow->GetCurrentTrack()->LoadTextures();
+  CTrack *pTrack = g_pMainWindow->GetCurrentTrack();
+  pTrack->m_assets.LoadFromDocument(
+      pTrack->m_sTrackFileFolder, pTrack->m_sTextureFile, pTrack->m_sBuildingFile);
   g_pMainWindow->UpdateWindow(true);
 }
 

@@ -7,6 +7,7 @@ import unittest
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 WHIPLIB = ROOT / "WhipLib"
+TRACK_ASSETS = ROOT / "TrackAssets"
 
 
 class E3S4WhipLibEngineContractTests(unittest.TestCase):
@@ -89,10 +90,6 @@ class E3S4WhipLibEngineContractTests(unittest.TestCase):
         for filename in (
             "Track.cpp",
             "Track.h",
-            "Palette.cpp",
-            "Palette.h",
-            "Texture.cpp",
-            "Texture.h",
             "ShapeData.cpp",
             "ShapeData.h",
             "ShapeFactory.cpp",
@@ -104,7 +101,10 @@ class E3S4WhipLibEngineContractTests(unittest.TestCase):
         ):
             self.assertTrue((WHIPLIB / filename).is_file(), filename)
 
-        texture = (WHIPLIB / "Texture.cpp").read_text(encoding="utf-8")
+        for filename in ("Palette.cpp", "Palette.h", "Texture.cpp", "Texture.h"):
+            self.assertTrue((TRACK_ASSETS / filename).is_file(), filename)
+
+        texture = (TRACK_ASSETS / "Texture.cpp").read_text(encoding="utf-8")
         shape_data = (WHIPLIB / "ShapeData.h").read_text(encoding="utf-8")
         self.assertIn("ProcessTextureData", texture)
         self.assertIn("ExportToPngFile", texture)

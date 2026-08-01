@@ -1,8 +1,8 @@
 #include "Palette.h"
+#include <cstdint>
+#include <cstring>
 #include <fstream>
-#include <sstream>
-#include <string.h>
-#include "Unmangler.h"
+#include <vector>
 #include "Logging.h"
 //-------------------------------------------------------------------------------------------------
 #if defined(_DEBUG) && defined(IS_WINDOWS)
@@ -56,22 +56,21 @@ bool CPalette::LoadPalette(const std::string &sFilename)
   }
 
   //read file
-  char *szBuf = new char[length];
-  memset(szBuf, 0, length);
-  file.read(szBuf, length);
-
-  int iLength = (int)length / 3;
-  if (iLength != PALETTE_SIZE)
+  std::vector<std::uint8_t> data(length);
+  file.read(reinterpret_cast<char *>(data.data()), static_cast<std::streamsize>(length));
+  if (!file)
     return false;
 
-  for (int i = 0; i < iLength; ++i) {
-    uint8 byR = szBuf[i * 3] << 2;
-    uint8 byG = szBuf[i * 3 + 1] << 2;
-    uint8 byB = szBuf[i * 3 + 2] << 2;
-    m_paletteAy[i] = glm::vec<3, uint8>(byR, byG, byB);
+  if (length != static_cast<size_t>(PALETTE_SIZE * 3))
+    return false;
+
+  for (int i = 0; i < PALETTE_SIZE; ++i) {
+    std::uint8_t byR = data[i * 3] << 2;
+    std::uint8_t byG = data[i * 3 + 1] << 2;
+    std::uint8_t byB = data[i * 3 + 2] << 2;
+    m_paletteAy[i] = glm::vec<3, std::uint8_t>(byR, byG, byB);
   }
 
-  delete[] szBuf;
   file.close();
 
   m_bLoaded = true;

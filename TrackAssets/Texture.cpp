@@ -1,14 +1,12 @@
 #include "Texture.h"
 #include "Palette.h"
+#include <cstdint>
 #include <fstream>
-#include <sstream>
+#include <cstring>
 #include "Unmangler.h"
 #include "Vertex.h"
-#include <fstream>
+#include <vector>
 #include "Logging.h"
-#if defined(IS_WINDOWS)
-#include <Windows.h>
-#endif
 //-------------------------------------------------------------------------------------------------
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "stb_image_write.h"
@@ -77,28 +75,30 @@ bool CTexture::LoadTexture(const std::string &sFilename, CPalette *pPalette)
   }
 
   //read file
-  char *szBuf = new char[length];
-  memset(szBuf, 0, length);
-  file.read(szBuf, length);
+  std::vector<std::uint8_t> data(length);
+  file.read(reinterpret_cast<char *>(data.data()), static_cast<std::streamsize>(length));
+  if (!file)
+    return false;
 
   bool bSuccess = false;
   //unmangle
-  int iUnmangledLength = Unmangler::GetUnmangledLength((uint8 *)szBuf, (int)length);
-  if (iUnmangledLength > 0 && iUnmangledLength < MAX_MANGLED_LENGTH) {
+  int iUnmangledLength = Unmangler::GetUnmangledLength(data.data(), (int)length);
+  const int iPixelsPerTile = TILE_WIDTH * TILE_HEIGHT;
+  if (iUnmangledLength > 0
+      && iUnmangledLength < MAX_MANGLED_LENGTH
+      && iUnmangledLength % iPixelsPerTile == 0) {
     Logging::LogMessage("Texture file %s is mangled", sFilename.c_str());
-    uint8 *szUnmangledData = new uint8[iUnmangledLength];
-    bSuccess = Unmangler::UnmangleFile((uint8 *)szBuf, (int)length, szUnmangledData, iUnmangledLength);
+    std::vector<std::uint8_t> unmangledData(static_cast<size_t>(iUnmangledLength));
+    bSuccess = Unmangler::UnmangleFile(data.data(), (int)length,
+                                       unmangledData.data(), iUnmangledLength);
     Logging::LogMessage("%s texture file %s", bSuccess ? "Unmangled" : "Failed to unmangle", sFilename.c_str());
 
     if (bSuccess)
-      bSuccess = ProcessTextureData(szUnmangledData, (size_t)iUnmangledLength);
-
-    delete[] szUnmangledData;
+      bSuccess = ProcessTextureData(unmangledData.data(), unmangledData.size());
   } else {
-    bSuccess = ProcessTextureData((uint8 *)szBuf, length);
+    bSuccess = ProcessTextureData(data.data(), length);
   }
 
-  delete[] szBuf;
   file.close();
 
   Logging::LogMessage("%s texture: %s", bSuccess ? "Loaded" : "Failed to load", sFilename.c_str());
@@ -108,7 +108,7 @@ bool CTexture::LoadTexture(const std::string &sFilename, CPalette *pPalette)
 
 //-------------------------------------------------------------------------------------------------
 
-void CTexture::GetTextureCoordinates(uint32 uiSurfaceType,
+void CTexture::GetTextureCoordinates(std::uint32_t uiSurfaceType,
                                      tVertex &topLeft, tVertex &topRight, tVertex &bottomLeft, tVertex &bottomRight)
 {
   if (!m_pPalette) {
@@ -121,8 +121,8 @@ void CTexture::GetTextureCoordinates(uint32 uiSurfaceType,
   bool bTransparent = uiSurfaceType & SURFACE_FLAG_TRANSPARENT;
   bool bPartialTrans = uiSurfaceType & SURFACE_FLAG_PARTIAL_TRANS;
   bool bApplyTexture = uiSurfaceType & SURFACE_FLAG_APPLY_TEXTURE;
-  uint32 uiTexIndex = uiSurfaceType & SURFACE_MASK_TEXTURE_INDEX;
-  uint32 uiTexIncVal = bPair ? 2 : 1;
+  std::uint32_t uiTexIndex = uiSurfaceType & SURFACE_MASK_TEXTURE_INDEX;
+  std::uint32_t uiTexIncVal = bPair ? 2 : 1;
 
   if (bApplyTexture) {
     ApplyTexCoords(topLeft.texCoords,
@@ -147,7 +147,7 @@ void CTexture::GetTextureCoordinates(uint32 uiSurfaceType,
 
 //-------------------------------------------------------------------------------------------------
 
-glm::vec2 CTexture::GetColorCenterCoordinates(uint32 uiColor)
+glm::vec2 CTexture::GetColorCenterCoordinates(std::uint32_t uiColor)
 {
   int iPaletteIndex = m_iNumTiles - NUM_PALETTE_TILES - NUM_TRANSPARENT_TILES;
 
@@ -159,11 +159,11 @@ glm::vec2 CTexture::GetColorCenterCoordinates(uint32 uiColor)
 
 //-------------------------------------------------------------------------------------------------
 
-uint8 *CTexture::GenerateBitmapData(int &iSize)
+std::uint8_t *CTexture::GenerateBitmapData(int &iSize) const
 {
   iSize = (4 * TILE_WIDTH * TILE_HEIGHT * m_iNumTiles);
 
-  uint8 *pData = new uint8[iSize];
+  std::uint8_t *pData = new std::uint8_t[iSize];
 
   tTile *pTilesFlipped = new tTile[m_iNumTiles];
   FlipTileLines(m_pTileAy, pTilesFlipped, m_iNumTiles);
@@ -186,18 +186,23 @@ uint8 *CTexture::GenerateBitmapData(int &iSize)
 
 //-------------------------------------------------------------------------------------------------
 
-bool CTexture::ExportToPngFile(const std::string &sFilename)
+bool CTexture::ExportToPngFile(const std::string &sFilename) const
 {
+  if (!IsLoaded() || sFilename.empty())
+    return false;
+
   int iBmpSize;
-  uint8 *pBmpData = GenerateBitmapData(iBmpSize);
-  stbi_write_png(sFilename.c_str(), TILE_WIDTH, TILE_HEIGHT * m_iNumTiles, 4, pBmpData, TILE_WIDTH * 4);
+  std::uint8_t *pBmpData = GenerateBitmapData(iBmpSize);
+  const bool bSuccess = stbi_write_png(sFilename.c_str(), TILE_WIDTH,
+                                      TILE_HEIGHT * m_iNumTiles, 4,
+                                      pBmpData, TILE_WIDTH * 4) != 0;
   delete[] pBmpData;
-  return true;
+  return bSuccess;
 }
 
 //-------------------------------------------------------------------------------------------------
 
-int CTexture::GetNumTiles()
+int CTexture::GetNumTiles() const
 {
   return m_iNumTiles - NUM_PALETTE_TILES - NUM_TRANSPARENT_TILES;
 }
@@ -228,23 +233,27 @@ glm::vec4 CTexture::ColorBytesToFloat(const glm::vec3 &color)
 
 //-------------------------------------------------------------------------------------------------
 
-bool CTexture::ProcessTextureData(const uint8 *pData, size_t length)
+bool CTexture::ProcessTextureData(const std::uint8_t *pData, size_t length)
 {
   if (!m_pPalette) {
     assert(0);
     return false;
   }
 
-  int iPixelsPerTile = TILE_WIDTH * TILE_HEIGHT;
+  const int iPixelsPerTile = TILE_WIDTH * TILE_HEIGHT;
+  if (length == 0 || length % static_cast<size_t>(iPixelsPerTile) != 0) {
+    Logging::LogMessage("Error loading texture: invalid texture byte count");
+    return false;
+  }
   int iNumTexTiles = (int)length / iPixelsPerTile;
   m_iNumTiles = iNumTexTiles + NUM_PALETTE_TILES + NUM_TRANSPARENT_TILES;
   m_pTileAy = new tTile[m_iNumTiles];
   for (int i = 0; i < iNumTexTiles; ++i) {
     tTile *pTile = &m_pTileAy[i];
     for (int j = 0; j < iPixelsPerTile; ++j) {
-      uint8 byPaletteIndex = pData[i * iPixelsPerTile + j];
+      std::uint8_t byPaletteIndex = pData[i * iPixelsPerTile + j];
       if (PALETTE_SIZE > byPaletteIndex) {
-        pTile->data[j % TILE_WIDTH][j / TILE_WIDTH] = glm::vec<4, uint8>(m_pPalette->m_paletteAy[byPaletteIndex].r,
+        pTile->data[j % TILE_WIDTH][j / TILE_WIDTH] = glm::vec<4, std::uint8_t>(m_pPalette->m_paletteAy[byPaletteIndex].r,
                                                                          m_pPalette->m_paletteAy[byPaletteIndex].g,
                                                                          m_pPalette->m_paletteAy[byPaletteIndex].b,
                                                                          byPaletteIndex ? 255 : 0);
@@ -268,7 +277,7 @@ bool CTexture::ProcessTextureData(const uint8 *pData, size_t length)
         int iPaletteIndex = iTileX / 4 + i * 16;
         if (PALETTE_SIZE > iPaletteIndex) {
           pPaletteTile->data[iTileX][iTileY] =
-            glm::vec<4, uint8>(m_pPalette->m_paletteAy[iPaletteIndex].r,
+            glm::vec<4, std::uint8_t>(m_pPalette->m_paletteAy[iPaletteIndex].r,
                                m_pPalette->m_paletteAy[iPaletteIndex].g,
                                m_pPalette->m_paletteAy[iPaletteIndex].b,
                                255);
@@ -298,7 +307,7 @@ bool CTexture::ProcessTextureData(const uint8 *pData, size_t length)
 
 //-------------------------------------------------------------------------------------------------
 
-void CTexture::FlipTileLines(tTile *pSource, tTile *pDest, int iNumTiles)
+void CTexture::FlipTileLines(const tTile *pSource, tTile *pDest, int iNumTiles) const
 {
   for (int i = 0; i < iNumTiles; ++i) {
     for (int x = 0; x < TILE_WIDTH; ++x) {
@@ -315,7 +324,7 @@ void CTexture::ApplyTexCoords(glm::vec2 &topLeft,
                               glm::vec2 &topRight,
                               glm::vec2 &bottomLeft,
                               glm::vec2 &bottomRight,
-                              uint32 uiTexIndex, uint32 uiTexIncVal,
+                              std::uint32_t uiTexIndex, std::uint32_t uiTexIncVal,
                               bool bFlipHoriz, bool bFlipVert)
 {
   if (!bFlipHoriz && !bFlipVert) {
@@ -347,7 +356,7 @@ void CTexture::ApplyColor(glm::vec2 &topLeft,
                           glm::vec2 &topRight,
                           glm::vec2 &bottomLeft,
                           glm::vec2 &bottomRight,
-                          uint32 uiTexIndex)
+                          std::uint32_t uiTexIndex)
 {
   int iPaletteIndex = m_iNumTiles - NUM_PALETTE_TILES - NUM_TRANSPARENT_TILES;
 
@@ -366,7 +375,7 @@ void CTexture::ApplyTransparency(glm::vec2 &topLeft,
                                  glm::vec2 &topRight,
                                  glm::vec2 &bottomLeft,
                                  glm::vec2 &bottomRight,
-                                 uint32 uiTexIndex)
+                                 std::uint32_t uiTexIndex)
 {
   int iTranspIndex = m_iNumTiles - NUM_TRANSPARENT_TILES;
 
@@ -381,24 +390,24 @@ void CTexture::ApplyTransparency(glm::vec2 &topLeft,
 
 //-------------------------------------------------------------------------------------------------
 
-glm::vec<4, uint8> CTexture::GetTranspColor(int iTranspIndex)
+glm::vec<4, std::uint8_t> CTexture::GetTranspColor(int iTranspIndex)
 {
-  glm::vec<4, uint8> color(0, 0, 0, 0);
+  glm::vec<4, std::uint8_t> color(0, 0, 0, 0);
   switch (iTranspIndex) {
     case 0:
-      color = glm::vec<4, uint8>(0, 0, 0, 255);
+      color = glm::vec<4, std::uint8_t>(0, 0, 0, 255);
       break;
     case 1:
-      color = glm::vec<4, uint8>(0, 0, 0, 64);
+      color = glm::vec<4, std::uint8_t>(0, 0, 0, 64);
       break;
     case 2:
-      color = glm::vec<4, uint8>(0, 0, 0, 128);
+      color = glm::vec<4, std::uint8_t>(0, 0, 0, 128);
       break;
     case 3:
-      color = glm::vec<4, uint8>(0, 0, 0, 192);
+      color = glm::vec<4, std::uint8_t>(0, 0, 0, 192);
       break;
     case 4:
-      color = glm::vec<4, uint8>(0, 0, 255, 64);
+      color = glm::vec<4, std::uint8_t>(0, 0, 255, 64);
       break;
   }
   return color;

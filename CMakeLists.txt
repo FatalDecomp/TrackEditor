@@ -15,6 +15,7 @@ endif()
 
 add_subdirectory(external/ROLLER)
 add_subdirectory(TrackModel)
+add_subdirectory(TrackAssets)
 
 if(NOT TARGET ROLLER::core)
     message(FATAL_ERROR "The ROLLER submodule did not provide ROLLER::core")
@@ -36,6 +37,14 @@ if(BUILD_TESTING)
         TrackEditor::track-model)
     add_test(NAME trackeditor-e3-s5a-track-model
              COMMAND trackeditor-e3-s5a-track-model-test)
+
+    add_executable(trackeditor-e3-s5b-track-assets-test
+        tests/track_assets_test.cpp)
+    target_compile_features(trackeditor-e3-s5b-track-assets-test PRIVATE cxx_std_17)
+    target_link_libraries(trackeditor-e3-s5b-track-assets-test PRIVATE
+        TrackEditor::track-assets)
+    add_test(NAME trackeditor-e3-s5b-track-assets
+             COMMAND trackeditor-e3-s5b-track-assets-test)
 
     find_package(Python3 COMPONENTS Interpreter QUIET)
     if(Python3_Interpreter_FOUND)
@@ -68,6 +77,11 @@ if(BUILD_TESTING)
             NAME trackeditor-e3-s5a-track-model-contract
             COMMAND "${Python3_EXECUTABLE}"
                     "${CMAKE_CURRENT_SOURCE_DIR}/tests/test_e3_s5a_track_model.py"
+                    -v)
+        add_test(
+            NAME trackeditor-e3-s5b-track-assets-contract
+            COMMAND "${Python3_EXECUTABLE}"
+                    "${CMAKE_CURRENT_SOURCE_DIR}/tests/test_e3_s5b_track_assets.py"
                     -v)
     endif()
 

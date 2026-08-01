@@ -1,10 +1,9 @@
-#ifndef _WHIPLIB_PALETTE_H
-#define _WHIPLIB_PALETTE_H
+#ifndef _TRACKEDITOR_PALETTE_H
+#define _TRACKEDITOR_PALETTE_H
 //-------------------------------------------------------------------------------------------------
-#include <vector>
+#include <cstdint>
 #include <string>
 #include "glm.hpp"
-#include "Types.h"
 //-------------------------------------------------------------------------------------------------
 #define PALETTE_SIZE 256
 //-------------------------------------------------------------------------------------------------
@@ -17,9 +16,9 @@ public:
 
   void ClearData();
   bool LoadPalette(const std::string &sFilename);
-  bool IsLoaded() { return m_bLoaded; };
+  bool IsLoaded() const { return m_bLoaded; };
 
-  glm::vec<3, uint8> m_paletteAy[PALETTE_SIZE];
+  glm::vec<3, std::uint8_t> m_paletteAy[PALETTE_SIZE];
 
 private:
   bool m_bLoaded;

@@ -319,6 +319,10 @@ void CMainWindow::OnNewTrack()
     ConfigurePreview(pPreview);
     pPreview->GetTrack()->m_sBuildingFile = dlg.GetBld().toLatin1().constData();
     pPreview->GetTrack()->m_sTextureFile = dlg.GetTex().toLatin1().constData();
+    pPreview->GetTrack()->m_assets.LoadFromDocument(
+        pPreview->GetTrack()->m_sTrackFileFolder,
+        pPreview->GetTrack()->m_sTextureFile,
+        pPreview->GetTrack()->m_sBuildingFile);
     pPreview->SaveHistory("New track created", false);
     m_sLastTrackFilesFolder = dlg.GetFilename().left(dlg.GetFilename().lastIndexOf(QDir::separator()));
     //add to array and create preview window

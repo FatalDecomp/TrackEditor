@@ -421,7 +421,7 @@ void CEditSurfaceDialog::OnTextureClicked()
         m_uiSignedBitValue |= iIndex;
       }
     } else {
-      CTilePicker dlg(this, iIndex, g_pMainWindow->GetCurrentTrack()->m_pPal);
+      CTilePicker dlg(this, iIndex, g_pMainWindow->GetCurrentTrack()->m_assets.GetPalette());
       if (dlg.exec()) {
         iIndex = dlg.GetSelected();
         m_uiSignedBitValue &= ~SURFACE_MASK_TEXTURE_INDEX;
@@ -445,7 +445,7 @@ void CEditSurfaceDialog::OnTextureClicked()
         iIndex = dlg.GetSelected();
       }
     } else {
-      CTilePicker dlg(this, iIndex, g_pMainWindow->GetCurrentTrack()->m_pPal);
+      CTilePicker dlg(this, iIndex, g_pMainWindow->GetCurrentTrack()->m_assets.GetPalette());
       if (dlg.exec()) {
         iIndex = dlg.GetSelected();
       }
@@ -564,9 +564,9 @@ CTexture *CEditSurfaceDialog::GetTexture()
 {
   if (g_pMainWindow->GetCurrentTrack()) {
     if (m_field == eSurfaceField::SURFACE_SIGN)
-      return g_pMainWindow->GetCurrentTrack()->m_pBld;
+      return g_pMainWindow->GetCurrentTrack()->m_assets.GetSignTexture();
     else
-      return g_pMainWindow->GetCurrentTrack()->m_pTex;
+      return g_pMainWindow->GetCurrentTrack()->m_assets.GetMainTexture();
   }
   return NULL;
 }
@@ -681,9 +681,10 @@ void CEditSurfaceDialog::UpdateDialog()
     lblTransparency->hide();
     cbTransparency->hide();
     int iIndex = uiValue & SURFACE_MASK_TEXTURE_INDEX;
-    if (iIndex < PALETTE_SIZE) {
+    CPalette *pPalette = g_pMainWindow->GetCurrentTrack()->m_assets.GetPalette();
+    if (pPalette && iIndex < PALETTE_SIZE) {
       QPixmap pixmap;
-      pixmap.convertFromImage(QtHelpers::GetQImageFromColor(g_pMainWindow->GetCurrentTrack()->m_pPal->m_paletteAy[iIndex]));
+      pixmap.convertFromImage(QtHelpers::GetQImageFromColor(pPalette->m_paletteAy[iIndex]));
       pbTexture1->setIcon(pixmap);
     } else {
       pbTexture1->setIcon(QPixmap());

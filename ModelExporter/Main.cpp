@@ -85,7 +85,7 @@ bool ExportCar(eWhipModel carModel, std::string sWhipDir, std::string sOutDir, b
 
 bool ExportTrack(CTrack *pTrack, std::string sOutDir, bool bObj)
 {
-  if (!pTrack || !pTrack->m_pTex || !pTrack->m_pBld)
+  if (!pTrack || !pTrack->m_assets.GetMainTexture() || !pTrack->m_assets.GetSignTexture())
     return false;
 
   //get track name
@@ -103,12 +103,12 @@ bool ExportTrack(CTrack *pTrack, std::string sOutDir, bool bObj)
   printf("Exporting ");
   printf(sTexFile.c_str());
   printf("...\n");
-  pTrack->m_pTex->ExportToPngFile(sTexFile);
+  pTrack->m_assets.GetMainTexture()->ExportToPngFile(sTexFile);
   std::string sSignTexFile = sOutDir + "\\" + sTrackName + "_BLD.png";
   printf("Exporting ");
   printf(sSignTexFile.c_str());
   printf("...\n");
-  pTrack->m_pBld->ExportToPngFile(sSignTexFile);
+  pTrack->m_assets.GetSignTexture()->ExportToPngFile(sSignTexFile);
 
   //setup
   pTrack->GenerateTrackMath();
@@ -307,7 +307,11 @@ int main(int argc, char *argv[])
       if (sExtension.compare(".TRK") == 0) {
         CTrack *pNewTrack = new CTrack();
         printf("Loading %s ", sEntry.c_str());
-        if (pNewTrack->LoadTrack(sEntry) && pNewTrack->LoadTextures()) {
+        if (pNewTrack->LoadTrack(sEntry)
+            && pNewTrack->m_assets.LoadFromDocument(
+                pNewTrack->m_sTrackFileFolder,
+                pNewTrack->m_sTextureFile,
+                pNewTrack->m_sBuildingFile)) {
           printf("success\n");
           trackAy.push_back(pNewTrack);
         } else {

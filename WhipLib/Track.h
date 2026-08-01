@@ -2,6 +2,7 @@
 #define _WHIPLIB_TRACK_H
 //-------------------------------------------------------------------------------------------------
 #include "TrackModel.h"
+#include "TrackAssets.h"
 #include "glm.hpp"
 #include <vector>
 #include "Types.h"
@@ -47,10 +48,6 @@ struct tChunkMath
 };
 typedef std::vector<tChunkMath> CChunkMathAy;
 //-------------------------------------------------------------------------------------------------
-class CTexture;
-class CPalette;
-//-------------------------------------------------------------------------------------------------
-
 class CTrack : public CTrackModel
 {
 public:
@@ -58,7 +55,6 @@ public:
   ~CTrack() override;
 
   void ClearData() override;
-  bool LoadTextures();
   bool ProcessTrackData(const uint8 *pData, size_t length) override;
   void GenerateTrackMath();
   void ResetStunts();
@@ -76,10 +72,7 @@ public:
 
   CChunkMathAy m_chunkMathAy;
   int m_iAILineHeight;
-
-  CPalette *m_pPal;
-  CTexture *m_pTex;
-  CTexture *m_pBld;
+  CTrackAssets m_assets;
 
 protected:
   void GetCenter(int i, glm::vec3 prevCenter,
@@ -98,10 +91,6 @@ protected:
   void GetAILine(int i, glm::vec3 center, glm::vec3 pitchAxis, glm::mat4 rollMat, glm::vec3 nextChunkPitched,
                glm::vec3 &aiLine, eShapeSection lineSection, int iHeight);
 
-private:
-  std::string m_sLastLoadedTex;
-  std::string m_sLastLoadedBld;
-  std::string m_sLastLoadedPal;
 };
 
 //-------------------------------------------------------------------------------------------------

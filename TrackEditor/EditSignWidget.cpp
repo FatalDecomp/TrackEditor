@@ -81,7 +81,7 @@ void CEditSignWidget::UpdateGeometrySelection(int iFrom, int iTo)
   leUnk->setVisible(bUnk);
   lblUnk->setVisible(bUnk);
   
-  QtHelpers::UpdateTextures(lblTex, NULL, g_pMainWindow->GetCurrentTrack()->m_pBld, g_pMainWindow->GetCurrentTrack()->m_pPal, g_pMainWindow->GetCurrentTrack()->m_chunkAy[iFrom].iSignTexture);
+  QtHelpers::UpdateTextures(lblTex, NULL, g_pMainWindow->GetCurrentTrack()->m_assets.GetSignTexture(), g_pMainWindow->GetCurrentTrack()->m_assets.GetPalette(), g_pMainWindow->GetCurrentTrack()->m_chunkAy[iFrom].iSignTexture);
 }
 
 //-------------------------------------------------------------------------------------------------
