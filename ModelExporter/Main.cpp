@@ -110,9 +110,6 @@ bool ExportTrack(CTrack *pTrack, std::string sOutDir, bool bObj)
   printf("...\n");
   pTrack->m_assets.GetSignTexture()->ExportToPngFile(sSignTexFile);
 
-  //setup
-  pTrack->GenerateTrackMath();
-
   //generate models
   std::vector<std::pair<std::string, CShapeData *>> trackSectionAy;
   std::vector<CShapeData *> signAy;

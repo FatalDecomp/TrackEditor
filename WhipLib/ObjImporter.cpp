@@ -2,6 +2,7 @@
 #include "Logging.h"
 #include "Vertex.h"
 #include "Texture.h"
+#include "TextureMapping.h"
 #include "ShapeData.h"
 #include <fstream>
 #include <sstream>
@@ -155,7 +156,7 @@ bool CObjImporter::ImportObj(const std::string &sFile, CShapeData **pShape, CTex
         tVertex vertex;
         vertex.position = vAy[ivIdx];
         //vertex.texCoords = vtAy[ivtIdx];
-        vertex.texCoords = pTexture->GetColorCenterCoordinates(0x8c); //light grey
+        vertex.texCoords = TextureMapping::GetColorCenterCoordinates(*pTexture, 0x8c); //light grey
         if(ivnIdx >= 0)
           vertex.normal = vnAy[ivnIdx];
         vertexAy.push_back(vertex);

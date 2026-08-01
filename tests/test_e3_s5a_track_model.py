@@ -33,13 +33,15 @@ class TrackModelContractTests(unittest.TestCase):
         ):
             self.assertNotIn(forbidden, model_text)
 
-    def test_whiplib_layers_geometry_over_the_model(self):
+    def test_whiplib_track_is_a_scalar_model_with_assets(self):
         whiplib_cmake = (ROOT / "WhipLib" / "CMakeLists.txt").read_text(encoding="utf-8")
         track_header = (ROOT / "WhipLib" / "Track.h").read_text(encoding="utf-8")
 
         self.assertIn("TrackEditor::track-model", whiplib_cmake)
         self.assertIn("class CTrack : public CTrackModel", track_header)
-        self.assertIn("CChunkMathAy m_chunkMathAy", track_header)
+        self.assertIn("CTrackAssets m_assets", track_header)
+        self.assertNotIn("m_chunkMathAy", track_header)
+        self.assertNotIn("glm", track_header)
 
     def test_history_is_owned_by_track_model_not_qt_preview(self):
         model_header = (ROOT / "TrackModel" / "TrackModel.h").read_text(encoding="utf-8")

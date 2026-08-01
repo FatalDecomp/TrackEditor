@@ -83,9 +83,22 @@ if(BUILD_TESTING)
             COMMAND "${Python3_EXECUTABLE}"
                     "${CMAKE_CURRENT_SOURCE_DIR}/tests/test_e3_s5b_track_assets.py"
                     -v)
+        add_test(
+            NAME trackeditor-e3-s5c-geometry-cleanup-contract
+            COMMAND "${Python3_EXECUTABLE}"
+                    "${CMAKE_CURRENT_SOURCE_DIR}/tests/test_e3_s5c_geometry_cleanup.py"
+                    -v)
     endif()
 
     if(TARGET TrackEditor)
+        add_executable(trackeditor-e3-s5c-track-geometry-test
+            tests/track_geometry_test.cpp)
+        target_compile_features(trackeditor-e3-s5c-track-geometry-test PRIVATE cxx_std_17)
+        target_link_libraries(trackeditor-e3-s5c-track-geometry-test PRIVATE
+            TrackEditor::WhipLib)
+        add_test(NAME trackeditor-e3-s5c-track-geometry
+                 COMMAND trackeditor-e3-s5c-track-geometry-test)
+
         add_executable(trackeditor-e3-s1-frame-delivery-test
             tests/editor_render_queue_test.cpp
             TrackEditor/EditorRenderQueue.cpp)

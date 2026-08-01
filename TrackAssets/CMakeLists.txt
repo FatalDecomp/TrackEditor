@@ -15,7 +15,6 @@ target_compile_definitions(track-assets
 target_include_directories(track-assets
     PUBLIC
         "${CMAKE_CURRENT_SOURCE_DIR}"
-        "${PROJECT_SOURCE_DIR}/external/glm"
     PRIVATE
         "${PROJECT_SOURCE_DIR}/WhipLib"
         "${PROJECT_SOURCE_DIR}/external/stb")

@@ -4,7 +4,6 @@
 #include <cstddef>
 #include <cstdint>
 #include <string>
-#include "glm.hpp"
 //-------------------------------------------------------------------------------------------------
 #define TILE_WIDTH 64
 #define TILE_HEIGHT TILE_WIDTH
@@ -40,11 +39,18 @@
 #define CAR_FLAG_ANMS_LOOKUP       0x00000200
 //-------------------------------------------------------------------------------------------------
 class CPalette;
-struct tVertex;
 //-------------------------------------------------------------------------------------------------
+struct tTextureColor
+{
+  std::uint8_t r;
+  std::uint8_t g;
+  std::uint8_t b;
+  std::uint8_t a;
+};
+
 struct tTile
 {
-  glm::vec<4, std::uint8_t> data[TILE_WIDTH][TILE_HEIGHT];
+  tTextureColor data[TILE_WIDTH][TILE_HEIGHT];
 };
 //-------------------------------------------------------------------------------------------------
 
@@ -56,39 +62,18 @@ public:
 
   void ClearData();
   bool LoadTexture(const std::string &sFilename, CPalette *pPalette);
-  void GetTextureCoordinates(std::uint32_t uiSurfaceType,
-                             tVertex &topLeft, tVertex &topRight, tVertex &bottomLeft, tVertex &bottomRight);
-  glm::vec2 GetColorCenterCoordinates(std::uint32_t uiColor);
   std::uint8_t *GenerateBitmapData(int &iSize) const;
   bool ExportToPngFile(const std::string &sFilename) const;
   int GetNumTiles() const;
+  int GetAtlasTileCount() const { return m_iNumTiles; }
   bool IsLoaded() const { return m_pTileAy && m_iNumTiles > 2; }
 
   tTile *m_pTileAy;
 
-  static glm::vec4 RandomColor();
-  static glm::vec4 ColorBytesToFloat(const glm::vec3 &color);
-
 private:
   bool ProcessTextureData(const std::uint8_t *pData, size_t length);
   void FlipTileLines(const tTile *pSource, tTile *pDest, int iNumTiles) const;
-  void ApplyTexCoords(glm::vec2 &topLeft,
-                      glm::vec2 &topRight,
-                      glm::vec2 &bottomLeft,
-                      glm::vec2 &bottomRight,
-                      std::uint32_t uiTexIndex, std::uint32_t uiTexIncVal,
-                      bool bFlipHoriz, bool bFlipVert);
-  void ApplyColor(glm::vec2 &topLeft,
-                  glm::vec2 &topRight,
-                  glm::vec2 &bottomLeft,
-                  glm::vec2 &bottomRight,
-                  std::uint32_t uiTexIndex);
-  void ApplyTransparency(glm::vec2 &topLeft,
-                         glm::vec2 &topRight,
-                         glm::vec2 &bottomLeft,
-                         glm::vec2 &bottomRight,
-                         std::uint32_t uiTexIndex);
-  glm::vec<4, std::uint8_t> GetTranspColor(int iTranspIndex);
+  tTextureColor GetTranspColor(int iTranspIndex);
 
   CPalette *m_pPalette; //not owned by this class
   int m_iNumTiles;

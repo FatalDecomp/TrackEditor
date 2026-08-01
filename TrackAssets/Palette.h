@@ -3,9 +3,15 @@
 //-------------------------------------------------------------------------------------------------
 #include <cstdint>
 #include <string>
-#include "glm.hpp"
 //-------------------------------------------------------------------------------------------------
 #define PALETTE_SIZE 256
+//-------------------------------------------------------------------------------------------------
+struct tPaletteColor
+{
+  std::uint8_t r;
+  std::uint8_t g;
+  std::uint8_t b;
+};
 //-------------------------------------------------------------------------------------------------
 
 class CPalette
@@ -18,7 +24,7 @@ public:
   bool LoadPalette(const std::string &sFilename);
   bool IsLoaded() const { return m_bLoaded; };
 
-  glm::vec<3, std::uint8_t> m_paletteAy[PALETTE_SIZE];
+  tPaletteColor m_paletteAy[PALETTE_SIZE];
 
 private:
   bool m_bLoaded;

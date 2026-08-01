@@ -62,7 +62,6 @@ set(trackeditor_sources
     TilePicker.cpp
     TilePicker.h
     TilePicker.ui
-    TrackCoordinateConversion.h
     TrackEditor.cpp
     TrackEditor.h
     TrackPreview.cpp
@@ -91,8 +90,7 @@ target_compile_definitions(TrackEditor
 
 target_include_directories(TrackEditor PRIVATE
     "${CMAKE_CURRENT_SOURCE_DIR}"
-    "${PROJECT_SOURCE_DIR}/WhipLib"
-    "${PROJECT_SOURCE_DIR}/external/glm")
+    "${PROJECT_SOURCE_DIR}/WhipLib")
 
 target_link_libraries(TrackEditor
     PRIVATE

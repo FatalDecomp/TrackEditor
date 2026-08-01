@@ -87,7 +87,6 @@ protected slots:
   void OnOpenReferenceModel();
   void OnUpdatePreview();
   void OnSaveHistoryTimer();
-  void OnStuntTimer();
   void OnZeroTimer();
   void OnReferenceModelChanged();
   void OnRefModelPos(double dYaw, double dPitch, double dRoll,
@@ -115,7 +114,6 @@ private:
   int m_iNewTrackNum;
   QString m_sHistoryDescription;
   QTimer *m_pSaveHistoryTimer;
-  QTimer *m_pStuntTimer;
   QTimer *m_pZeroTimer;
   CEditorRenderService *m_pRenderService;
   QElapsedTimer m_CameraClock;

@@ -190,12 +190,6 @@ CMainWindow::CMainWindow(const QString &sAppPath, float fDesktopScale,
   m_pSaveHistoryTimer->setInterval(250);
   connect(m_pSaveHistoryTimer, &QTimer::timeout, this, &CMainWindow::OnSaveHistoryTimer, Qt::QueuedConnection);
 
-  //setup stunt timer
-  m_pStuntTimer = new QTimer(this);
-  m_pStuntTimer->setInterval(28);
-  connect(m_pStuntTimer, &QTimer::timeout, this, &CMainWindow::OnStuntTimer);
-  m_pStuntTimer->start();
-
   //setup zero timer
   m_pZeroTimer = new QTimer(this);
   m_pZeroTimer->setInterval(0);
@@ -1154,21 +1148,6 @@ void CMainWindow::OnSaveHistoryTimer()
 
 //-------------------------------------------------------------------------------------------------
 
-void CMainWindow::OnStuntTimer()
-{
-  eWhipModel carModel;
-  eShapeSection aiLine;
-  bool bMillionPlus;
-  if (p && p->m_pDisplaySettings && p->m_pDisplaySettings->GetDisplaySettings(carModel, aiLine, bMillionPlus) & ANIMATE_STUNTS) {
-    if (GetCurrentTrack())
-      GetCurrentTrack()->UpdateStunts();
-    if (GetCurrentPreview())
-      GetCurrentPreview()->UpdateTrack(true);
-  }
-}
-
-//-------------------------------------------------------------------------------------------------
-
 void CMainWindow::OnZeroTimer()
 {
   const qint64 iElapsedNanoseconds = m_CameraClock.nsecsElapsed();
@@ -1389,9 +1368,6 @@ void CMainWindow::UpdateWindow(bool bUpdatingTextures)
     twViewer->setTabText(i, p->m_previewAy[i]->GetTitle(false));
   }
   setWindowTitle(sCurrentTab + sTitle);
-
-  if (GetCurrentTrack())
-    GetCurrentTrack()->GenerateTrackMath();
 
   if (GetCurrentPreview()) {
     if (bUpdatingTextures) {

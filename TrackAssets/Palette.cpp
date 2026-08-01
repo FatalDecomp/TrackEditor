@@ -68,7 +68,7 @@ bool CPalette::LoadPalette(const std::string &sFilename)
     std::uint8_t byR = data[i * 3] << 2;
     std::uint8_t byG = data[i * 3 + 1] << 2;
     std::uint8_t byB = data[i * 3 + 2] << 2;
-    m_paletteAy[i] = glm::vec<3, std::uint8_t>(byR, byG, byB);
+    m_paletteAy[i] = tPaletteColor{byR, byG, byB};
   }
 
   file.close();

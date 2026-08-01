@@ -78,6 +78,10 @@ class TrackAssetsContractTests(unittest.TestCase):
             "ObjExporter",
             "GenerateTrackMath",
             "tChunkMath",
+            "glm",
+            "tVertex",
+            "GetTextureCoordinates",
+            "GetColorCenterCoordinates",
         ):
             self.assertNotIn(forbidden, assets_text)
 

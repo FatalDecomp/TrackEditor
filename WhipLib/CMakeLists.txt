@@ -6,7 +6,9 @@ set(whiplib_sources
     ObjImporter.cpp
     ShapeData.cpp
     ShapeFactory.cpp
+    TextureMapping.cpp
     Track.cpp
+    TrackGeometry.cpp
     WhipLib.cpp)
 
 if(TRACKEDITOR_ENABLE_FBX)

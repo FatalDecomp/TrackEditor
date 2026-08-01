@@ -4,7 +4,6 @@
 #include <fstream>
 #include <cstring>
 #include "Unmangler.h"
-#include "Vertex.h"
 #include <vector>
 #include "Logging.h"
 //-------------------------------------------------------------------------------------------------
@@ -108,57 +107,6 @@ bool CTexture::LoadTexture(const std::string &sFilename, CPalette *pPalette)
 
 //-------------------------------------------------------------------------------------------------
 
-void CTexture::GetTextureCoordinates(std::uint32_t uiSurfaceType,
-                                     tVertex &topLeft, tVertex &topRight, tVertex &bottomLeft, tVertex &bottomRight)
-{
-  if (!m_pPalette) {
-    return;
-  }
-
-  bool bPair = uiSurfaceType & SURFACE_FLAG_TEXTURE_PAIR;// &&uiSurfaceType &SURFACE_FLAG_PAIR_NEXT_TEX;
-  bool bFlipVert = uiSurfaceType & SURFACE_FLAG_FLIP_VERT;
-  bool bFlipHoriz = uiSurfaceType & SURFACE_FLAG_FLIP_HORIZ;
-  bool bTransparent = uiSurfaceType & SURFACE_FLAG_TRANSPARENT;
-  bool bPartialTrans = uiSurfaceType & SURFACE_FLAG_PARTIAL_TRANS;
-  bool bApplyTexture = uiSurfaceType & SURFACE_FLAG_APPLY_TEXTURE;
-  std::uint32_t uiTexIndex = uiSurfaceType & SURFACE_MASK_TEXTURE_INDEX;
-  std::uint32_t uiTexIncVal = bPair ? 2 : 1;
-
-  if (bApplyTexture) {
-    ApplyTexCoords(topLeft.texCoords,
-                   topRight.texCoords,
-                   bottomLeft.texCoords,
-                   bottomRight.texCoords,
-                   uiTexIndex, uiTexIncVal, bFlipHoriz, bFlipVert);
-  } else if (bTransparent) {
-    ApplyTransparency(topLeft.texCoords,
-                      topRight.texCoords,
-                      bottomLeft.texCoords,
-                      bottomRight.texCoords,
-                      uiTexIndex);
-  } else {
-    ApplyColor(topLeft.texCoords,
-               topRight.texCoords,
-               bottomLeft.texCoords,
-               bottomRight.texCoords,
-               uiTexIndex);
-  }
-}
-
-//-------------------------------------------------------------------------------------------------
-
-glm::vec2 CTexture::GetColorCenterCoordinates(std::uint32_t uiColor)
-{
-  int iPaletteIndex = m_iNumTiles - NUM_PALETTE_TILES - NUM_TRANSPARENT_TILES;
-
-  int iPaletteX = uiColor / 16;
-  int iPaletteY = uiColor % 16;
-
-  return glm::vec2(1.0f - (float)(iPaletteX * 4 + 1) / TILE_WIDTH, ((float)iPaletteIndex * TILE_HEIGHT + iPaletteY * 4 + 1) / (float)(m_iNumTiles * TILE_HEIGHT));
-}
-
-//-------------------------------------------------------------------------------------------------
-
 std::uint8_t *CTexture::GenerateBitmapData(int &iSize) const
 {
   iSize = (4 * TILE_WIDTH * TILE_HEIGHT * m_iNumTiles);
@@ -209,30 +157,6 @@ int CTexture::GetNumTiles() const
 
 //-------------------------------------------------------------------------------------------------
 
-glm::vec4 CTexture::RandomColor()
-{
-  glm::vec4 ret;
-  ret.r = rand() / (float)RAND_MAX;
-  ret.b = rand() / (float)RAND_MAX;
-  ret.g = rand() / (float)RAND_MAX;
-  ret.a = 1.0f;
-  return ret;
-}
-
-//-------------------------------------------------------------------------------------------------
-
-glm::vec4 CTexture::ColorBytesToFloat(const glm::vec3 &color)
-{
-  glm::vec4 ret;
-  ret.r = (float)color.r / 255.0f;
-  ret.g = (float)color.g / 255.0f;
-  ret.b = (float)color.b / 255.0f;
-  ret.a = 1.0f;
-  return ret;
-}
-
-//-------------------------------------------------------------------------------------------------
-
 bool CTexture::ProcessTextureData(const std::uint8_t *pData, size_t length)
 {
   if (!m_pPalette) {
@@ -253,10 +177,11 @@ bool CTexture::ProcessTextureData(const std::uint8_t *pData, size_t length)
     for (int j = 0; j < iPixelsPerTile; ++j) {
       std::uint8_t byPaletteIndex = pData[i * iPixelsPerTile + j];
       if (PALETTE_SIZE > byPaletteIndex) {
-        pTile->data[j % TILE_WIDTH][j / TILE_WIDTH] = glm::vec<4, std::uint8_t>(m_pPalette->m_paletteAy[byPaletteIndex].r,
-                                                                         m_pPalette->m_paletteAy[byPaletteIndex].g,
-                                                                         m_pPalette->m_paletteAy[byPaletteIndex].b,
-                                                                         byPaletteIndex ? 255 : 0);
+        pTile->data[j % TILE_WIDTH][j / TILE_WIDTH] =
+            tTextureColor{m_pPalette->m_paletteAy[byPaletteIndex].r,
+                          m_pPalette->m_paletteAy[byPaletteIndex].g,
+                          m_pPalette->m_paletteAy[byPaletteIndex].b,
+                          static_cast<std::uint8_t>(byPaletteIndex ? 255 : 0)};
       } else {
         assert(0);
         Logging::LogMessage("Error loading texture: palette index out of bounds");
@@ -277,10 +202,10 @@ bool CTexture::ProcessTextureData(const std::uint8_t *pData, size_t length)
         int iPaletteIndex = iTileX / 4 + i * 16;
         if (PALETTE_SIZE > iPaletteIndex) {
           pPaletteTile->data[iTileX][iTileY] =
-            glm::vec<4, std::uint8_t>(m_pPalette->m_paletteAy[iPaletteIndex].r,
-                               m_pPalette->m_paletteAy[iPaletteIndex].g,
-                               m_pPalette->m_paletteAy[iPaletteIndex].b,
-                               255);
+              tTextureColor{m_pPalette->m_paletteAy[iPaletteIndex].r,
+                            m_pPalette->m_paletteAy[iPaletteIndex].g,
+                            m_pPalette->m_paletteAy[iPaletteIndex].b,
+                            255};
         }
       }
     }
@@ -320,94 +245,24 @@ void CTexture::FlipTileLines(const tTile *pSource, tTile *pDest, int iNumTiles) 
 
 //-------------------------------------------------------------------------------------------------
 
-void CTexture::ApplyTexCoords(glm::vec2 &topLeft,
-                              glm::vec2 &topRight,
-                              glm::vec2 &bottomLeft,
-                              glm::vec2 &bottomRight,
-                              std::uint32_t uiTexIndex, std::uint32_t uiTexIncVal,
-                              bool bFlipHoriz, bool bFlipVert)
+tTextureColor CTexture::GetTranspColor(int iTranspIndex)
 {
-  if (!bFlipHoriz && !bFlipVert) {
-    topLeft = glm::vec2(1.0f, (float)uiTexIndex / (float)m_iNumTiles);
-    topRight = glm::vec2(1.0f, (float)(uiTexIndex + uiTexIncVal) / (float)m_iNumTiles);
-    bottomLeft = glm::vec2(0.0f, (float)uiTexIndex / (float)m_iNumTiles);
-    bottomRight = glm::vec2(0.0f, (float)(uiTexIndex + uiTexIncVal) / (float)m_iNumTiles);
-  } else if (bFlipHoriz && !bFlipVert) {
-    topLeft = glm::vec2(1.0f, (float)(uiTexIndex + uiTexIncVal) / (float)m_iNumTiles);
-    topRight = glm::vec2(1.0f, (float)uiTexIndex / (float)m_iNumTiles);
-    bottomLeft = glm::vec2(0.0f, (float)(uiTexIndex + uiTexIncVal) / (float)m_iNumTiles);
-    bottomRight = glm::vec2(0.0f, (float)uiTexIndex / (float)m_iNumTiles);
-  } else if (!bFlipHoriz && bFlipVert) {
-    topLeft = glm::vec2(0.0f, (float)uiTexIndex / (float)m_iNumTiles);
-    topRight = glm::vec2(0.0f, (float)(uiTexIndex + uiTexIncVal) / (float)m_iNumTiles);
-    bottomLeft = glm::vec2(1.0f, (float)uiTexIndex / (float)m_iNumTiles);
-    bottomRight = glm::vec2(1.0f, (float)(uiTexIndex + uiTexIncVal) / (float)m_iNumTiles);
-  } else if (bFlipHoriz && bFlipVert) {
-    topLeft = glm::vec2(0.0f, (float)(uiTexIndex + uiTexIncVal) / (float)m_iNumTiles);
-    topRight = glm::vec2(0.0f, (float)uiTexIndex / (float)m_iNumTiles);
-    bottomLeft = glm::vec2(1.0f, (float)(uiTexIndex + uiTexIncVal) / (float)m_iNumTiles);
-    bottomRight = glm::vec2(1.0f, (float)uiTexIndex / (float)m_iNumTiles);
-  }
-}
-
-//-------------------------------------------------------------------------------------------------
-
-void CTexture::ApplyColor(glm::vec2 &topLeft,
-                          glm::vec2 &topRight,
-                          glm::vec2 &bottomLeft,
-                          glm::vec2 &bottomRight,
-                          std::uint32_t uiTexIndex)
-{
-  int iPaletteIndex = m_iNumTiles - NUM_PALETTE_TILES - NUM_TRANSPARENT_TILES;
-
-  int iPaletteX = uiTexIndex / 16;
-  int iPaletteY = uiTexIndex % 16;
-
-  topLeft     = glm::vec2(1.0f - (float)(iPaletteX * 4 + 1) / TILE_WIDTH, ((float)iPaletteIndex * TILE_HEIGHT + iPaletteY * 4 + 1) / (float)(m_iNumTiles * TILE_HEIGHT));
-  topRight    = glm::vec2(1.0f - (float)(iPaletteX * 4 + 1) / TILE_WIDTH, ((float)iPaletteIndex * TILE_HEIGHT + iPaletteY * 4 + 3) / (float)(m_iNumTiles * TILE_HEIGHT));
-  bottomLeft  = glm::vec2(1.0f - (float)(iPaletteX * 4 + 3) / TILE_WIDTH, ((float)iPaletteIndex * TILE_HEIGHT + iPaletteY * 4 + 1) / (float)(m_iNumTiles * TILE_HEIGHT));
-  bottomRight = glm::vec2(1.0f - (float)(iPaletteX * 4 + 3) / TILE_WIDTH, ((float)iPaletteIndex * TILE_HEIGHT + iPaletteY * 4 + 3) / (float)(m_iNumTiles * TILE_HEIGHT));
-}
-
-//-------------------------------------------------------------------------------------------------
-
-void CTexture::ApplyTransparency(glm::vec2 &topLeft,
-                                 glm::vec2 &topRight,
-                                 glm::vec2 &bottomLeft,
-                                 glm::vec2 &bottomRight,
-                                 std::uint32_t uiTexIndex)
-{
-  int iTranspIndex = m_iNumTiles - NUM_TRANSPARENT_TILES;
-
-  int iTranspX = uiTexIndex / 16;
-  int iTranspY = uiTexIndex % 16;
-
-  topLeft     = glm::vec2(1.0f - (float)(iTranspX * 4 + 1) / TILE_WIDTH, ((float)iTranspIndex * TILE_HEIGHT + iTranspY * 4 + 1) / (float)(m_iNumTiles * TILE_HEIGHT));
-  topRight    = glm::vec2(1.0f - (float)(iTranspX * 4 + 1) / TILE_WIDTH, ((float)iTranspIndex * TILE_HEIGHT + iTranspY * 4 + 3) / (float)(m_iNumTiles * TILE_HEIGHT));
-  bottomLeft  = glm::vec2(1.0f - (float)(iTranspX * 4 + 3) / TILE_WIDTH, ((float)iTranspIndex * TILE_HEIGHT + iTranspY * 4 + 1) / (float)(m_iNumTiles * TILE_HEIGHT));
-  bottomRight = glm::vec2(1.0f - (float)(iTranspX * 4 + 3) / TILE_WIDTH, ((float)iTranspIndex * TILE_HEIGHT + iTranspY * 4 + 3) / (float)(m_iNumTiles * TILE_HEIGHT));
-}
-
-//-------------------------------------------------------------------------------------------------
-
-glm::vec<4, std::uint8_t> CTexture::GetTranspColor(int iTranspIndex)
-{
-  glm::vec<4, std::uint8_t> color(0, 0, 0, 0);
+  tTextureColor color{0, 0, 0, 0};
   switch (iTranspIndex) {
     case 0:
-      color = glm::vec<4, std::uint8_t>(0, 0, 0, 255);
+      color = tTextureColor{0, 0, 0, 255};
       break;
     case 1:
-      color = glm::vec<4, std::uint8_t>(0, 0, 0, 64);
+      color = tTextureColor{0, 0, 0, 64};
       break;
     case 2:
-      color = glm::vec<4, std::uint8_t>(0, 0, 0, 128);
+      color = tTextureColor{0, 0, 0, 128};
       break;
     case 3:
-      color = glm::vec<4, std::uint8_t>(0, 0, 0, 192);
+      color = tTextureColor{0, 0, 0, 192};
       break;
     case 4:
-      color = glm::vec<4, std::uint8_t>(0, 0, 255, 64);
+      color = tTextureColor{0, 0, 255, 64};
       break;
   }
   return color;
