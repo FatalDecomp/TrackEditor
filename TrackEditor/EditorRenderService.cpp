@@ -1,12 +1,14 @@
 #include "EditorRenderService.h"
 
 #include <QByteArray>
+#include <QDir>
 #include <QFile>
 #include <QMetaObject>
 #include <QMutex>
 #include <QMutexLocker>
 #include <QPointer>
 #include <QThread>
+#include <QTemporaryFile>
 #include <QWaitCondition>
 
 #include <algorithm>
@@ -141,6 +143,32 @@ private:
     Result.sErrorText = CopyFacadeError();
   }
 
+  void QueryFailedLoadEpoch(tEdRenderResult &Result)
+  {
+    tEdGeometrySizes FailedSizes = {};
+    FailedSizes.uiStructSize = sizeof(FailedSizes);
+    FailedSizes.uiVersion = ROLLER_ED_GEOMETRY_SIZES_VERSION;
+    AssertWorkerThread("RollerEd_QueryGeometrySizes after failed load");
+    if (RollerEd_QueryGeometrySizes(&FailedSizes) == ROLLER_ED_RESULT_OK)
+      Result.Tag.uiActualGeometryEpoch = FailedSizes.uiGeometryEpoch;
+  }
+
+  void SetSerializedTrackFailure(tEdRenderResult &Result,
+                                 const tEdRenderRequest &Request,
+                                 const std::string &sErrorText)
+  {
+    Result.Tag.eResult = ROLLER_ED_RESULT_LOAD_FAILED;
+    Result.bLoadFailed = true;
+    Result.sErrorText = sErrorText;
+
+    // A host-side temporary-file failure has the same scene semantics as a
+    // failed facade load: the worker scene must not keep an older document.
+    AssertWorkerThread("RollerEd_UnloadTrack after serialized load failure");
+    RollerEd_UnloadTrack();
+    QueryFailedLoadEpoch(Result);
+    m_ullActiveDocumentId = Request.Tag.ullDocumentId;
+  }
+
   bool QueryGeometry(tEdRenderResult &Result, tEdGeometrySizes &Sizes)
   {
     Sizes = {};
@@ -165,19 +193,54 @@ private:
     Result.Tag.ullDocumentRevision = Request.Tag.ullDocumentRevision;
     Result.Tag.eResult = ROLLER_ED_RESULT_OK;
 
+    const bool bLoadCommand = Request.eKind
+        != eEdRenderCommandKind::RENDER_ONLY;
     if (m_eInitResult != ROLLER_ED_RESULT_OK) {
       Result.Tag.eResult = m_eInitResult;
-      Result.bLoadFailed = Request.eKind
-          == eEdRenderCommandKind::LOAD_AND_RENDER;
+      Result.bLoadFailed = bLoadCommand;
       Result.sErrorText = m_sInitError;
       return Result;
     }
 
     tEdGeometrySizes Sizes = {};
-    if (Request.eKind == eEdRenderCommandKind::LOAD_AND_RENDER) {
+    QTemporaryFile TemporaryTrack;
+    std::string sTrackPath = Request.sTrackPath;
+    if (Request.eKind
+        == eEdRenderCommandKind::LOAD_SERIALIZED_AND_RENDER) {
+      TemporaryTrack.setFileTemplate(
+          QDir::temp().filePath("TrackEditor-render-XXXXXX.TRK"));
+      if (!TemporaryTrack.open()) {
+        SetSerializedTrackFailure(
+            Result, Request,
+            std::string("could not create temporary track: ")
+                + TemporaryTrack.errorString().toStdString());
+        return Result;
+      }
+
+      const size_t uiDataSize = Request.SerializedTrackData.size();
+      if (uiDataSize
+              > static_cast<size_t>(std::numeric_limits<qint64>::max())
+          || TemporaryTrack.write(
+                 reinterpret_cast<const char *>(
+                     Request.SerializedTrackData.data()),
+                 static_cast<qint64>(uiDataSize))
+              != static_cast<qint64>(uiDataSize)
+          || !TemporaryTrack.flush()) {
+        SetSerializedTrackFailure(
+            Result, Request,
+            std::string("could not write temporary track: ")
+                + TemporaryTrack.errorString().toStdString());
+        return Result;
+      }
+
+      sTrackPath = EncodePath(TemporaryTrack.fileName());
+      TemporaryTrack.close();
+    }
+
+    if (bLoadCommand) {
       AssertWorkerThread("RollerEd_LoadTrackFile");
       const eRollerEdResult eLoadResult = RollerEd_LoadTrackFile(
-          Request.sTrackPath.c_str(), Request.sDocumentAssetRoot.c_str());
+          sTrackPath.c_str(), Request.sDocumentAssetRoot.c_str());
       if (eLoadResult != ROLLER_ED_RESULT_OK) {
         Result.Tag.eResult = eLoadResult;
         Result.bLoadFailed = true;
@@ -185,12 +248,7 @@ private:
 
         // The failed load has already advanced the actual geometry epoch. Preserve
         // the copied load error before this next facade call invalidates its pointer.
-        tEdGeometrySizes FailedSizes = {};
-        FailedSizes.uiStructSize = sizeof(FailedSizes);
-        FailedSizes.uiVersion = ROLLER_ED_GEOMETRY_SIZES_VERSION;
-        AssertWorkerThread("RollerEd_QueryGeometrySizes after failed load");
-        if (RollerEd_QueryGeometrySizes(&FailedSizes) == ROLLER_ED_RESULT_OK)
-          Result.Tag.uiActualGeometryEpoch = FailedSizes.uiGeometryEpoch;
+        QueryFailedLoadEpoch(Result);
         m_ullActiveDocumentId = Request.Tag.ullDocumentId;
         return Result;
       }
@@ -352,6 +410,34 @@ uint64_t CEditorRenderService::EnqueueLoadAndRender(
   Request.eKind = eEdRenderCommandKind::LOAD_AND_RENDER;
   Request.sTrackPath = EncodePath(sTrackPath);
   Request.sDocumentAssetRoot = EncodePath(sDocumentAssetRoot);
+  Request.Camera = Camera;
+  Request.bHasCamera = true;
+  Request.uiWidth = static_cast<uint32_t>(NormalizedSize.width());
+  Request.uiHeight = static_cast<uint32_t>(NormalizedSize.height());
+  Request.dDevicePixelRatio = dDevicePixelRatio;
+  const uint64_t ullRequestId = Request.Tag.ullRequestId;
+  m_pThread->Enqueue(std::move(Request));
+  return ullRequestId;
+}
+
+uint64_t CEditorRenderService::EnqueueSerializedLoadAndRender(
+    uint64_t ullDocumentId, uint64_t ullDocumentRevision,
+    const std::vector<uint8_t> &SerializedTrackData,
+    const QString &sDocumentAssetRoot, const QSize &DevicePixelSize,
+    double dDevicePixelRatio, const tEdCameraState &Camera)
+{
+  Q_ASSERT(QThread::currentThread() == thread());
+  if (!IsDocumentRegistered(ullDocumentId))
+    return 0;
+
+  const QSize NormalizedSize = NormalizeDevicePixelSize(DevicePixelSize);
+  tEdRenderRequest Request;
+  Request.Tag.ullRequestId = CEditorRenderIds::NextRequestId();
+  Request.Tag.ullDocumentId = ullDocumentId;
+  Request.Tag.ullDocumentRevision = ullDocumentRevision;
+  Request.eKind = eEdRenderCommandKind::LOAD_SERIALIZED_AND_RENDER;
+  Request.sDocumentAssetRoot = EncodePath(sDocumentAssetRoot);
+  Request.SerializedTrackData = SerializedTrackData;
   Request.Camera = Camera;
   Request.bHasCamera = true;
   Request.uiWidth = static_cast<uint32_t>(NormalizedSize.width());

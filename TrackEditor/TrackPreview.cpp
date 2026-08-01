@@ -74,6 +74,8 @@ CTrackPreview::CTrackPreview(QWidget *pParent,
   , m_FrameState(m_ullDocumentId)
   , m_Camera{}
   , m_pResizeTimer(new QTimer(this))
+  , m_pEditTimer(new QTimer(this))
+  , m_bReloadPending(false)
 {
   p = new CTrackPreviewPrivate;
 
@@ -87,6 +89,11 @@ CTrackPreview::CTrackPreview(QWidget *pParent,
   connect(m_pResizeTimer, &QTimer::timeout,
           this, &CTrackPreview::QueueResizeRender);
 
+  m_pEditTimer->setSingleShot(true);
+  m_pEditTimer->setInterval(100);
+  connect(m_pEditTimer, &QTimer::timeout,
+          this, &CTrackPreview::QueueEditedTrackReload);
+
   m_Camera.uiStructSize = sizeof(m_Camera);
   m_Camera.uiVersion = ROLLER_ED_CAMERA_STATE_VERSION;
   m_Camera.fPosition[0] = -4000.0f;
@@ -96,6 +103,7 @@ CTrackPreview::CTrackPreview(QWidget *pParent,
   m_Camera.fPitchDegrees = -25.0f;
 
   if (!sTrackFile.isEmpty()) {
+    m_sDocumentAssetRoot = QFileInfo(sTrackFile).absolutePath();
     p->m_track.m_sTrackFileFolder = sTrackFile.left(sTrackFile.lastIndexOf(QDir::separator()) + 1).toLatin1().constData();
   }
 
@@ -129,6 +137,7 @@ void CTrackPreview::UpdateCameraPos()
 bool CTrackPreview::LoadTrack(const QString &sFilename)
 {
   m_sTrackFile = sFilename;
+  m_sDocumentAssetRoot = QFileInfo(sFilename).absolutePath();
   const QByteArray EncodedFilename = QFile::encodeName(sFilename);
   bool bSuccess = p->m_track.LoadTrack(EncodedFilename.constData());
   if (bSuccess) {
@@ -357,22 +366,41 @@ QSize CTrackPreview::DevicePixelSize() const
 
 void CTrackPreview::QueueLoadAndRender()
 {
-  if (!m_pRenderService || m_sTrackFile.isEmpty() || m_bUnsavedChanges)
+  if (!m_pRenderService || m_sTrackFile.isEmpty())
     return;
 
-  const QString sAssetRoot = QFileInfo(m_sTrackFile).absolutePath();
-  const uint64_t ullRequestId = m_pRenderService->EnqueueLoadAndRender(
-      m_ullDocumentId, m_FrameState.GetDocumentRevision(), m_sTrackFile,
-      sAssetRoot, DevicePixelSize(), devicePixelRatioF(), m_Camera);
-  if (ullRequestId != 0)
+  // GetTrackData serializes the current model through CTrack::WriteToVector.
+  // The worker owns this snapshot before materializing its temporary .TRK.
+  std::vector<uint8> TrackData;
+  p->m_track.GetTrackData(TrackData);
+  const std::vector<uint8_t> SerializedTrackData(
+      TrackData.begin(), TrackData.end());
+  const uint64_t ullRequestId =
+      m_pRenderService->EnqueueSerializedLoadAndRender(
+          m_ullDocumentId, m_FrameState.GetDocumentRevision(),
+          SerializedTrackData, m_sDocumentAssetRoot, DevicePixelSize(),
+          devicePixelRatioF(), m_Camera);
+  if (ullRequestId != 0) {
+    m_bReloadPending = true;
     m_FrameState.BeginRequest(ullRequestId);
+  }
+}
+
+//-------------------------------------------------------------------------------------------------
+
+void CTrackPreview::QueueEditedTrackReload()
+{
+  // The tab may have become hidden while the debounce timer was active. Only
+  // the visible document may replace the process-wide worker scene.
+  if (isVisible())
+    QueueLoadAndRender();
 }
 
 //-------------------------------------------------------------------------------------------------
 
 void CTrackPreview::QueueResizeRender()
 {
-  if (!m_pRenderService || m_bUnsavedChanges)
+  if (!m_pRenderService || m_bReloadPending)
     return;
 
   if (m_FrameState.GetDisplayState() == eEdFrameDisplayState::CURRENT) {
@@ -383,7 +411,8 @@ void CTrackPreview::QueueResizeRender()
     if (ullRequestId != 0)
       m_FrameState.BeginRequest(ullRequestId);
   } else if (m_FrameState.GetDisplayState()
-             == eEdFrameDisplayState::PLACEHOLDER) {
+                 == eEdFrameDisplayState::PLACEHOLDER
+             && m_FrameState.GetLatestRequestId() == 0) {
     QueueLoadAndRender();
   }
 }
@@ -397,6 +426,8 @@ void CTrackPreview::OnRenderCompleted(const tEdRenderResult &Result)
   if (!m_FrameState.ApplyResult(Result))
     return;
 
+  m_bReloadPending = Result.Tag.eResult != ROLLER_ED_RESULT_OK;
+
   update();
   emit FrameStateChanged();
 }
@@ -405,6 +436,7 @@ void CTrackPreview::OnRenderCompleted(const tEdRenderResult &Result)
 
 void CTrackPreview::Activate()
 {
+  m_pEditTimer->stop();
   QueueLoadAndRender();
 }
 
@@ -413,6 +445,10 @@ void CTrackPreview::Activate()
 void CTrackPreview::MarkDocumentEdited()
 {
   m_FrameState.MarkDocumentEdited();
+  m_bReloadPending = true;
+  m_pResizeTimer->stop();
+  if (isVisible())
+    m_pEditTimer->start();
 }
 
 //-------------------------------------------------------------------------------------------------

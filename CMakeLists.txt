@@ -42,6 +42,11 @@ if(BUILD_TESTING)
             COMMAND "${Python3_EXECUTABLE}"
                     "${CMAKE_CURRENT_SOURCE_DIR}/tests/test_e3_s1_render_worker.py"
                     -v)
+        add_test(
+            NAME trackeditor-e3-s2-edit-display-contract
+            COMMAND "${Python3_EXECUTABLE}"
+                    "${CMAKE_CURRENT_SOURCE_DIR}/tests/test_e3_s2_edit_display.py"
+                    -v)
     endif()
 
     if(TARGET TrackEditor)

@@ -92,6 +92,7 @@ private:
   bool SaveTrack_Internal(const QString &sFilename);
   void UpdateReferenceModelPos_Internal();
   void QueueLoadAndRender();
+  void QueueEditedTrackReload();
   void QueueResizeRender();
   void OnRenderCompleted(const tEdRenderResult &Result);
   QSize DevicePixelSize() const;
@@ -105,6 +106,7 @@ private:
   int m_iScale;
   bool m_bAlreadySaved;
   QString m_sTrackFile;
+  QString m_sDocumentAssetRoot;
   QString m_sLastCarTex;
   int m_iHistoryIndex;
   CEditorRenderService *m_pRenderService;
@@ -112,6 +114,8 @@ private:
   CDocumentFrameState m_FrameState;
   tEdCameraState m_Camera;
   QTimer *m_pResizeTimer;
+  QTimer *m_pEditTimer;
+  bool m_bReloadPending;
 };
 
 //-------------------------------------------------------------------------------------------------

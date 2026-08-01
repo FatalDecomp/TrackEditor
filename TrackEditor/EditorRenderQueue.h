@@ -7,6 +7,7 @@
 
 #include <cstdint>
 #include <string>
+#include <vector>
 
 enum
 {
@@ -34,6 +35,7 @@ typedef struct
 enum class eEdRenderCommandKind
 {
   LOAD_AND_RENDER,
+  LOAD_SERIALIZED_AND_RENDER,
   RENDER_ONLY
 };
 
@@ -43,6 +45,7 @@ struct tEdRenderRequest
   eEdRenderCommandKind eKind = eEdRenderCommandKind::RENDER_ONLY;
   std::string sTrackPath;
   std::string sDocumentAssetRoot;
+  std::vector<uint8_t> SerializedTrackData;
   tEdCameraState Camera = {};
   bool bHasCamera = false;
   uint32_t uiWidth = 0;

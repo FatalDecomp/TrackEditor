@@ -3,6 +3,7 @@
 
 #include <QCoreApplication>
 #include <QEventLoop>
+#include <QFile>
 #include <QThread>
 #include <QTimer>
 
@@ -13,6 +14,7 @@
 #include <cstring>
 #include <iostream>
 #include <string>
+#include <vector>
 
 #ifdef assert
 #undef assert
@@ -31,9 +33,11 @@ namespace
 std::string g_sError;
 std::string g_sLoadedTrackPath;
 std::string g_sLoadedAssetRoot;
+std::string g_sLoadedTrackData;
 float g_fCameraX = 0.0f;
 uint32_t g_uiGeometryEpoch = 0;
 uint32_t g_uiSceneState = ROLLER_ED_SCENE_EMPTY;
+std::atomic<uint32_t> g_uiInitCount(0);
 std::atomic<uint32_t> g_uiRenderCount(0);
 Qt::HANDLE g_pWorkerThreadId = nullptr;
 Qt::HANDLE g_pUiThreadId = nullptr;
@@ -83,6 +87,7 @@ extern "C" eRollerEdResult ROLLER_ED_CALL RollerEd_Init(
   RecordFacadeThread();
   assert(pInfo);
   assert(std::string(pInfo->szAssetRoot) == "test-assets");
+  ++g_uiInitCount;
   return ROLLER_ED_RESULT_OK;
 }
 
@@ -98,14 +103,29 @@ extern "C" eRollerEdResult ROLLER_ED_CALL RollerEd_LoadTrackFile(
   RecordFacadeThread();
   g_sLoadedTrackPath = szTrackPath ? szTrackPath : "";
   g_sLoadedAssetRoot = szDocumentAssetRoot ? szDocumentAssetRoot : "";
+  g_sLoadedTrackData.clear();
+  QFile TrackFile(QString::fromLocal8Bit(g_sLoadedTrackPath.c_str()));
+  if (TrackFile.open(QIODevice::ReadOnly)) {
+    const QByteArray Data = TrackFile.readAll();
+    g_sLoadedTrackData.assign(Data.constData(),
+                              static_cast<size_t>(Data.size()));
+  }
   ++g_uiGeometryEpoch;
-  if (g_sLoadedTrackPath == "fail.trk") {
+  if (g_sLoadedTrackPath == "fail.trk" || g_sLoadedTrackData == "FAIL") {
     g_uiSceneState = ROLLER_ED_SCENE_FAILED;
     g_sError = "copied load error";
     return ROLLER_ED_RESULT_LOAD_FAILED;
   }
   g_uiSceneState = ROLLER_ED_SCENE_READY;
   g_sError.clear();
+  return ROLLER_ED_RESULT_OK;
+}
+
+extern "C" eRollerEdResult ROLLER_ED_CALL RollerEd_UnloadTrack(void)
+{
+  RecordFacadeThread();
+  ++g_uiGeometryEpoch;
+  g_uiSceneState = ROLLER_ED_SCENE_EMPTY;
   return ROLLER_ED_RESULT_OK;
 }
 
@@ -193,33 +213,86 @@ int main(int argc, char **argv)
   assert(Document.ApplyResult(GoodResult));
   assert(Document.CanExport());
 
-  const uint64_t ullFailedRequest = Service.EnqueueLoadAndRender(
-      Document.GetDocumentId(), Document.GetDocumentRevision(), "fail.trk",
-      "document-assets", QSize(4, 3), 1.0, Camera);
+  std::vector<uint8_t> EditedTrackData = {'E', 'D', 'I', 'T'};
+  const uint64_t ullEditedRequest = Service.EnqueueSerializedLoadAndRender(
+      Document.GetDocumentId(), Document.GetDocumentRevision(), EditedTrackData,
+      "original-document-assets", QSize(4, 3), 1.0, Camera);
+  Document.BeginRequest(ullEditedRequest);
+  EditedTrackData.assign({'M', 'U', 'T', 'A', 'T', 'E', 'D'});
+  const tEdRenderResult EditedResult = WaitForResult(Service, ullEditedRequest);
+  const QString sEditedTemporaryTrack =
+      QString::fromLocal8Bit(g_sLoadedTrackPath.c_str());
+  assert(sEditedTemporaryTrack.endsWith(".TRK"));
+  assert(g_sLoadedTrackData == "EDIT");
+  assert(g_sLoadedAssetRoot == "original-document-assets");
+  assert(!QFile::exists(sEditedTemporaryTrack));
+  assert(EditedResult.Tag.eResult == ROLLER_ED_RESULT_OK);
+  assert(Document.ApplyResult(EditedResult));
+  assert(Document.CanExport());
+
+  const std::vector<uint8_t> InvalidTrackData = {'F', 'A', 'I', 'L'};
+  const uint64_t ullFailedRequest = Service.EnqueueSerializedLoadAndRender(
+      Document.GetDocumentId(), Document.GetDocumentRevision(),
+      InvalidTrackData, "original-document-assets", QSize(4, 3), 1.0,
+      Camera);
   Document.BeginRequest(ullFailedRequest);
   const tEdRenderResult FailedResult = WaitForResult(Service, ullFailedRequest);
+  const QString sFailedTemporaryTrack =
+      QString::fromLocal8Bit(g_sLoadedTrackPath.c_str());
   assert(FailedResult.Tag.eResult == ROLLER_ED_RESULT_LOAD_FAILED);
   assert(FailedResult.sErrorText == "copied load error");
   assert(g_sError == "a later facade call replaced the error buffer");
+  assert(!QFile::exists(sFailedTemporaryTrack));
   assert(Document.ApplyResult(FailedResult));
   assert(Document.GetDisplayState()
       == eEdFrameDisplayState::STALE_AFTER_LOAD_FAILURE);
   assert(!Document.CanExport());
 
+  const std::vector<uint8_t> RecoveredTrackData = {'R', 'E', 'C', 'O', 'V', 'E', 'R'};
+  const uint64_t ullRecoveredRequest = Service.EnqueueSerializedLoadAndRender(
+      Document.GetDocumentId(), Document.GetDocumentRevision(),
+      RecoveredTrackData, "original-document-assets", QSize(4, 3), 1.0,
+      Camera);
+  Document.BeginRequest(ullRecoveredRequest);
+  const tEdRenderResult RecoveredResult =
+      WaitForResult(Service, ullRecoveredRequest);
+  assert(RecoveredResult.Tag.eResult == ROLLER_ED_RESULT_OK);
+  assert(Document.ApplyResult(RecoveredResult));
+  assert(Document.GetDisplayState() == eEdFrameDisplayState::CURRENT);
+  assert(Document.CanExport());
+
   const uint32_t uiRenderCountBeforeStaleRequest = g_uiRenderCount.load();
   const uint64_t ullStaleRequest = Service.EnqueueRender(
-      Document.GetDocumentId(), Document.GetDocumentRevision(), 1,
+      Document.GetDocumentId(), Document.GetDocumentRevision(),
+      Document.GetInstalledGeometryEpoch() - 1,
       QSize(4, 3), 1.0, Camera);
   Document.BeginRequest(ullStaleRequest);
   const tEdRenderResult StaleResult = WaitForResult(Service, ullStaleRequest);
   assert(StaleResult.Tag.eResult == ROLLER_ED_RESULT_STALE);
   assert(g_uiRenderCount.load() == uiRenderCountBeforeStaleRequest);
 
+  CDocumentFrameState TabB(CEditorRenderIds::NextDocumentId());
+  Service.RegisterDocument(TabB.GetDocumentId());
+  const std::vector<uint8_t> TabBTrackData = {'T', 'A', 'B', 'B'};
+  const uint64_t ullTabBRequest = Service.EnqueueSerializedLoadAndRender(
+      TabB.GetDocumentId(), TabB.GetDocumentRevision(), TabBTrackData,
+      "tab-b-document-assets", QSize(4, 3), 1.0, Camera);
+  TabB.BeginRequest(ullTabBRequest);
+  const tEdRenderResult TabBResult = WaitForResult(Service, ullTabBRequest);
+  assert(g_sLoadedTrackData == "TABB");
+  assert(g_sLoadedAssetRoot == "tab-b-document-assets");
+  assert(TabB.ApplyResult(TabBResult));
+  assert(TabB.CanExport());
+  assert(g_uiInitCount.load() == 1);
+
+  Service.InvalidateDocument(TabB.GetDocumentId());
+  TabB.Invalidate();
   Service.InvalidateDocument(Document.GetDocumentId());
   Document.Invalidate();
   Service.Stop();
   assert(g_bAllFacadeCallsOnWorker.load());
+  assert(g_uiInitCount.load() == 1);
 
-  std::cout << "E3-S1 editor render service tests passed\n";
+  std::cout << "E3-S1/S2 editor render service tests passed\n";
   return 0;
 }

@@ -9,6 +9,7 @@
 
 #include <cstdint>
 #include <unordered_set>
+#include <vector>
 
 class CEditorRenderThread;
 
@@ -32,6 +33,14 @@ public:
                                 const QSize &DevicePixelSize,
                                 double dDevicePixelRatio,
                                 const tEdCameraState &Camera);
+  uint64_t EnqueueSerializedLoadAndRender(
+      uint64_t ullDocumentId,
+      uint64_t ullDocumentRevision,
+      const std::vector<uint8_t> &SerializedTrackData,
+      const QString &sDocumentAssetRoot,
+      const QSize &DevicePixelSize,
+      double dDevicePixelRatio,
+      const tEdCameraState &Camera);
   uint64_t EnqueueRender(uint64_t ullDocumentId,
                          uint64_t ullDocumentRevision,
                          uint32_t uiExpectedGeometryEpoch,
