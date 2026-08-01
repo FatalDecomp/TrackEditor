@@ -13,7 +13,12 @@
 #include "ShapeData.h"
 #include "ShapeFactory.h"
 #include "Texture.h"
+#ifndef WHIPLIB_ENABLE_FBX
+#define WHIPLIB_ENABLE_FBX 1
+#endif
+#if WHIPLIB_ENABLE_FBX
 #include "FBXExporter.h"
+#endif
 #include "ObjExporter.h"
 #include "ObjImporter.h"
 #include "CarHelpers.h"
@@ -968,6 +973,7 @@ bool CTrackPreview::Export(eExportType exportType)
   bool bExported = false;
   switch (exportType) {
     case eExportType::EXPORT_FBX:
+#if WHIPLIB_ENABLE_FBX
       bExported = CFBXExporter::GetFBXExporter().ExportTrack(trackSectionAy,
                                                              signAy,
                                                              signBackAy,
@@ -975,6 +981,10 @@ bool CTrackPreview::Export(eExportType exportType)
                                                              sFilename.toLatin1().constData(),
                                                              sTexFile.toLatin1().constData(),
                                                              sSignTexFile.toLatin1().constData());
+#else
+      QMessageBox::warning(this, "FBX export unavailable", "This build was compiled without Autodesk FBX SDK support.");
+      bExported = false;
+#endif
       break;
     case eExportType::EXPORT_OBJ:
       bExported = CObjExporter::GetObjExporter().ExportTrack(trackSectionAy,

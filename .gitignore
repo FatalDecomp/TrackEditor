@@ -394,6 +394,9 @@ FodyWeavers.xsd
 /TrackEditor/TrackEditor.pro
 /TrackEditor/lmoc
 /TrackEditor/lui
+/TrackEditor/lmoc-macos
+/TrackEditor/lui-macos
+/TrackEditor/lrcc-macos
 /TrackEditor/qrc_resource.cpp
 /TrackEditor/trackeditor_plugin_import.cpp
 /lib

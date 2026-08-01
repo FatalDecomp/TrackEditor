@@ -1,5 +1,10 @@
 #include "ShapeFactory.h"
+#ifndef WHIPLIB_ENABLE_FBX
+#define WHIPLIB_ENABLE_FBX 1
+#endif
+#if WHIPLIB_ENABLE_FBX
 #include "FBXExporter.h"
+#endif
 #include "ObjExporter.h"
 #include "ShapeData.h"
 #include "Texture.h"
@@ -14,7 +19,7 @@
 static void LogMessageCbStatic(const char *szMsg, int iLen)
 {
   (void)(iLen);
-  printf(szMsg);
+  printf("%s", szMsg);
   printf("\n");
 }
 
@@ -39,7 +44,7 @@ bool ExportCar(eWhipModel carModel, std::string sWhipDir, std::string sOutDir, b
   std::string sTexFile = sOutDir + "\\" + sCarName + ".png";
   carTex.ExportToPngFile(sTexFile);
   printf("Exporting ");
-  printf(sTexFile.c_str());
+  printf("%s", sTexFile.c_str());
   printf("...\n");
 
   //create shape data
@@ -57,7 +62,7 @@ bool ExportCar(eWhipModel carModel, std::string sWhipDir, std::string sOutDir, b
     sExtension = ".obj";
   std::string sFilename = sOutDir + std::string("\\") + sCarName + sExtension;
   printf("Exporting ");
-  printf(sFilename.c_str());
+  printf("%s", sFilename.c_str());
   printf("...\n");
   bool bSuccess = false;
   std::string sBackName = sCarName + " (Back)";
@@ -73,7 +78,12 @@ bool ExportCar(eWhipModel carModel, std::string sWhipDir, std::string sOutDir, b
 
     bSuccess = CObjExporter::GetObjExporter().ExportShapes(shapeAy, sFilename, sMtlFile, sCarName);
   } else {
+#if WHIPLIB_ENABLE_FBX
     bSuccess = CFBXExporter::GetFBXExporter().ExportShapes(shapeAy, sFilename.c_str(), sTexFile.c_str());
+#else
+    printf("FBX export is unavailable in this build. Rebuild with Autodesk FBX SDK support or export OBJ.\n");
+    bSuccess = false;
+#endif
   }
 
   delete pCar;
@@ -101,12 +111,12 @@ bool ExportTrack(CTrack *pTrack, std::string sOutDir, bool bObj)
   //make texture files
   std::string sTexFile = sOutDir + "\\" + sTrackName + ".png";
   printf("Exporting ");
-  printf(sTexFile.c_str());
+  printf("%s", sTexFile.c_str());
   printf("...\n");
   pTrack->m_pTex->ExportToPngFile(sTexFile);
   std::string sSignTexFile = sOutDir + "\\" + sTrackName + "_BLD.png";
   printf("Exporting ");
-  printf(sSignTexFile.c_str());
+  printf("%s", sSignTexFile.c_str());
   printf("...\n");
   pTrack->m_pBld->ExportToPngFile(sSignTexFile);
 
@@ -223,7 +233,7 @@ bool ExportTrack(CTrack *pTrack, std::string sOutDir, bool bObj)
     sExtension = ".obj";
   std::string sFilename = sOutDir + std::string("\\") + sTrackName + sExtension;
   printf("Exporting ");
-  printf(sFilename.c_str());
+  printf("%s", sFilename.c_str());
   printf("...\n");
   bool bExported = false;
   if (bObj) {
@@ -234,6 +244,7 @@ bool ExportTrack(CTrack *pTrack, std::string sOutDir, bool bObj)
                                                            sTrackName,
                                                            sFilename);
   } else {
+#if WHIPLIB_ENABLE_FBX
     bExported = CFBXExporter::GetFBXExporter().ExportTrack(trackSectionAy,
                                                            signAy,
                                                            signBackAy,
@@ -241,6 +252,10 @@ bool ExportTrack(CTrack *pTrack, std::string sOutDir, bool bObj)
                                                            sFilename.c_str(),
                                                            sTexFile.c_str(),
                                                            sSignTexFile.c_str());
+#else
+    printf("FBX export is unavailable in this build. Rebuild with Autodesk FBX SDK support or export OBJ.\n");
+    bExported = false;
+#endif
   }
 
   //cleanup
@@ -275,6 +290,10 @@ int main(int argc, char *argv[])
     bObj = true;
   } else {
     printf("type must be OBJ or FBX\n");
+    return -1;
+  }
+  if (!bObj && !WHIPLIB_ENABLE_FBX) {
+    printf("FBX export is unavailable in this build. Rebuild with Autodesk FBX SDK support or export OBJ.\n");
     return -1;
   }
   CShapeFactory::GetShapeFactory().m_bOglRunning = false;
