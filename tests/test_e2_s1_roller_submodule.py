@@ -110,6 +110,7 @@ class RollerSubmoduleTests(unittest.TestCase):
                 "-B",
                 str(build_root),
                 f"-DCMAKE_PREFIX_PATH={package_root}",
+                "-DTRACKEDITOR_BUILD_APPLICATION=OFF",
                 "-DCMAKE_DISABLE_FIND_PACKAGE_WildMidi=TRUE",
                 "-DCMAKE_DISABLE_FIND_PACKAGE_libcdio=TRUE",
             ]

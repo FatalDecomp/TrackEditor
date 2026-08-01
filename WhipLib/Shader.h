@@ -2,7 +2,7 @@
 #define _WHIPLIB_SHADER_H
 //-------------------------------------------------------------------------------------------------
 #include "Types.h"
-#include "glew.h"
+#include <GL/glew.h>
 #include "glm.hpp"
 #include <string>
 #include <unordered_map>

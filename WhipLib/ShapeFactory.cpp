@@ -1,4 +1,4 @@
-#include <glew.h>
+#include <GL/glew.h>
 #include "gtc/matrix_transform.hpp"
 #include "gtx/transform.hpp"
 #include "ShapeFactory.h"
