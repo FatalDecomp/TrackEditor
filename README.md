@@ -1,6 +1,22 @@
 # Roller Track Editor
 Whiplash/Fatal Racing track editor, OBJ and FBX resource converter, and DLL for loading Whiplash assets
 
+## ROLLER editor-core integration
+
+Clone recursively so the pinned ROLLER source is available:
+
+```sh
+git clone --recursive https://github.com/FatalDecomp/TrackEditor.git
+cd TrackEditor
+cmake -S . -B out/core
+cmake --build out/core --target roller-core
+```
+
+The top-level CMake configuration builds ROLLER's editor-facing static library
+as `ROLLER::core` with the game disabled. SDL3 and SDL3_image development
+packages must be discoverable by CMake; WildMidi and libcdio are not required.
+The Qt application remains on its legacy build until E2-S2.
+
 ## Track Editor Features: 
 * Open, render, edit, and save Whiplash tracks
 * Multiple tracks open at once in tabs
