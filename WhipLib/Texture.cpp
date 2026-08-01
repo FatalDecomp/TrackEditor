@@ -3,7 +3,7 @@
 #include <fstream>
 #include <sstream>
 #include "Unmangler.h"
-#include "glew.h"
+#include <GL/glew.h>
 #include "OpenGLDebug.h"
 #include "Vertex.h"
 #include "ShapeFactory.h"

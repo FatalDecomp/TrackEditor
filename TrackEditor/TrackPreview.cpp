@@ -1,4 +1,4 @@
-#include "glew.h"
+#include <GL/glew.h>
 #include "TrackPreview.h"
 #include "MainWindow.h"
 #include "gtc/matrix_transform.hpp"
@@ -13,7 +13,9 @@
 #include "ShapeData.h"
 #include "ShapeFactory.h"
 #include "Texture.h"
+#if TRACKEDITOR_ENABLE_FBX
 #include "FBXExporter.h"
+#endif
 #include "ObjExporter.h"
 #include "ObjImporter.h"
 #include "CarHelpers.h"
@@ -807,6 +809,11 @@ bool CTrackPreview::SaveTrackAs()
 
 bool CTrackPreview::Export(eExportType exportType)
 {
+#if !TRACKEDITOR_ENABLE_FBX
+  if (exportType == eExportType::EXPORT_FBX)
+    return false;
+#endif
+
   //get export settings
   CExportWizard exportWizard(this, exportType);
   if (!exportWizard.exec())
@@ -968,6 +975,7 @@ bool CTrackPreview::Export(eExportType exportType)
   bool bExported = false;
   switch (exportType) {
     case eExportType::EXPORT_FBX:
+#if TRACKEDITOR_ENABLE_FBX
       bExported = CFBXExporter::GetFBXExporter().ExportTrack(trackSectionAy,
                                                              signAy,
                                                              signBackAy,
@@ -975,6 +983,7 @@ bool CTrackPreview::Export(eExportType exportType)
                                                              sFilename.toLatin1().constData(),
                                                              sTexFile.toLatin1().constData(),
                                                              sSignTexFile.toLatin1().constData());
+#endif
       break;
     case eExportType::EXPORT_OBJ:
       bExported = CObjExporter::GetObjExporter().ExportTrack(trackSectionAy,

@@ -11,7 +11,7 @@
 #include <string.h>
 #include <vector>
 #include <glm.hpp>
-#include <glew.h>
+#include <GL/glew.h>
 #include "gtc/matrix_transform.hpp"
 #include "gtx/transform.hpp"
 //-------------------------------------------------------------------------------------------------

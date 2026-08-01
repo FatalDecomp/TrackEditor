@@ -1,0 +1,3 @@
+[submodule "external/ROLLER"]
+	path = external/ROLLER
+	url = https://github.com/FatalDecomp/ROLLER.git

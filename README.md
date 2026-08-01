@@ -1,11 +1,24 @@
 # Roller Track Editor
-Whiplash/Fatal Racing track editor, OBJ and FBX resource converter, and DLL for loading Whiplash assets
+Whiplash/Fatal Racing track editor, OBJ resource converter, and library for loading Whiplash assets. FBX export is an optional developer feature.
+
+## Build
+
+Clone recursively so the pinned ROLLER editor core is available:
+
+```sh
+git clone --recursive https://github.com/FatalDecomp/TrackEditor.git
+cd TrackEditor
+cmake -S . -B out/build -DTRACKEDITOR_ENABLE_FBX=OFF
+cmake --build out/build --config Release
+```
+
+The CMake build uses dynamic Qt 5.15 and system/prebuilt SDL3, SDL3_image, and GLEW packages. It builds ROLLER's `ROLLER::core` target with the game disabled, so WildMidi and libcdio are not required. See [docs/building.md](docs/building.md) for Windows, Linux, macOS, run, and optional FBX instructions.
 
 ## Track Editor Features: 
 * Open, render, edit, and save Whiplash tracks
 * Multiple tracks open at once in tabs
 * Export tracks to OBJ format
-* Export tracks to FBX format
+* Optionally export tracks to FBX format when built with a local Autodesk FBX SDK
 * Track geometry data can be edited and track chunks can be added and removed
 * Additional surface data such as grip level and AI data can be edited
 * Surface textures can be changed
@@ -18,23 +31,25 @@ Whiplash/Fatal Racing track editor, OBJ and FBX resource converter, and DLL for 
 * Fine control over Copy/Paste behavior
 * Toggle display of each individual section of track
 
-![alt text](https://github.com/Zizin13/RollerTrackEditor/blob/master/TrackEditor/images/screenshot.png)
+![Track Editor](TrackEditor/images/screenshot.png)
 
 ## ModelExporter Features:
 * Included with Track Editor releases
 * Exports all Whiplash tracks and cars to OBJ or FBX format
 
-![alt text](https://github.com/Zizin13/RollerTrackEditor/blob/master/ModelExporter/images/blender.png)
+![Model exported to Blender](ModelExporter/images/blender.png)
 
-![alt text](https://github.com/Zizin13/RollerTrackEditor/blob/master/WhipLib/images/unreal.png)
+![Model exported to Unreal](WhipLib/images/unreal.png)
 
 ## External dependencies used:
-* Qt 5.15.16: https://download.qt.io/archive/qt/5.15/5.15.16/single/
-* Glew 2.1.0: https://sourceforge.net/projects/glew/files/glew/2.1.0/
+* Dynamic Qt 5.15
+* SDL 3.2.22 or newer
+* SDL_image 3.2.4 or newer
+* GLEW 2.1.0 or newer
 * GLM 1.0.1: https://github.com/g-truc/glm
 * stb_image 2.30: https://github.com/nothings/stb
 * stb_image_write 1.16: https://github.com/nothings/stb
-* FBX 2020.3.7: https://aps.autodesk.com/developer/overview/fbx-sdk (libs are too big to include on github, must install SDK to /external/FBX)
+* Optional FBX SDK 2020.3.7 or compatible, installed outside the repository
 
 ## Remaining issues:
 - TRACK1: right wall at the end of final tunnel is shaped wrong (483-486)

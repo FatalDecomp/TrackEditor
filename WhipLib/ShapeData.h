@@ -1,7 +1,7 @@
 #ifndef _WHIPLIB_SHAPEDATA_H
 #define _WHIPLIB_SHAPEDATA_H
 //-------------------------------------------------------------------------------------------------
-#include <glew.h>
+#include <GL/glew.h>
 #include "glm.hpp"
 #include "Vertex.h"
 #include "Types.h"

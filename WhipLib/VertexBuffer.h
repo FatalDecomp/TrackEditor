@@ -1,7 +1,7 @@
 #ifndef _WHIPLIB_VERTEXBUFFER_H
 #define _WHIPLIB_VERTEXBUFFER_H
 //-------------------------------------------------------------------------------------------------
-#include "glew.h"
+#include <GL/glew.h>
 #include "Types.h"
 #include "Vertex.h"
 //-------------------------------------------------------------------------------------------------

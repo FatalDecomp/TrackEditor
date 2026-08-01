@@ -1,4 +1,4 @@
-#include <glew.h>
+#include <GL/glew.h>
 #include "OpenGLDebug.h"
 #include "ShapeData.h"
 #include "VertexBuffer.h"

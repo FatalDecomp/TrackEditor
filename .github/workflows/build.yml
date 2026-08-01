@@ -1,0 +1,110 @@
+name: Build
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  linux:
+    name: Linux (FBX disabled)
+    runs-on: ubuntu-26.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install binary dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes libglew-dev libsdl3-dev libsdl3-image-dev ninja-build
+
+      - name: Install dynamic Qt 5.15
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: '5.15.2'
+          cache: true
+
+      - name: Configure (without FBX)
+        run: >-
+          cmake -S . -B build -G Ninja
+          -DCMAKE_BUILD_TYPE=Release
+          -DTRACKEDITOR_ENABLE_FBX=OFF
+
+      - name: Build
+        run: cmake --build build --parallel
+
+      - name: Test
+        run: ctest --test-dir build --output-on-failure
+
+  macos:
+    name: macOS (FBX disabled)
+    runs-on: macos-15-intel
+    env:
+      HOMEBREW_NO_BOTTLE_SOURCE_FALLBACK: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install binary dependencies
+        run: brew install --force-bottle glew sdl3 sdl3_image ninja
+
+      - name: Install dynamic Qt 5.15
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: '5.15.2'
+          cache: true
+
+      - name: Configure (without FBX)
+        run: >-
+          cmake -S . -B build -G Ninja
+          -DCMAKE_BUILD_TYPE=Release
+          -DTRACKEDITOR_ENABLE_FBX=OFF
+
+      - name: Build
+        run: cmake --build build --parallel
+
+      - name: Test
+        run: ctest --test-dir build --output-on-failure
+
+  windows:
+    name: Windows (FBX disabled)
+    runs-on: windows-2022
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install dynamic Qt 5.15
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: '5.15.2'
+          arch: win64_msvc2019_64
+          cache: true
+
+      - name: Install prebuilt SDL development packages
+        shell: pwsh
+        run: .\scripts\install-sdl-windows.ps1 -Destination "$env:RUNNER_TEMP\sdl"
+
+      - name: Install GLEW
+        shell: pwsh
+        run: |
+          vcpkg install glew:x64-windows
+          "$env:VCPKG_INSTALLATION_ROOT\installed\x64-windows\bin" |
+            Add-Content -LiteralPath $env:GITHUB_PATH
+
+      - name: Configure (without FBX)
+        shell: pwsh
+        run: |
+          cmake -S . -B build -G "Visual Studio 17 2022" -A x64 `
+            -DTRACKEDITOR_ENABLE_FBX=OFF `
+            -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_INSTALLATION_ROOT\scripts\buildsystems\vcpkg.cmake"
+
+      - name: Build
+        run: cmake --build build --config Release --parallel
+
+      - name: Test
+        run: ctest --test-dir build -C Release --output-on-failure
