@@ -7,6 +7,7 @@
 class CMainWindowPrivate;
 class CTrack;
 class CTrackPreview;
+class CEditorRenderService;
 //-------------------------------------------------------------------------------------------------
 struct tPreferences
 {
@@ -32,7 +33,8 @@ class CMainWindow : public QMainWindow, private Ui::MainWindow
   Q_OBJECT
 
 public:
-  CMainWindow(const QString &sAppPath, float fDesktopScale);
+  CMainWindow(const QString &sAppPath, float fDesktopScale,
+              CEditorRenderService *pRenderService);
   ~CMainWindow();
 
   const QString &GetAppPath() { return m_sAppPath; };
@@ -101,6 +103,8 @@ private:
   void SaveSettings();
   bool SaveChangesAndContinue();
   void UpdateGeometrySelection();
+  void ConfigurePreview(CTrackPreview *pPreview);
+  void UpdateExportActions();
   int MirrorSurfaceType(int iSurfaceType);
 
   CMainWindowPrivate *p;
@@ -112,6 +116,7 @@ private:
   QTimer *m_pSaveHistoryTimer;
   QTimer *m_pStuntTimer;
   QTimer *m_pZeroTimer;
+  CEditorRenderService *m_pRenderService;
 };
 
 //-------------------------------------------------------------------------------------------------

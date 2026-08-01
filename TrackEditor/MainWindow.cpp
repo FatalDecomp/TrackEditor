@@ -1,5 +1,5 @@
-#include <GL/glew.h>
 #include "TrackEditor.h"
+#include "EditorRenderService.h"
 #include "MainWindow.h"
 #include "qmessagebox.h"
 #include "qfiledialog.h"
@@ -97,12 +97,14 @@ public:
 
 //-------------------------------------------------------------------------------------------------
 
-CMainWindow::CMainWindow(const QString &sAppPath, float fDesktopScale)
+CMainWindow::CMainWindow(const QString &sAppPath, float fDesktopScale,
+                         CEditorRenderService *pRenderService)
   : QMainWindow(NULL)
   , m_sAppPath(sAppPath)
   , m_sLastTrackFilesFolder("")
   , m_fDesktopScale(fDesktopScale)
   , m_iNewTrackNum(0)
+  , m_pRenderService(pRenderService)
 {
   //init
   Logging::SetWhipLibLoggingCallback(LogMessageCbStatic);
@@ -266,7 +268,6 @@ void CMainWindow::closeEvent(QCloseEvent *pEvent)
   //cleanup
   twViewer->blockSignals(true);
   for (int i = 0; i < (int)p->m_previewAy.size(); ++i) {
-    p->m_previewAy[i]->makeCurrent();
     delete p->m_previewAy[i];
   }
   p->m_previewAy.clear();
@@ -293,7 +294,11 @@ void CMainWindow::LogMessage(const QString &sMsg)
 
 void CMainWindow::SaveHistory(const QString &sDescription)
 {
-  GetCurrentPreview()->m_bUnsavedChanges = true;
+  CTrackPreview *pPreview = GetCurrentPreview();
+  if (!pPreview)
+    return;
+  pPreview->m_bUnsavedChanges = true;
+  pPreview->MarkDocumentEdited();
   m_sHistoryDescription = sDescription;
   m_pSaveHistoryTimer->start();
 }
@@ -312,11 +317,12 @@ void CMainWindow::OnNewTrack()
 {
   CNewTrackDialog dlg(this, ++m_iNewTrackNum);
   if (dlg.exec()) {
-    CTrackPreview *pPreview = new CTrackPreview(this, dlg.GetFilename());
-    connect(pPreview, &CTrackPreview::ReferenceModelChanged, this, &CMainWindow::OnReferenceModelChanged);
+    CTrackPreview *pPreview = new CTrackPreview(
+        this, m_pRenderService, dlg.GetFilename());
+    ConfigurePreview(pPreview);
     pPreview->GetTrack()->m_sBuildingFile = dlg.GetBld().toLatin1().constData();
     pPreview->GetTrack()->m_sTextureFile = dlg.GetTex().toLatin1().constData();
-    pPreview->SaveHistory("New track created");
+    pPreview->SaveHistory("New track created", false);
     m_sLastTrackFilesFolder = dlg.GetFilename().left(dlg.GetFilename().lastIndexOf(QDir::separator()));
     //add to array and create preview window
     p->m_previewAy.push_back(pPreview);
@@ -342,8 +348,8 @@ void CMainWindow::OnLoadTrack()
     }
   }
 
-  CTrackPreview *pPreview = new CTrackPreview(this);
-  connect(pPreview, &CTrackPreview::ReferenceModelChanged, this, &CMainWindow::OnReferenceModelChanged);
+  CTrackPreview *pPreview = new CTrackPreview(this, m_pRenderService);
+  ConfigurePreview(pPreview);
   if (!pPreview->LoadTrack(sFilename)) {
     //load failed
     delete pPreview;
@@ -983,11 +989,10 @@ void CMainWindow::OnAbout()
 
 void CMainWindow::OnTabCloseRequested(int iIndex)
 {
-  if (iIndex > p->m_previewAy.size()) return;
+  if (iIndex < 0 || iIndex >= (int)p->m_previewAy.size()) return;
 
   twViewer->blockSignals(true);
   if (p->m_previewAy[iIndex]->SaveChangesAndContinue()) {
-    p->m_previewAy[iIndex]->makeCurrent();
     delete p->m_previewAy[iIndex];
     p->m_previewAy.erase(p->m_previewAy.begin() + iIndex);
   }
@@ -1000,13 +1005,15 @@ void CMainWindow::OnTabCloseRequested(int iIndex)
 
 void CMainWindow::OnTabChanged(int iIndex)
 {
-  if (iIndex > p->m_previewAy.size()) return;
+  if (iIndex < 0 || iIndex >= (int)p->m_previewAy.size()) {
+    UpdateExportActions();
+    return;
+  }
 
   eWhipModel carModel;
   eShapeSection aiLine;
   bool bMillionPlus;
   uint32 uiShowModels = p->m_pDisplaySettings->GetDisplaySettings(carModel, aiLine, bMillionPlus);
-  p->m_previewAy[iIndex]->makeCurrent();
   p->m_previewAy[iIndex]->ShowModels(uiShowModels);
   p->m_previewAy[iIndex]->UpdateCar(carModel, aiLine, bMillionPlus);
   p->m_previewAy[iIndex]->AttachLast(p->m_pDisplaySettings->GetAttachLast());
@@ -1020,6 +1027,7 @@ void CMainWindow::OnTabChanged(int iIndex)
                                            p->m_previewAy[iIndex]->m_iRefX,   p->m_previewAy[iIndex]->m_iRefY,     p->m_previewAy[iIndex]->m_iRefZ,
                                            p->m_previewAy[iIndex]->m_dRefScale);
 
+  p->m_previewAy[iIndex]->Activate();
   UpdateWindow();
 }
 
@@ -1137,7 +1145,7 @@ void CMainWindow::OnUpdatePreview()
 void CMainWindow::OnSaveHistoryTimer()
 {
   if (GetCurrentPreview())
-    GetCurrentPreview()->SaveHistory(m_sHistoryDescription);
+    GetCurrentPreview()->SaveHistory(m_sHistoryDescription, false);
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -1393,6 +1401,7 @@ void CMainWindow::UpdateWindow(bool bUpdatingTextures)
     lblChunkWarning->setVisible(GetCurrentTrack()->m_chunkAy.size() >= 500);
     lblStuntWarning->setVisible(GetCurrentTrack()->HasPitchedStunt());
   }
+  UpdateExportActions();
   UpdateGeometrySelection();
   emit UpdateWindowSig();
 }
@@ -1408,6 +1417,26 @@ void CMainWindow::UpdateGeometrySelection()
     GetCurrentPreview()->UpdateGeometrySelection();
   }
   emit UpdateGeometrySelectionSig(sbSelChunksFrom->value(), sbSelChunksTo->value());
+}
+
+//-------------------------------------------------------------------------------------------------
+
+void CMainWindow::ConfigurePreview(CTrackPreview *pPreview)
+{
+  connect(pPreview, &CTrackPreview::ReferenceModelChanged,
+          this, &CMainWindow::OnReferenceModelChanged);
+  connect(pPreview, &CTrackPreview::FrameStateChanged,
+          this, &CMainWindow::UpdateExportActions);
+}
+
+//-------------------------------------------------------------------------------------------------
+
+void CMainWindow::UpdateExportActions()
+{
+  const CTrackPreview *pPreview = GetCurrentPreview();
+  const bool bCanExport = pPreview && pPreview->CanExport();
+  actExportOBJ->setEnabled(bCanExport);
+  actExportFBX->setEnabled(bCanExport);
 }
 
 //-------------------------------------------------------------------------------------------------

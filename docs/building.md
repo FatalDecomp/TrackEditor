@@ -60,7 +60,7 @@ Adjust the Qt prefix for the version and location selected in the installer.
 
 ## Run
 
-The executable is `TrackEditor` (`TrackEditor.exe` on Windows). CMake copies its required GLSL files to a `Shaders` directory beside the executable. The noninteractive `--cmake-smoke-test` switch initializes Qt and exits successfully; CTest uses it on all three CI platforms.
+The executable is `TrackEditor` (`TrackEditor.exe` on Windows). The viewport is a plain Qt widget that blits worker-rendered `QImage` frames, so it does not create a Qt OpenGL context or require runtime GLSL files. The noninteractive `--cmake-smoke-test` switch initializes Qt and exits successfully; CTest uses it on all three CI platforms.
 
 ## Optional FBX export
 

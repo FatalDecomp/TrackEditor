@@ -1,13 +1,6 @@
-#include <GL/glew.h>
 #include "TrackPreview.h"
+#include "EditorRenderService.h"
 #include "MainWindow.h"
-#include "gtc/matrix_transform.hpp"
-#include "gtx/transform.hpp"
-#include "Camera.h"
-#include "Shader.h"
-#include "IndexBuffer.h"
-#include "VertexBuffer.h"
-#include "OpenGLDebug.h"
 #include "Track.h"
 #include "DisplaySettings.h"
 #include "ShapeData.h"
@@ -17,19 +10,18 @@
 #include "FBXExporter.h"
 #endif
 #include "ObjExporter.h"
-#include "ObjImporter.h"
 #include "CarHelpers.h"
-#include "Entity.h"
-#include "NoclipComponent.h"
 #include "ExportWizard.h"
 #include "qevent.h"
 #include "qdir.h"
 #include "qmessagebox.h"
 #include "qfiledialog.h"
 #include "qfile.h"
+#include "qfileinfo.h"
+#include "qpainter.h"
+#include "qtimer.h"
 #include "qtextstream.h"
 #include <fstream>
-#include <glm.hpp>
 //-------------------------------------------------------------------------------------------------
 #if defined(_DEBUG) && defined(IS_WINDOWS)
 #define new new(_CLIENT_BLOCK, __FILE__, __LINE__)
@@ -41,250 +33,20 @@ class CTrackPreviewPrivate
 public:
   CTrackPreviewPrivate()
     : m_pShader(NULL)
-    , m_pCenterSurf(NULL)
-    , m_pCenterWire(NULL)
-    , m_pLShoulderSurf(NULL)
-    , m_pLShoulderWire(NULL)
-    , m_pRShoulderSurf(NULL)
-    , m_pRShoulderWire(NULL)
-    , m_pLWallSurf(NULL)
-    , m_pLWallWire(NULL)
-    , m_pRWallSurf(NULL)
-    , m_pRWallWire(NULL)
-    , m_pRoofSurf(NULL)
-    , m_pRoofWire(NULL)
-    , m_pOWallFloorSurf(NULL)
-    , m_pOWallFloorWire(NULL)
-    , m_pLLOWallSurf(NULL)
-    , m_pLLOWallWire(NULL)
-    , m_pRLOWallSurf(NULL)
-    , m_pRLOWallWire(NULL)
-    , m_pLUOWallSurf(NULL)
-    , m_pLUOWallWire(NULL)
-    , m_pRUOWallSurf(NULL)
-    , m_pRUOWallWire(NULL)
-    , m_pSelection(NULL)
-    , m_pAILine1(NULL)
-    , m_pAILine2(NULL)
-    , m_pAILine3(NULL)
-    , m_pAILine4(NULL)
-    , m_pEnvirFloor(NULL)
-    , m_pAxes(NULL)
-    , m_pCar(NULL)
-    , m_pTestNormals(NULL)
-    , m_noclipComponent(true)
-    , m_pRefModel(NULL)
   {
-    m_entity.Init();
-    m_camera.Init();
-    m_noclipComponent.Init();
-    m_entity.AddComponent(&m_camera);
-    m_entity.AddComponent(&m_noclipComponent);
-    m_entity.m_position = glm::vec3(0.0f, 4000.0f, -5000.0f);
-    m_entity.m_bAcceptControls = true;
-  };
-  ~CTrackPreviewPrivate()
-  {
-    m_entity.Shutdown();
-    DeleteModels();
-    if (m_pEnvirFloor) {
-      delete m_pEnvirFloor;
-      m_pEnvirFloor = NULL;
-    }
-    if (m_pCar) {
-      delete m_pCar;
-      m_pCar = NULL;
-    }
-    if (m_pShader) {
-      delete m_pShader;
-      m_pShader = NULL;
-    }
-    if (m_pAxes) {
-      delete m_pAxes;
-      m_pAxes = NULL;
-    }
-    if (m_pTestNormals) {
-      delete m_pTestNormals;
-      m_pTestNormals = NULL;
-    }
-    if (m_pRefModel) {
-      delete m_pRefModel;
-      m_pRefModel = NULL;
-    }
-  };
-  void DeleteModels()
-  {
-    if (m_pCenterSurf) {
-      delete m_pCenterSurf;
-      m_pCenterSurf = NULL;
-    }
-    if (m_pCenterWire) {
-      delete m_pCenterWire;
-      m_pCenterWire = NULL;
-    }
-    if (m_pLShoulderSurf) {
-      delete m_pLShoulderSurf;
-      m_pLShoulderSurf = NULL;
-    }
-    if (m_pLShoulderWire) {
-      delete m_pLShoulderWire;
-      m_pLShoulderWire = NULL;
-    }
-    if (m_pRShoulderSurf) {
-      delete m_pRShoulderSurf;
-      m_pRShoulderSurf = NULL;
-    }
-    if (m_pRShoulderWire) {
-      delete m_pRShoulderWire;
-      m_pRShoulderWire = NULL;
-    }
-    if (m_pLWallSurf) {
-      delete m_pLWallSurf;
-      m_pLWallSurf = NULL;
-    }
-    if (m_pLWallWire) {
-      delete m_pLWallWire;
-      m_pLWallWire = NULL;
-    }
-    if (m_pRWallSurf) {
-      delete m_pRWallSurf;
-      m_pRWallSurf = NULL;
-    }
-    if (m_pRWallWire) {
-      delete m_pRWallWire;
-      m_pRWallWire = NULL;
-    }
-    if (m_pRoofSurf) {
-      delete m_pRoofSurf;
-      m_pRoofSurf = NULL;
-    }
-    if (m_pRoofWire) {
-      delete m_pRoofWire;
-      m_pRoofWire = NULL;
-    }
-    if (m_pOWallFloorSurf) {
-      delete m_pOWallFloorSurf;
-      m_pOWallFloorSurf = NULL;
-    }
-    if (m_pOWallFloorWire) {
-      delete m_pOWallFloorWire;
-      m_pOWallFloorWire = NULL;
-    }
-    if (m_pLLOWallSurf) {
-      delete m_pLLOWallSurf;
-      m_pLLOWallSurf = NULL;
-    }
-    if (m_pLLOWallWire) {
-      delete m_pLLOWallWire;
-      m_pLLOWallWire = NULL;
-    }
-    if (m_pRLOWallSurf) {
-      delete m_pRLOWallSurf;
-      m_pRLOWallSurf = NULL;
-    }
-    if (m_pRLOWallWire) {
-      delete m_pRLOWallWire;
-      m_pRLOWallWire = NULL;
-    }
-    if (m_pLUOWallSurf) {
-      delete m_pLUOWallSurf;
-      m_pLUOWallSurf = NULL;
-    }
-    if (m_pLUOWallWire) {
-      delete m_pLUOWallWire;
-      m_pLUOWallWire = NULL;
-    }
-    if (m_pRUOWallSurf) {
-      delete m_pRUOWallSurf;
-      m_pRUOWallSurf = NULL;
-    }
-    if (m_pRUOWallWire) {
-      delete m_pRUOWallWire;
-      m_pRUOWallWire = NULL;
-    }
-    if (m_pAILine1) {
-      delete m_pAILine1;
-      m_pAILine1 = NULL;
-    }
-    if (m_pAILine2) {
-      delete m_pAILine2;
-      m_pAILine2 = NULL;
-    }
-    if (m_pAILine3) {
-      delete m_pAILine3;
-      m_pAILine3 = NULL;
-    }
-    if (m_pAILine4) {
-      delete m_pAILine4;
-      m_pAILine4 = NULL;
-    }
-    if (m_pSelection) {
-      delete m_pSelection;
-      m_pSelection = NULL;
-    }
-    for (std::vector<CShapeData *>::iterator it = m_signAy.begin(); it != m_signAy.end(); ++it) {
-      delete *it;
-    }
-    m_signAy.clear();
-    for (std::vector<CShapeData *>::iterator it = m_audioAy.begin(); it != m_audioAy.end(); ++it) {
-      delete *it;
-    }
-    m_audioAy.clear();
-    for (std::vector<CShapeData *>::iterator it = m_stuntAy.begin(); it != m_stuntAy.end(); ++it) {
-      delete *it;
-    }
-    m_stuntAy.clear();
   }
-
-  CShapeData *m_pCenterSurf;
-  CShapeData *m_pCenterWire;
-  CShapeData *m_pLShoulderSurf;
-  CShapeData *m_pLShoulderWire;
-  CShapeData *m_pRShoulderSurf;
-  CShapeData *m_pRShoulderWire;
-  CShapeData *m_pLWallSurf;
-  CShapeData *m_pLWallWire;
-  CShapeData *m_pRWallSurf;
-  CShapeData *m_pRWallWire;
-  CShapeData *m_pRoofSurf;
-  CShapeData *m_pRoofWire;
-  CShapeData *m_pOWallFloorSurf;
-  CShapeData *m_pOWallFloorWire;
-  CShapeData *m_pLLOWallSurf;
-  CShapeData *m_pLLOWallWire;
-  CShapeData *m_pRLOWallSurf;
-  CShapeData *m_pRLOWallWire;
-  CShapeData *m_pLUOWallSurf;
-  CShapeData *m_pLUOWallWire;
-  CShapeData *m_pRUOWallSurf;
-  CShapeData *m_pRUOWallWire;
-  CShapeData *m_pSelection;
-  CShapeData *m_pAILine1;
-  CShapeData *m_pAILine2;
-  CShapeData *m_pAILine3;
-  CShapeData *m_pAILine4;
-  CShapeData *m_pEnvirFloor;
-  CShapeData *m_pCar;
-  CShapeData *m_pAxes;
-  CShapeData *m_pTestNormals;
-  std::vector<CShapeData *> m_signAy;
-  std::vector<CShapeData *> m_audioAy;
-  std::vector<CShapeData *> m_stuntAy;
-  CShapeData *m_pRefModel;
 
   CShader *m_pShader;
   CTrack m_track;
   CHistoryAy m_historyAy;
-  CTexture m_carTex;
-  CCamera m_camera;
-  CEntity m_entity;
-  CNoclipComponent m_noclipComponent;
 };
 
 //-------------------------------------------------------------------------------------------------
 
-CTrackPreview::CTrackPreview(QWidget *pParent, const QString &sTrackFile)
-  : QGLWidget(QGLFormat(QGL::SampleBuffers), pParent)
+CTrackPreview::CTrackPreview(QWidget *pParent,
+                             CEditorRenderService *pRenderService,
+                             const QString &sTrackFile)
+  : QWidget(pParent)
   , m_uiShowModels(0)
   , m_carModel(eWhipModel::CAR_XZIZIN)
   , m_carAILine(eShapeSection::AILINE1)
@@ -307,21 +69,47 @@ CTrackPreview::CTrackPreview(QWidget *pParent, const QString &sTrackFile)
   , m_iRefY(0)
   , m_iRefZ(0)
   , m_dRefScale(1.0)
+  , m_pRenderService(pRenderService)
+  , m_ullDocumentId(CEditorRenderIds::NextDocumentId())
+  , m_FrameState(m_ullDocumentId)
+  , m_Camera{}
+  , m_pResizeTimer(new QTimer(this))
 {
   p = new CTrackPreviewPrivate;
+
+  Q_ASSERT(m_pRenderService);
+  m_pRenderService->RegisterDocument(m_ullDocumentId);
+  connect(m_pRenderService, &CEditorRenderService::FrameCompleted,
+          this, &CTrackPreview::OnRenderCompleted);
+
+  m_pResizeTimer->setSingleShot(true);
+  m_pResizeTimer->setInterval(100);
+  connect(m_pResizeTimer, &QTimer::timeout,
+          this, &CTrackPreview::QueueResizeRender);
+
+  m_Camera.uiStructSize = sizeof(m_Camera);
+  m_Camera.uiVersion = ROLLER_ED_CAMERA_STATE_VERSION;
+  m_Camera.fPosition[0] = -4000.0f;
+  m_Camera.fPosition[1] = 0.0f;
+  m_Camera.fPosition[2] = 1600.0f;
+  m_Camera.fYawDegrees = 0.0f;
+  m_Camera.fPitchDegrees = -25.0f;
 
   if (!sTrackFile.isEmpty()) {
     p->m_track.m_sTrackFileFolder = sTrackFile.left(sTrackFile.lastIndexOf(QDir::separator()) + 1).toLatin1().constData();
   }
 
-  setFocus();
+  setFocusPolicy(Qt::StrongFocus);
+  setAutoFillBackground(false);
 }
 
 //-------------------------------------------------------------------------------------------------
 
 CTrackPreview::~CTrackPreview()
 {
-  glUseProgram(0);
+  m_FrameState.Invalidate();
+  if (m_pRenderService)
+    m_pRenderService->InvalidateDocument(m_ullDocumentId);
   if (p) {
     delete p;
     p = NULL;
@@ -332,12 +120,8 @@ CTrackPreview::~CTrackPreview()
 
 void CTrackPreview::UpdateCameraPos()
 {
-  if (!hasFocus())
-    return;
-
-  p->m_entity.Update();
-
-  repaint();
+  // Camera input is wired to roller-core by E3-S3. E3-S1 deliberately does
+  // not render from this UI timer; frames are produced only by the worker.
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -345,11 +129,21 @@ void CTrackPreview::UpdateCameraPos()
 bool CTrackPreview::LoadTrack(const QString &sFilename)
 {
   m_sTrackFile = sFilename;
-  bool bSuccess = p->m_track.LoadTrack(sFilename.toLatin1().constData());
+  const QByteArray EncodedFilename = QFile::encodeName(sFilename);
+  bool bSuccess = p->m_track.LoadTrack(EncodedFilename.constData());
   if (bSuccess) {
+    p->m_track.GenerateTrackMath();
+    if (!p->m_track.m_chunkAy.empty()) {
+      const glm::vec3 &Center = p->m_track.m_chunkAy.front().math.center;
+      m_Camera.fPosition[0] = Center.x - 4000.0f;
+      m_Camera.fPosition[1] = Center.y;
+      m_Camera.fPosition[2] = Center.z + 1600.0f;
+    }
     p->m_historyAy.clear();
-    SaveHistory(sFilename + " loaded");
+    SaveHistory(sFilename + " loaded", false);
     m_bUnsavedChanges = false;
+    m_bAlreadySaved = true;
+    QueueLoadAndRender();
   }
   return bSuccess;
 }
@@ -358,56 +152,15 @@ bool CTrackPreview::LoadTrack(const QString &sFilename)
 
 void CTrackPreview::DeleteEnvirFloor()
 {
-  if (p->m_pEnvirFloor) {
-    delete p->m_pEnvirFloor;
-    p->m_pEnvirFloor = NULL;
-  }
+  update();
 }
 
 //-------------------------------------------------------------------------------------------------
 
 void CTrackPreview::UpdateTrack(bool bUpdatingStunt)
 {
-  if (!bUpdatingStunt)
-    p->DeleteModels();
-
-  if (!p->m_track.m_chunkAy.empty()) {
-    CShapeFactory::GetShapeFactory().MakeTrackSurface(&p->m_pCenterSurf, p->m_pShader, &p->m_track, eShapeSection::CENTER, m_bAttachLast);
-    CShapeFactory::GetShapeFactory().MakeTrackSurface(&p->m_pCenterWire, p->m_pShader, &p->m_track, eShapeSection::CENTER, m_bAttachLast, true);
-    CShapeFactory::GetShapeFactory().MakeTrackSurface(&p->m_pLShoulderSurf, p->m_pShader, &p->m_track, eShapeSection::LSHOULDER, m_bAttachLast);
-    CShapeFactory::GetShapeFactory().MakeTrackSurface(&p->m_pLShoulderWire, p->m_pShader, &p->m_track, eShapeSection::LSHOULDER, m_bAttachLast, true);
-    CShapeFactory::GetShapeFactory().MakeTrackSurface(&p->m_pRShoulderSurf, p->m_pShader, &p->m_track, eShapeSection::RSHOULDER, m_bAttachLast);
-    CShapeFactory::GetShapeFactory().MakeTrackSurface(&p->m_pRShoulderWire, p->m_pShader, &p->m_track, eShapeSection::RSHOULDER, m_bAttachLast, true);
-    CShapeFactory::GetShapeFactory().MakeTrackSurface(&p->m_pLWallSurf, p->m_pShader, &p->m_track, eShapeSection::LWALL, m_bAttachLast);
-    CShapeFactory::GetShapeFactory().MakeTrackSurface(&p->m_pLWallWire, p->m_pShader, &p->m_track, eShapeSection::LWALL, m_bAttachLast, true);
-    CShapeFactory::GetShapeFactory().MakeTrackSurface(&p->m_pRWallSurf, p->m_pShader, &p->m_track, eShapeSection::RWALL, m_bAttachLast);
-    CShapeFactory::GetShapeFactory().MakeTrackSurface(&p->m_pRWallWire, p->m_pShader, &p->m_track, eShapeSection::RWALL, m_bAttachLast, true);
-    CShapeFactory::GetShapeFactory().MakeTrackSurface(&p->m_pRoofSurf, p->m_pShader, &p->m_track, eShapeSection::ROOF, m_bAttachLast);
-    CShapeFactory::GetShapeFactory().MakeTrackSurface(&p->m_pRoofWire, p->m_pShader, &p->m_track, eShapeSection::ROOF, m_bAttachLast, true);
-    CShapeFactory::GetShapeFactory().MakeAILine(&p->m_pAILine1, p->m_pShader, &p->m_track, eShapeSection::AILINE1, m_bAttachLast);
-    CShapeFactory::GetShapeFactory().MakeAILine(&p->m_pAILine2, p->m_pShader, &p->m_track, eShapeSection::AILINE2, m_bAttachLast);
-    CShapeFactory::GetShapeFactory().MakeAILine(&p->m_pAILine3, p->m_pShader, &p->m_track, eShapeSection::AILINE3, m_bAttachLast);
-    CShapeFactory::GetShapeFactory().MakeAILine(&p->m_pAILine4, p->m_pShader, &p->m_track, eShapeSection::AILINE4, m_bAttachLast);
-    if (!bUpdatingStunt) {
-      CShapeFactory::GetShapeFactory().MakeTrackSurface(&p->m_pOWallFloorSurf, p->m_pShader, &p->m_track, eShapeSection::OWALLFLOOR, m_bAttachLast);
-      CShapeFactory::GetShapeFactory().MakeTrackSurface(&p->m_pOWallFloorWire, p->m_pShader, &p->m_track, eShapeSection::OWALLFLOOR, m_bAttachLast, true);
-      CShapeFactory::GetShapeFactory().MakeTrackSurface(&p->m_pLLOWallSurf, p->m_pShader, &p->m_track, eShapeSection::LLOWALL, m_bAttachLast);
-      CShapeFactory::GetShapeFactory().MakeTrackSurface(&p->m_pLLOWallWire, p->m_pShader, &p->m_track, eShapeSection::LLOWALL, m_bAttachLast, true);
-      CShapeFactory::GetShapeFactory().MakeTrackSurface(&p->m_pRLOWallSurf, p->m_pShader, &p->m_track, eShapeSection::RLOWALL, m_bAttachLast);
-      CShapeFactory::GetShapeFactory().MakeTrackSurface(&p->m_pRLOWallWire, p->m_pShader, &p->m_track, eShapeSection::RLOWALL, m_bAttachLast, true);
-      CShapeFactory::GetShapeFactory().MakeTrackSurface(&p->m_pLUOWallSurf, p->m_pShader, &p->m_track, eShapeSection::LUOWALL, m_bAttachLast);
-      CShapeFactory::GetShapeFactory().MakeTrackSurface(&p->m_pLUOWallWire, p->m_pShader, &p->m_track, eShapeSection::LUOWALL, m_bAttachLast, true);
-      CShapeFactory::GetShapeFactory().MakeTrackSurface(&p->m_pRUOWallSurf, p->m_pShader, &p->m_track, eShapeSection::RUOWALL, m_bAttachLast);
-      CShapeFactory::GetShapeFactory().MakeTrackSurface(&p->m_pRUOWallWire, p->m_pShader, &p->m_track, eShapeSection::RUOWALL, m_bAttachLast, true);
-      CShapeFactory::GetShapeFactory().MakeSigns(p->m_pShader, &p->m_track, p->m_signAy);
-      CShapeFactory::GetShapeFactory().MakeAudio(p->m_pShader, &p->m_track, p->m_audioAy);
-      CShapeFactory::GetShapeFactory().MakeStunts(p->m_pShader, &p->m_track, p->m_stuntAy);
-
-      UpdateCar(m_carModel, m_carAILine, m_bMillionPlus);
-      UpdateGeometrySelection();
-    }
-  }
-  repaint();
+  (void)bUpdatingStunt;
+  update();
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -415,28 +168,22 @@ void CTrackPreview::UpdateTrack(bool bUpdatingStunt)
 void CTrackPreview::ShowModels(uint32 uiShowModels)
 {
   m_uiShowModels = uiShowModels;
-  repaint();
+  update();
 }
 
 //-------------------------------------------------------------------------------------------------
 
 void CTrackPreview::UpdateGeometrySelection()
 {
-  CShapeFactory::GetShapeFactory().MakeSelectedChunks(&p->m_pSelection, p->m_pShader, &p->m_track, m_iSelFrom, m_iSelTo);
-  CShapeFactory::GetShapeFactory().MakeEnvirFloor(&p->m_pEnvirFloor, p->m_pShader, &p->m_track, m_iSelFrom);
-
-  if (p->m_pCar)
-    CShapeFactory::GetShapeFactory().GetCarPos(&p->m_track, m_iSelFrom, m_carAILine, p->m_pCar->m_modelToWorldMatrix, m_bMillionPlus);
-  //if (p->m_pTestNormals)
-  //  CShapeFactory::GetShapeFactory().GetCarPos(&p->m_track, m_iSelFrom, m_carAILine, p->m_pTestNormals->m_modelToWorldMatrix, m_bMillionPlus);
-
-  repaint();
+  update();
 }
 
 //-------------------------------------------------------------------------------------------------
 
-void CTrackPreview::SaveHistory(const QString &sDescription)
+void CTrackPreview::SaveHistory(const QString &sDescription, bool bDocumentEdit)
 {
+  if (bDocumentEdit)
+    MarkDocumentEdited();
   tTrackHistory history;
   history.sDescription = sDescription.toLatin1().constData();
   p->m_track.GetTrackData(history.byteAy);
@@ -502,25 +249,13 @@ void CTrackPreview::UpdateReferenceModelPos(double dYaw, double dPitch, double d
 
 void CTrackPreview::UpdateReferenceModelTexture()
 {
-  if (p->m_pRefModel) {
-    p->m_pRefModel->m_pTexture = p->m_track.m_pTex;
-
-    // set tex coords for all verts for color in new texture
-    int numVerts = p->m_pRefModel->m_uiNumVerts;
-    tVertex *vertices = p->m_pRefModel->m_vertices;
-    for (int i = 0; i < numVerts; i++) {
-      (&(vertices)[i])->texCoords = p->m_pRefModel->m_pTexture->GetColorCenterCoordinates(0x8c); //light grey
-    }
-    p->m_pRefModel->m_pVertexBuf->Update(vertices, numVerts);
-  }
+  update();
 }
 
 //-------------------------------------------------------------------------------------------------
 
 void CTrackPreview::LoadHistory(const tTrackHistory *pHistory)
 {
-  p->DeleteModels();
-
   int iSize = (int)pHistory->byteAy.size();
   uint8 *byData = new uint8[iSize];
   for (int i = 0; i < iSize; ++i)
@@ -530,6 +265,7 @@ void CTrackPreview::LoadHistory(const tTrackHistory *pHistory)
   p->m_track.ProcessTrackData(byData, iSize);
 
   delete[] byData;
+  MarkDocumentEdited();
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -539,33 +275,7 @@ void CTrackPreview::UpdateCar(eWhipModel carModel, eShapeSection aiLine, bool bM
   m_carModel = carModel;
   m_carAILine = aiLine;
   m_bMillionPlus = bMillionPlus;
-
-  if (p->m_pCar) {
-    delete p->m_pCar;
-    p->m_pCar = NULL;
-  }
-  if (p->m_pTestNormals) {
-    delete p->m_pTestNormals;
-    p->m_pTestNormals = NULL;
-  }
-
-  if (p->m_track.m_pPal && !p->m_track.m_sTrackFileFolder.empty()) {
-    QString sTexName = CarHelpers::GetCarTextureFromModel(carModel).c_str();
-    QString sTex = QString(p->m_track.m_sTrackFileFolder.c_str()) + QDir::separator() + sTexName;
-    if (m_sLastCarTex.compare(sTex) != 0) {
-      if (p->m_carTex.LoadTexture(sTex.toLatin1().constData(), p->m_track.m_pPal))
-        m_sLastCarTex = sTex;
-    }
-    CShapeFactory::GetShapeFactory().MakeModel(&p->m_pCar, p->m_pShader, &p->m_carTex, carModel);
-    //p->m_pTestNormals = CShapeFactory::GetShapeFactory().MakeNormalsTest(*p->m_pCar, p->m_pShader);
-  }
-
-  if (p->m_pCar)
-    CShapeFactory::GetShapeFactory().GetCarPos(&p->m_track, m_iSelFrom, m_carAILine, p->m_pCar->m_modelToWorldMatrix, m_bMillionPlus);
-  //if (p->m_pTestNormals)
-  //  CShapeFactory::GetShapeFactory().GetCarPos(&p->m_track, m_iSelFrom, m_carAILine, p->m_pTestNormals->m_modelToWorldMatrix, m_bMillionPlus);
-
-  repaint();
+  update();
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -580,153 +290,129 @@ void CTrackPreview::AttachLast(bool bAttachLast)
 
 void CTrackPreview::OpenReferenceModel()
 {
-  //get filename
-  QString sFilename = QDir::toNativeSeparators(QFileDialog::getOpenFileName(
-    this, "Load Reference Model", g_pMainWindow->m_sLastTrackFilesFolder, QString("OBJ Files (*.obj)")));
-  if (sFilename.isEmpty())
-    return;
-
-  //delete model if it already exists
-  if (p->m_pRefModel) {
-    delete p->m_pRefModel;
-    p->m_pRefModel = NULL;
-  }
-
-  //load new model
-  if (!CObjImporter::GetObjImporter().ImportObj(sFilename.toLatin1().constData(), &p->m_pRefModel, p->m_pShader, p->m_track.m_pTex))
-    return;
-
-  //update last used dir and model file
-  m_sReferenceModelFile = sFilename;
-  g_pMainWindow->m_sLastTrackFilesFolder = sFilename.left(sFilename.lastIndexOf(QDir::separator()));
-
-  //update model position
-  UpdateReferenceModelPos_Internal();
-
-  //update ui
-  emit ReferenceModelChanged();
+  QMessageBox::information(
+      this, "Reference Model",
+      "Reference-mesh display will return with the roller-core overlay stories.");
 }
 
 //-------------------------------------------------------------------------------------------------
 
-void CTrackPreview::paintGL()
+void CTrackPreview::paintEvent(QPaintEvent *pEvent)
 {
-  if (m_uiShowModels & SHOW_ENVIRONMENT)
-    glClearColor(0.03125f, 0.296875f, 0.984375f, 1.0f);
-  else
-    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-  glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
-  glViewport(0, 0, width(), height());
+  (void)pEvent;
+  QPainter Painter(this);
+  Painter.fillRect(rect(), QColor(8, 12, 18));
 
-  glm::mat4 viewToProjectionMatrix = glm::perspective(glm::radians(60.0f), ((float)width()) / height(), 100.0f, 500000.0f);
-  glm::mat4 worldToViewMatrix = p->m_camera.GetWorldToViewMatrix();
-  glm::mat4 worldToProjectionMatrix = viewToProjectionMatrix * worldToViewMatrix;
+  if (!m_FrameState.GetImage().isNull()) {
+    Painter.drawImage(rect(), m_FrameState.GetImage());
+  } else {
+    Painter.setPen(QColor(190, 198, 210));
+    Painter.drawText(rect(), Qt::AlignCenter,
+                     m_FrameState.GetErrorText().empty()
+                         ? QString("No rendered frame")
+                         : QString::fromStdString(m_FrameState.GetErrorText()));
+  }
 
-  if (m_uiShowModels & SHOW_ENVIRONMENT && p->m_pEnvirFloor)
-    p->m_pEnvirFloor->Draw(worldToProjectionMatrix, p->m_camera.GetPosition());
-  //environment floor should never clip through track even when it is higher than it
-  //so we draw it first then clear depth buffer bit
-  glClear(GL_DEPTH_BUFFER_BIT);
+  if (m_FrameState.GetDisplayState()
+      == eEdFrameDisplayState::STALE_AFTER_LOAD_FAILURE) {
+    const QRect Banner(0, 0, width(), 44);
+    Painter.fillRect(Banner, QColor(150, 28, 28, 225));
+    Painter.setPen(Qt::white);
+    const QString sMessage = m_FrameState.GetErrorText().empty()
+        ? QString("Stale frame: the latest track load failed")
+        : QString("Stale frame: %1")
+              .arg(QString::fromStdString(m_FrameState.GetErrorText()));
+    Painter.drawText(Banner.adjusted(12, 0, -12, 0),
+                     Qt::AlignVCenter | Qt::AlignLeft, sMessage);
+  }
+}
 
-  if (m_uiShowModels & SHOW_CENTER_SURF_MODEL && p->m_pCenterSurf) {
-    p->m_pCenterSurf->Draw(worldToProjectionMatrix, p->m_camera.GetPosition());
+//-------------------------------------------------------------------------------------------------
+
+void CTrackPreview::resizeEvent(QResizeEvent *pEvent)
+{
+  QWidget::resizeEvent(pEvent);
+  m_pResizeTimer->start();
+}
+
+//-------------------------------------------------------------------------------------------------
+
+void CTrackPreview::showEvent(QShowEvent *pEvent)
+{
+  QWidget::showEvent(pEvent);
+  if (!m_sTrackFile.isEmpty() && m_FrameState.GetLatestRequestId() == 0)
+    QueueLoadAndRender();
+}
+
+//-------------------------------------------------------------------------------------------------
+
+QSize CTrackPreview::DevicePixelSize() const
+{
+  const qreal dDevicePixelRatio = devicePixelRatioF();
+  return QSize(qMax(1, qRound(width() * dDevicePixelRatio)),
+               qMax(1, qRound(height() * dDevicePixelRatio)));
+}
+
+//-------------------------------------------------------------------------------------------------
+
+void CTrackPreview::QueueLoadAndRender()
+{
+  if (!m_pRenderService || m_sTrackFile.isEmpty() || m_bUnsavedChanges)
+    return;
+
+  const QString sAssetRoot = QFileInfo(m_sTrackFile).absolutePath();
+  const uint64_t ullRequestId = m_pRenderService->EnqueueLoadAndRender(
+      m_ullDocumentId, m_FrameState.GetDocumentRevision(), m_sTrackFile,
+      sAssetRoot, DevicePixelSize(), devicePixelRatioF(), m_Camera);
+  if (ullRequestId != 0)
+    m_FrameState.BeginRequest(ullRequestId);
+}
+
+//-------------------------------------------------------------------------------------------------
+
+void CTrackPreview::QueueResizeRender()
+{
+  if (!m_pRenderService || m_bUnsavedChanges)
+    return;
+
+  if (m_FrameState.GetDisplayState() == eEdFrameDisplayState::CURRENT) {
+    const uint64_t ullRequestId = m_pRenderService->EnqueueRender(
+        m_ullDocumentId, m_FrameState.GetDocumentRevision(),
+        m_FrameState.GetInstalledGeometryEpoch(), DevicePixelSize(),
+        devicePixelRatioF(), m_Camera);
+    if (ullRequestId != 0)
+      m_FrameState.BeginRequest(ullRequestId);
+  } else if (m_FrameState.GetDisplayState()
+             == eEdFrameDisplayState::PLACEHOLDER) {
+    QueueLoadAndRender();
   }
-  if (m_uiShowModels & SHOW_CENTER_WIRE_MODEL && p->m_pCenterWire)
-    p->m_pCenterWire->Draw(worldToProjectionMatrix, p->m_camera.GetPosition());
-  if (m_uiShowModels & SHOW_LSHOULDER_SURF_MODEL && p->m_pLShoulderSurf) {
-    p->m_pLShoulderSurf->Draw(worldToProjectionMatrix, p->m_camera.GetPosition());
-  }
-  if (m_uiShowModels & SHOW_LSHOULDER_WIRE_MODEL && p->m_pLShoulderWire)
-    p->m_pLShoulderWire->Draw(worldToProjectionMatrix, p->m_camera.GetPosition());
-  if (m_uiShowModels & SHOW_RSHOULDER_SURF_MODEL && p->m_pRShoulderSurf) {
-    p->m_pRShoulderSurf->Draw(worldToProjectionMatrix, p->m_camera.GetPosition());
-  }
-  if (m_uiShowModels & SHOW_RSHOULDER_WIRE_MODEL && p->m_pRShoulderWire)
-    p->m_pRShoulderWire->Draw(worldToProjectionMatrix, p->m_camera.GetPosition());
-  if (m_uiShowModels & SHOW_LWALL_SURF_MODEL && p->m_pLWallSurf) {
-    p->m_pLWallSurf->Draw(worldToProjectionMatrix, p->m_camera.GetPosition());
-  }
-  if (m_uiShowModels & SHOW_LWALL_WIRE_MODEL && p->m_pLWallWire)
-    p->m_pLWallWire->Draw(worldToProjectionMatrix, p->m_camera.GetPosition());
-  if (m_uiShowModels & SHOW_RWALL_SURF_MODEL && p->m_pRWallSurf) {
-    p->m_pRWallSurf->Draw(worldToProjectionMatrix, p->m_camera.GetPosition());
-  }
-  if (m_uiShowModels & SHOW_RWALL_WIRE_MODEL && p->m_pRWallWire)
-    p->m_pRWallWire->Draw(worldToProjectionMatrix, p->m_camera.GetPosition());
-  if (m_uiShowModels & SHOW_ROOF_SURF_MODEL && p->m_pRoofSurf) {
-    p->m_pRoofSurf->Draw(worldToProjectionMatrix, p->m_camera.GetPosition());
-  }
-  if (m_uiShowModels & SHOW_ROOF_WIRE_MODEL && p->m_pRoofWire)
-    p->m_pRoofWire->Draw(worldToProjectionMatrix, p->m_camera.GetPosition());
-  if (m_uiShowModels & SHOW_OWALLFLOOR_SURF_MODEL && p->m_pOWallFloorSurf) {
-    p->m_pOWallFloorSurf->Draw(worldToProjectionMatrix, p->m_camera.GetPosition());
-  }
-  if (m_uiShowModels & SHOW_OWALLFLOOR_WIRE_MODEL && p->m_pOWallFloorWire)
-    p->m_pOWallFloorWire->Draw(worldToProjectionMatrix, p->m_camera.GetPosition());
-  if (m_uiShowModels & SHOW_LLOWALL_SURF_MODEL && p->m_pLLOWallSurf) {
-    p->m_pLLOWallSurf->Draw(worldToProjectionMatrix, p->m_camera.GetPosition());
-  }
-  if (m_uiShowModels & SHOW_LLOWALL_WIRE_MODEL && p->m_pLLOWallWire)
-    p->m_pLLOWallWire->Draw(worldToProjectionMatrix, p->m_camera.GetPosition());
-  if (m_uiShowModels & SHOW_RLOWALL_SURF_MODEL && p->m_pRLOWallSurf) {
-    p->m_pRLOWallSurf->Draw(worldToProjectionMatrix, p->m_camera.GetPosition());
-  }
-  if (m_uiShowModels & SHOW_RLOWALL_WIRE_MODEL && p->m_pRLOWallWire)
-    p->m_pRLOWallWire->Draw(worldToProjectionMatrix, p->m_camera.GetPosition());
-  if (m_uiShowModels & SHOW_LUOWALL_SURF_MODEL && p->m_pLUOWallSurf) {
-    p->m_pLUOWallSurf->Draw(worldToProjectionMatrix, p->m_camera.GetPosition());
-  }
-  if (m_uiShowModels & SHOW_LUOWALL_WIRE_MODEL && p->m_pLUOWallWire)
-    p->m_pLUOWallWire->Draw(worldToProjectionMatrix, p->m_camera.GetPosition());
-  if (m_uiShowModels & SHOW_RUOWALL_SURF_MODEL && p->m_pRUOWallSurf) {
-    p->m_pRUOWallSurf->Draw(worldToProjectionMatrix, p->m_camera.GetPosition());
-  }
-  if (m_uiShowModels & SHOW_RUOWALL_WIRE_MODEL && p->m_pRUOWallWire)
-    p->m_pRUOWallWire->Draw(worldToProjectionMatrix, p->m_camera.GetPosition());
-  if (m_uiShowModels & SHOW_SELECTION_HIGHLIGHT && p->m_pSelection)
-    p->m_pSelection->Draw(worldToProjectionMatrix, p->m_camera.GetPosition());
-  if (m_uiShowModels & SHOW_AILINE_MODELS
-      && p->m_pAILine1
-      && p->m_pAILine2
-      && p->m_pAILine3
-      && p->m_pAILine4) {
-    p->m_pAILine1->Draw(worldToProjectionMatrix, p->m_camera.GetPosition());
-    p->m_pAILine2->Draw(worldToProjectionMatrix, p->m_camera.GetPosition());
-    p->m_pAILine3->Draw(worldToProjectionMatrix, p->m_camera.GetPosition());
-    p->m_pAILine4->Draw(worldToProjectionMatrix, p->m_camera.GetPosition());
-  }
-  if (m_uiShowModels & SHOW_TEST_CAR && p->m_pCar)
-    p->m_pCar->Draw(worldToProjectionMatrix, p->m_camera.GetPosition());
-  if (m_uiShowModels & SHOW_SIGNS) {
-    for (std::vector<CShapeData *>::iterator it = p->m_signAy.begin(); it != p->m_signAy.end(); ++it) {
-      (*it)->Draw(worldToProjectionMatrix, p->m_camera.GetPosition());
-    }
-  }
-  if (m_uiShowModels & SHOW_AUDIO) {
-    for (std::vector<CShapeData *>::iterator it = p->m_audioAy.begin(); it != p->m_audioAy.end(); ++it) {
-      (*it)->Draw(worldToProjectionMatrix, p->m_camera.GetPosition());
-    }
-  }
-  if (m_uiShowModels & SHOW_STUNTS) {
-    for (std::vector<CShapeData *>::iterator it = p->m_stuntAy.begin(); it != p->m_stuntAy.end(); ++it) {
-      (*it)->Draw(worldToProjectionMatrix, p->m_camera.GetPosition());
-    }
-  }
-  if (m_uiShowModels & SHOW_REF_MODEL && p->m_pRefModel) {
-    p->m_pRefModel->Draw(worldToProjectionMatrix, p->m_camera.GetPosition());
-    if (m_uiShowModels & SHOW_REF_WIRE_MODEL) {
-      // set GLSL flag for color inversion and mode for line drawing
-      p->m_pShader->SetUniform1i("wireframe", 1);
-      glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-      p->m_pRefModel->Draw(worldToProjectionMatrix, p->m_camera.GetPosition());
-      glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-      p->m_pShader->SetUniform1i("wireframe", 0);
-    }
-  }
-  //if (p->m_pAxes)
-  //  p->m_pAxes->Draw(worldToProjectionMatrix);
-  //if (p->m_pTestNormals)
-  //  p->m_pTestNormals->Draw(worldToProjectionMatrix, p->m_camera.GetPosition());
+}
+
+//-------------------------------------------------------------------------------------------------
+
+void CTrackPreview::OnRenderCompleted(const tEdRenderResult &Result)
+{
+  if (Result.Tag.ullDocumentId != m_ullDocumentId)
+    return;
+  if (!m_FrameState.ApplyResult(Result))
+    return;
+
+  update();
+  emit FrameStateChanged();
+}
+
+//-------------------------------------------------------------------------------------------------
+
+void CTrackPreview::Activate()
+{
+  QueueLoadAndRender();
+}
+
+//-------------------------------------------------------------------------------------------------
+
+void CTrackPreview::MarkDocumentEdited()
+{
+  m_FrameState.MarkDocumentEdited();
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -779,6 +465,8 @@ bool CTrackPreview::SaveTrack()
 {
   if (m_bAlreadySaved) {
     m_bUnsavedChanges = !SaveTrack_Internal(m_sTrackFile);
+    if (!m_bUnsavedChanges)
+      QueueLoadAndRender();
     g_pMainWindow->UpdateWindow();
     return true;
   } else {
@@ -801,6 +489,7 @@ bool CTrackPreview::SaveTrackAs()
   m_sTrackFile = sFilename;
   m_bUnsavedChanges = false;
   m_bAlreadySaved = true;
+  QueueLoadAndRender();
   g_pMainWindow->UpdateWindow();
   return true;
 }
@@ -809,6 +498,9 @@ bool CTrackPreview::SaveTrackAs()
 
 bool CTrackPreview::Export(eExportType exportType)
 {
+  if (!CanExport())
+    return false;
+
 #if !TRACKEDITOR_ENABLE_FBX
   if (exportType == eExportType::EXPORT_FBX)
     return false;
@@ -1022,33 +714,6 @@ QString CTrackPreview::GetTitle(bool bFullPath)
 
 //-------------------------------------------------------------------------------------------------
 
-void CTrackPreview::initializeGL()
-{
-  setMouseTracking(false);
-  if (glewInit() != GLEW_OK)
-    assert(0);
-
-  glEnable(GL_DEBUG_OUTPUT);
-  glDebugMessageCallback(GLErrorCb, 0);
-  glEnable(GL_DEPTH_TEST);
-  glEnable(GL_CULL_FACE);
-  glEnable(GL_BLEND);
-  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-  glEnable(GL_ALPHA_TEST);
-  glAlphaFunc(GL_GREATER, 0.24f);
-  glLineWidth(3.0f);
-
-  if (!p->m_pShader) {
-    std::string sVertexShader = std::string(g_pMainWindow->GetAppPath().toLatin1().constData()) + std::string("/Shaders/WhiplashVertexShader.glsl");
-    std::string sFragmentShader = std::string(g_pMainWindow->GetAppPath().toLatin1().constData()) + std::string("/Shaders/WhiplashFragmentShader.glsl");
-    p->m_pShader = new CShader(sVertexShader, sFragmentShader);
-  }
-
-  //p->m_pAxes = DebugShapes::MakeAxes(p->m_pShader);
-  UpdateCar(m_carModel, m_carAILine, m_bMillionPlus);
-  p->m_track.LoadTextures();
-}
-
 //-------------------------------------------------------------------------------------------------
 
 void CTrackPreview::mousePressEvent(QMouseEvent *pEvent)
@@ -1122,16 +787,7 @@ bool CTrackPreview::SaveTrack_Internal(const QString &sFilename)
 
 void CTrackPreview::UpdateReferenceModelPos_Internal()
 {
-  if (!p->m_pRefModel)
-    return;
-
-  glm::mat4 yawMat = glm::rotate(glm::radians((float)m_dRefYaw), glm::vec3(0, 1, 0));
-  glm::mat4 pitchMat = glm::rotate(glm::radians((float)m_dRefPitch), glm::vec3(1, 0, 0));
-  glm::mat4 rollMat = glm::rotate(glm::radians((float)m_dRefRoll), glm::vec3(0, 0, 1));
-  glm::mat4 translateMat = glm::translate(glm::vec3(m_iRefX, m_iRefY, m_iRefZ));
-  glm::mat4 scaleMat = glm::scale(glm::mat4(1), glm::vec3(m_dRefScale, m_dRefScale, m_dRefScale));
-  p->m_pRefModel->m_modelToWorldMatrix = translateMat * rollMat * pitchMat * yawMat * scaleMat;
-  repaint();
+  update();
 }
 
 //-------------------------------------------------------------------------------------------------

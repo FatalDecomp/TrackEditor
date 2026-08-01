@@ -31,6 +31,10 @@ set(trackeditor_sources
     EditSurfaceDialog.cpp
     EditSurfaceDialog.h
     EditSurfaceDialog.ui
+    EditorRenderQueue.cpp
+    EditorRenderQueue.h
+    EditorRenderService.cpp
+    EditorRenderService.h
     ExportWizard.cpp
     ExportWizard.h
     ExportWizard.ui
@@ -97,12 +101,3 @@ target_link_libraries(TrackEditor
         Qt5::OpenGL
         GLEW::GLEW
         OpenGL::GL)
-
-add_custom_command(TARGET TrackEditor POST_BUILD
-    COMMAND "${CMAKE_COMMAND}" -E make_directory
-            "$<TARGET_FILE_DIR:TrackEditor>/Shaders"
-    COMMAND "${CMAKE_COMMAND}" -E copy_if_different
-            "${PROJECT_SOURCE_DIR}/WhipLib/Shaders/WhiplashVertexShader.glsl"
-            "${PROJECT_SOURCE_DIR}/WhipLib/Shaders/WhiplashFragmentShader.glsl"
-            "$<TARGET_FILE_DIR:TrackEditor>/Shaders"
-    COMMENT "Copying TrackEditor runtime shaders")

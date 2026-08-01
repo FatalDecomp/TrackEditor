@@ -37,9 +37,45 @@ if(BUILD_TESTING)
             COMMAND "${Python3_EXECUTABLE}"
                     "${CMAKE_CURRENT_SOURCE_DIR}/tests/test_e2_s1_roller_submodule.py"
                     -v)
+        add_test(
+            NAME trackeditor-e3-s1-render-worker-contract
+            COMMAND "${Python3_EXECUTABLE}"
+                    "${CMAKE_CURRENT_SOURCE_DIR}/tests/test_e3_s1_render_worker.py"
+                    -v)
     endif()
 
     if(TARGET TrackEditor)
+        add_executable(trackeditor-e3-s1-frame-delivery-test
+            tests/editor_render_queue_test.cpp
+            TrackEditor/EditorRenderQueue.cpp)
+        target_compile_features(trackeditor-e3-s1-frame-delivery-test PRIVATE cxx_std_17)
+        target_include_directories(trackeditor-e3-s1-frame-delivery-test PRIVATE
+            "${CMAKE_CURRENT_SOURCE_DIR}/TrackEditor"
+            "${CMAKE_CURRENT_SOURCE_DIR}/external/ROLLER/PROJECTS/ROLLER")
+        target_link_libraries(trackeditor-e3-s1-frame-delivery-test PRIVATE
+            Qt5::Core
+            Qt5::Gui)
+        add_test(NAME trackeditor-e3-s1-frame-delivery
+                 COMMAND trackeditor-e3-s1-frame-delivery-test)
+
+        add_executable(trackeditor-e3-s1-render-service-test
+            tests/editor_render_service_test.cpp
+            TrackEditor/EditorRenderQueue.cpp
+            TrackEditor/EditorRenderQueue.h
+            TrackEditor/EditorRenderService.cpp
+            TrackEditor/EditorRenderService.h)
+        set_target_properties(trackeditor-e3-s1-render-service-test PROPERTIES
+            AUTOMOC ON)
+        target_compile_features(trackeditor-e3-s1-render-service-test PRIVATE cxx_std_17)
+        target_include_directories(trackeditor-e3-s1-render-service-test PRIVATE
+            "${CMAKE_CURRENT_SOURCE_DIR}/TrackEditor"
+            "${CMAKE_CURRENT_SOURCE_DIR}/external/ROLLER/PROJECTS/ROLLER")
+        target_link_libraries(trackeditor-e3-s1-render-service-test PRIVATE
+            Qt5::Core
+            Qt5::Gui)
+        add_test(NAME trackeditor-e3-s1-render-service
+                 COMMAND trackeditor-e3-s1-render-service-test)
+
         add_test(NAME trackeditor-smoke COMMAND TrackEditor --cmake-smoke-test)
         if(WIN32)
             set(trackeditor_qpa_platform windows)
