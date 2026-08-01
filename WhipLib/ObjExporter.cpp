@@ -140,7 +140,7 @@ void CObjExporter::ExportShape_Internal(std::ofstream &out, int &iOffset, CShape
       << std::to_string(pShapeData->m_vertices[i].normal.z) << "\n";
   }
   out << "usemtl " << sMtlName << "\n";
-  if (pShapeData->m_drawType == GL_TRIANGLES) {
+  if (pShapeData->m_drawType == eShapePrimitive::TRIANGLES) {
     out << "#pols\n";
     int iNumPols = (int)pShapeData->m_uiNumIndices / 3;
     for (int i = 0; i < iNumPols; ++i) {
@@ -153,7 +153,7 @@ void CObjExporter::ExportShape_Internal(std::ofstream &out, int &iOffset, CShape
       }
       out << "\n";
     }
-  } else if (pShapeData->m_drawType == GL_LINES) {
+  } else if (pShapeData->m_drawType == eShapePrimitive::LINES) {
     out << "#lines\n";
     out << "l ";
     for (int i = 0; i < (int)pShapeData->m_uiNumVerts; ++i) {

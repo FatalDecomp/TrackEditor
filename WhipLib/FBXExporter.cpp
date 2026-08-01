@@ -124,7 +124,7 @@ bool CFBXExporter::ExportTrack(std::vector<std::pair<std::string, CShapeData *>>
 
   for (std::vector<std::pair<std::string, CShapeData *>>::iterator it = trackSectionAy.begin(); it != trackSectionAy.end(); ++it) {
     FbxNode *pTrackSectionNode = NULL;
-    if (it->second->m_drawType == GL_TRIANGLES)
+    if (it->second->m_drawType == eShapePrimitive::TRIANGLES)
       pTrackSectionNode = CreateShapeMesh(it->second, it->first.c_str(), szTextureFile, pScene);
     else
       pTrackSectionNode = CreateShapeLine(it->second, it->first.c_str(), szTextureFile, pScene);

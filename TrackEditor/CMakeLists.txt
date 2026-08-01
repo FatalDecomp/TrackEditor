@@ -100,7 +100,4 @@ target_link_libraries(TrackEditor
         ROLLER::core
         Qt5::Core
         Qt5::Gui
-        Qt5::Widgets
-        Qt5::OpenGL
-        GLEW::GLEW
-        OpenGL::GL)
+        Qt5::Widgets)

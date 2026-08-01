@@ -151,7 +151,7 @@ WLFUNC bool wlGetModel(uint8 *pBmpBuf,
 
   //generate model
   CShapeData *pShape = NULL;
-  CShapeFactory::GetShapeFactory().MakeModel(&pShape, NULL, &tex, model);
+  CShapeFactory::GetShapeFactory().MakeModel(&pShape, &tex, model);
   if (!pShape)
     return bSuccess;
 
@@ -182,8 +182,8 @@ WLFUNC int wlLoadTrack(const char *szTrack)
 
   if (bSuccess) {
     pNewTrack->pTrackShape = NULL;
-    CShapeFactory::GetShapeFactory().MakeTrackSurface(&pNewTrack->pTrackShape, NULL, &pNewTrack->track, eShapeSection::EXPORT, true, false);
-    CShapeFactory::GetShapeFactory().MakeSigns(NULL, &pNewTrack->track, pNewTrack->signAy);
+    CShapeFactory::GetShapeFactory().MakeTrackSurface(&pNewTrack->pTrackShape, &pNewTrack->track, eShapeSection::EXPORT, true, false);
+    CShapeFactory::GetShapeFactory().MakeSigns(&pNewTrack->track, pNewTrack->signAy);
     for (int i = 0; i < (int)pNewTrack->signAy.size(); ++i) {
       pNewTrack->signAy[i]->TransformVertsForExport();
     }

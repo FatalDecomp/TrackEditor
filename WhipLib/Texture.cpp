@@ -3,10 +3,7 @@
 #include <fstream>
 #include <sstream>
 #include "Unmangler.h"
-#include <GL/glew.h>
-#include "OpenGLDebug.h"
 #include "Vertex.h"
-#include "ShapeFactory.h"
 #include <fstream>
 #include "Logging.h"
 #if defined(IS_WINDOWS)
@@ -27,8 +24,7 @@
 //-------------------------------------------------------------------------------------------------
 
 CTexture::CTexture()
-  : m_uiId(0)
-  , m_iNumTiles(0)
+  : m_iNumTiles(0)
   , m_pTileAy(NULL)
   , m_pPalette(NULL)
 {
@@ -45,9 +41,6 @@ CTexture::~CTexture()
 
 void CTexture::ClearData()
 {
-  GLCALL(glDeleteTextures(1, &m_uiId));
-
-  m_uiId = 0;
   m_iNumTiles = 0;
   if (m_pTileAy) {
     delete[] m_pTileAy;
@@ -62,14 +55,6 @@ bool CTexture::LoadTexture(const std::string &sFilename, CPalette *pPalette)
 {
   ClearData();
   m_pPalette = pPalette;
-  if (m_uiId == 0) {
-    GLCALL(glGenTextures(1, &m_uiId));
-    GLCALL(glBindTexture(GL_TEXTURE_2D, m_uiId));
-    GLCALL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST));
-    GLCALL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST));
-    GLCALL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE));
-    GLCALL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE));
-  }
 
   if (sFilename.empty()) {
     Logging::LogMessage("Texture filename is empty");
@@ -119,21 +104,6 @@ bool CTexture::LoadTexture(const std::string &sFilename, CPalette *pPalette)
   Logging::LogMessage("%s texture: %s", bSuccess ? "Loaded" : "Failed to load", sFilename.c_str());
 
   return bSuccess;
-}
-
-//-------------------------------------------------------------------------------------------------
-
-void CTexture::Bind(uint32 uiSlot) const
-{
-  GLCALL(glActiveTexture(GL_TEXTURE0 + uiSlot));
-  GLCALL(glBindTexture(GL_TEXTURE_2D, m_uiId));
-}
-
-//-------------------------------------------------------------------------------------------------
-
-void CTexture::Unbind() const
-{
-  GLCALL(glBindTexture(GL_TEXTURE_2D, 0));
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -323,15 +293,6 @@ bool CTexture::ProcessTextureData(const uint8 *pData, size_t length)
     }
   }
 
-  tTile *pTilesFlipped = new tTile[m_iNumTiles];
-  FlipTileLines(m_pTileAy, pTilesFlipped, m_iNumTiles);
-  int iLength = TILE_WIDTH;
-  int iHeight = TILE_HEIGHT * m_iNumTiles;
-  GLCALL(glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8,
-                      iLength, iHeight, 0,
-                      GL_RGBA, GL_UNSIGNED_BYTE, pTilesFlipped));
-  GLCALL(glBindTexture(GL_TEXTURE_2D, 0));
-  delete[] pTilesFlipped;
   return true;
 }
 

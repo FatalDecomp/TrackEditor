@@ -1,15 +1,12 @@
 LIBS = 	../lib/WhipLib.a \
-		../external/glew/lib/libGLEW.a \
 		../external/FBX/lib/release/libalembic.a \
 		../external/FBX/lib/release/libfbxsdk.a \
-		-lGL \
 		-lxml2 \
 		-lz
 
 INCLUDES = 	-I. \
 			-I../WhipLib \
-			-I../external/glm \
-			-I../external/glew/include/GL
+			-I../external/glm
 
 ifeq ($(BUILDCONFIG), debug)
 	DEBUGFLAGS = -D _DEBUG -D DEBUG

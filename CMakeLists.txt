@@ -20,9 +20,7 @@ if(NOT TARGET ROLLER::core)
 endif()
 
 if(TRACKEDITOR_BUILD_APPLICATION)
-    find_package(Qt5 5.15 REQUIRED COMPONENTS Core Gui Widgets OpenGL)
-    find_package(OpenGL REQUIRED)
-    find_package(GLEW 2.1 REQUIRED)
+    find_package(Qt5 5.15 REQUIRED COMPONENTS Core Gui Widgets)
 
     add_subdirectory(WhipLib)
     add_subdirectory(TrackEditor)
@@ -51,6 +49,11 @@ if(BUILD_TESTING)
             NAME trackeditor-e3-s3-camera-input-contract
             COMMAND "${Python3_EXECUTABLE}"
                     "${CMAKE_CURRENT_SOURCE_DIR}/tests/test_e3_s3_camera_input.py"
+                    -v)
+        add_test(
+            NAME trackeditor-e3-s4-whiplib-engine-contract
+            COMMAND "${Python3_EXECUTABLE}"
+                    "${CMAKE_CURRENT_SOURCE_DIR}/tests/test_e3_s4_whiplib_engine.py"
                     -v)
     endif()
 

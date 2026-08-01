@@ -12,7 +12,7 @@ cmake -S . -B out/build -DTRACKEDITOR_ENABLE_FBX=OFF
 cmake --build out/build --config Release
 ```
 
-The CMake build uses dynamic Qt 5.15 and system/prebuilt SDL3, SDL3_image, and GLEW packages. It builds ROLLER's `ROLLER::core` target with the game disabled, so WildMidi and libcdio are not required. See [docs/building.md](docs/building.md) for Windows, Linux, macOS, run, and optional FBX instructions.
+The CMake build uses dynamic Qt 5.15 and system/prebuilt SDL3 and SDL3_image packages. It builds ROLLER's `ROLLER::core` target with the game disabled, so WildMidi and libcdio are not required. See [docs/building.md](docs/building.md) for Windows, Linux, macOS, run, and optional FBX instructions.
 
 ## Track Editor Features: 
 * Open, render, edit, and save Whiplash tracks
@@ -45,7 +45,6 @@ The CMake build uses dynamic Qt 5.15 and system/prebuilt SDL3, SDL3_image, and G
 * Dynamic Qt 5.15
 * SDL 3.2.22 or newer
 * SDL_image 3.2.4 or newer
-* GLEW 2.1.0 or newer
 * GLM 1.0.1: https://github.com/g-truc/glm
 * stb_image 2.30: https://github.com/nothings/stb
 * stb_image_write 1.16: https://github.com/nothings/stb

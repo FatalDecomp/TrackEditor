@@ -56,8 +56,6 @@ public:
 
   void ClearData();
   bool LoadTexture(const std::string &sFilename, CPalette *pPalette);
-  void Bind(uint32 uiSlot = 0) const;
-  void Unbind() const;
   void GetTextureCoordinates(uint32 uiSurfaceType,
                              tVertex &topLeft, tVertex &topRight, tVertex &bottomLeft, tVertex &bottomRight);
   glm::vec2 GetColorCenterCoordinates(uint32 uiColor);
@@ -91,7 +89,6 @@ private:
                          uint32 uiTexIndex);
   glm::vec<4, uint8> GetTranspColor(int iTranspIndex);
 
-  uint32 m_uiId;
   CPalette *m_pPalette; //not owned by this class
   int m_iNumTiles;
 };

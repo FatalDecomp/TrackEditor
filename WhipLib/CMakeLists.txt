@@ -1,38 +1,17 @@
 set(whiplib_sources
-    Camera.cpp
     CarHelpers.cpp
-    Clock.cpp
     DisasmHelpers.cpp
-    DriveComponent.cpp
-    Entity.cpp
-    GameClock.cpp
-    GameInput.cpp
-    IndexBuffer.cpp
     Logging.cpp
     MathHelpers.cpp
-    NoclipComponent.cpp
     ObjExporter.cpp
     ObjImporter.cpp
     Palette.cpp
-    PhysicsComponent.cpp
-    Renderer.cpp
-    Scene.cpp
-    SceneManager.cpp
-    Shader.cpp
-    ShapeComponent.cpp
     ShapeData.cpp
     ShapeFactory.cpp
     Texture.cpp
     Track.cpp
-    TrackComponent.cpp
     Unmangler.cpp
-    VertexArray.cpp
-    VertexBuffer.cpp
     WhipLib.cpp)
-
-if(WIN32)
-    list(APPEND whiplib_sources WinUserKeyMapper.cpp)
-endif()
 
 if(TRACKEDITOR_ENABLE_FBX)
     list(APPEND whiplib_sources FBXExporter.cpp)
@@ -46,7 +25,6 @@ target_compile_definitions(WhipLib
     PUBLIC
         GLM_ENABLE_EXPERIMENTAL
         TRACKEDITOR_ENABLE_FBX=$<BOOL:${TRACKEDITOR_ENABLE_FBX}>
-        $<$<BOOL:${GLEW_USE_STATIC_LIBS}>:GLEW_STATIC>
     PRIVATE
         WHIPLIB_LIB
         $<$<PLATFORM_ID:Windows>:IS_WINDOWS>
@@ -60,11 +38,6 @@ target_include_directories(WhipLib
         "${PROJECT_SOURCE_DIR}/external/stb"
         "${CMAKE_CURRENT_SOURCE_DIR}/CarPlans"
         "${CMAKE_CURRENT_SOURCE_DIR}/SignPlans")
-
-target_link_libraries(WhipLib
-    PUBLIC
-        GLEW::GLEW
-        OpenGL::GL)
 
 if(WIN32)
     target_link_libraries(WhipLib PRIVATE Shlwapi)
