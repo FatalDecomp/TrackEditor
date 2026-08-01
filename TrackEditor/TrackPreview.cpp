@@ -1,4 +1,5 @@
 #include "TrackPreview.h"
+#include "TrackCoordinateConversion.h"
 #include "EditorRenderService.h"
 #include "MainWindow.h"
 #include "Track.h"
@@ -151,8 +152,16 @@ bool CTrackPreview::LoadTrack(const QString &sFilename)
     p->m_track.GenerateTrackMath();
     if (!p->m_track.m_chunkAy.empty()) {
       const glm::vec3 &Center = p->m_track.m_chunkAy.front().math.center;
+      const glm::vec3 RollerOrigin(
+          static_cast<float>(p->m_track.m_header.iHeaderUnk1),
+          static_cast<float>(p->m_track.m_header.iHeaderUnk2),
+          static_cast<float>(p->m_track.m_header.iFloorDepth));
+      const glm::vec3 RollerCenter =
+          EditorTrackCoordinates::ToRollerWorld(Center, RollerOrigin);
       m_CameraController.SetPosition(
-          Center.x - 4000.0f, Center.y, Center.z + 1600.0f);
+          RollerCenter.x - 4000.0f,
+          RollerCenter.y,
+          RollerCenter.z + 1600.0f);
     }
     p->m_historyAy.clear();
     SaveHistory(sFilename + " loaded", false);

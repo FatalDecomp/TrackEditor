@@ -80,6 +80,20 @@ class E3S3CameraInputContractTests(unittest.TestCase):
         self.assertNotIn("Qt::ShiftModifier", source)
         self.assertNotIn("Qt::ControlModifier", source)
 
+    def test_initial_camera_converts_whiplib_axes_to_roller_world(self) -> None:
+        preview = (EDITOR / "TrackPreview.cpp").read_text(encoding="utf-8")
+        conversion = (EDITOR / "TrackCoordinateConversion.h").read_text(
+            encoding="utf-8"
+        )
+
+        self.assertIn("EditorTrackCoordinates::ToRollerWorld", preview)
+        self.assertIn("m_header.iHeaderUnk1", preview)
+        self.assertIn("m_header.iHeaderUnk2", preview)
+        self.assertIn("m_header.iFloorDepth", preview)
+        self.assertIn("RollerOrigin.x + ModelPosition.z", conversion)
+        self.assertIn("RollerOrigin.y + ModelPosition.x", conversion)
+        self.assertIn("RollerOrigin.z + ModelPosition.y", conversion)
+
 
 if __name__ == "__main__":
     unittest.main()

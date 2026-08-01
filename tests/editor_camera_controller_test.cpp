@@ -1,4 +1,5 @@
 #include "EditorCameraController.h"
+#include "TrackCoordinateConversion.h"
 
 #include <cassert>
 #include <cmath>
@@ -117,6 +118,18 @@ void TestMovementFollowsYawAndPitch()
   assert(NearlyEqual(Camera.GetCameraState().fYawDegrees, 5.0f));
   assert(NearlyEqual(Camera.GetCameraState().fPitchDegrees, -5.0f));
 }
+
+void TestTrackCoordinateConversion()
+{
+  const glm::vec3 ModelPosition(100.0f, 200.0f, 300.0f);
+  const glm::vec3 RollerOrigin(1000.0f, 2000.0f, 2048.0f);
+  const glm::vec3 RollerPosition =
+      EditorTrackCoordinates::ToRollerWorld(ModelPosition, RollerOrigin);
+
+  assert(NearlyEqual(RollerPosition.x, 1300.0f));
+  assert(NearlyEqual(RollerPosition.y, 2100.0f));
+  assert(NearlyEqual(RollerPosition.z, 2248.0f));
+}
 }
 
 int main()
@@ -124,6 +137,7 @@ int main()
   TestFacadeStateAndWorldAxisMovement();
   TestMouseLookSensitivityAndClickGate();
   TestMovementFollowsYawAndPitch();
+  TestTrackCoordinateConversion();
   CEditorCameraController::SetMovementSpeed(
       CEditorCameraController::DEFAULT_MOVEMENT_SPEED);
   std::cout << "E3-S3 editor camera input tests passed\n";

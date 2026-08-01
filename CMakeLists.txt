@@ -93,6 +93,7 @@ if(BUILD_TESTING)
         target_compile_features(trackeditor-e3-s3-camera-input-test PRIVATE cxx_std_17)
         target_include_directories(trackeditor-e3-s3-camera-input-test PRIVATE
             "${CMAKE_CURRENT_SOURCE_DIR}/TrackEditor"
+            "${CMAKE_CURRENT_SOURCE_DIR}/external/glm"
             "${CMAKE_CURRENT_SOURCE_DIR}/external/ROLLER/PROJECTS/ROLLER")
         add_test(NAME trackeditor-e3-s3-camera-input
                  COMMAND trackeditor-e3-s3-camera-input-test)

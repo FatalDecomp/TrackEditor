@@ -62,6 +62,7 @@ set(trackeditor_sources
     TilePicker.cpp
     TilePicker.h
     TilePicker.ui
+    TrackCoordinateConversion.h
     TrackEditor.cpp
     TrackEditor.h
     TrackPreview.cpp
