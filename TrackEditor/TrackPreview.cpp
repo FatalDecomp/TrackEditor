@@ -35,7 +35,7 @@ public:
   CTrackPreviewPrivate() = default;
 
   CTrack m_track;
-  CHistoryAy m_historyAy;
+  CTrackHistory m_history;
 };
 
 //-------------------------------------------------------------------------------------------------
@@ -57,7 +57,6 @@ CTrackPreview::CTrackPreview(QWidget *pParent,
   , m_iSelTo(0)
   , m_bToChecked(false)
   , m_sLastCarTex("")
-  , m_iHistoryIndex(0)
   , m_sReferenceModelFile("")
   , m_dRefYaw(0.0)
   , m_dRefPitch(0.0)
@@ -147,7 +146,7 @@ bool CTrackPreview::LoadTrack(const QString &sFilename)
   if (bSuccess) {
     p->m_track.GenerateTrackMath();
     if (!p->m_track.m_chunkAy.empty()) {
-      const glm::vec3 &Center = p->m_track.m_chunkAy.front().math.center;
+      const glm::vec3 &Center = p->m_track.m_chunkMathAy.front().center;
       const glm::vec3 RollerOrigin(
           static_cast<float>(p->m_track.m_header.iHeaderUnk1),
           static_cast<float>(p->m_track.m_header.iHeaderUnk2),
@@ -159,7 +158,7 @@ bool CTrackPreview::LoadTrack(const QString &sFilename)
           RollerCenter.y,
           RollerCenter.z + 1600.0f);
     }
-    p->m_historyAy.clear();
+    p->m_history.Clear();
     SaveHistory(sFilename + " loaded", false);
     m_bUnsavedChanges = false;
     m_bAlreadySaved = true;
@@ -204,49 +203,24 @@ void CTrackPreview::SaveHistory(const QString &sDescription, bool bDocumentEdit)
 {
   if (bDocumentEdit)
     MarkDocumentEdited();
-  tTrackHistory history;
-  history.sDescription = sDescription.toLatin1().constData();
-  p->m_track.GetTrackData(history.byteAy);
-
-  while (m_iHistoryIndex < (int)p->m_historyAy.size() - 1) {
-    p->m_historyAy.pop_back();
-  }
-
-  p->m_historyAy.push_back(history);
-
-  while ((int)p->m_historyAy.size() > g_pMainWindow->m_preferences.iHistoryMaxSize) {
-    p->m_historyAy.erase(p->m_historyAy.begin());
-  }
-
-  m_iHistoryIndex = (int)p->m_historyAy.size() - 1;
+  p->m_history.Save(p->m_track, sDescription.toStdString(),
+                    static_cast<size_t>(g_pMainWindow->m_preferences.iHistoryMaxSize));
 }
 
 //-------------------------------------------------------------------------------------------------
 
 void CTrackPreview::Undo()
 {
-  if (p->m_historyAy.empty()) return;
-
-  m_iHistoryIndex--;
-  if (m_iHistoryIndex < 0)
-    m_iHistoryIndex = 0;
-
-  tTrackHistory *pHistory = &p->m_historyAy[m_iHistoryIndex];
-  LoadHistory(pHistory);
+  if (p->m_history.Undo(p->m_track))
+    MarkDocumentEdited();
 }
 
 //-------------------------------------------------------------------------------------------------
 
 void CTrackPreview::Redo()
 {
-  if (p->m_historyAy.empty()) return;
-
-  m_iHistoryIndex++;
-  if (m_iHistoryIndex >= (int)p->m_historyAy.size())
-    m_iHistoryIndex = (int)p->m_historyAy.size() - 1;
-
-  tTrackHistory *pHistory = &p->m_historyAy[m_iHistoryIndex];
-  LoadHistory(pHistory);
+  if (p->m_history.Redo(p->m_track))
+    MarkDocumentEdited();
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -270,22 +244,6 @@ void CTrackPreview::UpdateReferenceModelPos(double dYaw, double dPitch, double d
 void CTrackPreview::UpdateReferenceModelTexture()
 {
   update();
-}
-
-//-------------------------------------------------------------------------------------------------
-
-void CTrackPreview::LoadHistory(const tTrackHistory *pHistory)
-{
-  int iSize = (int)pHistory->byteAy.size();
-  uint8 *byData = new uint8[iSize];
-  for (int i = 0; i < iSize; ++i)
-    byData[i] = pHistory->byteAy[i];
-
-  p->m_track.ClearData();
-  p->m_track.ProcessTrackData(byData, iSize);
-
-  delete[] byData;
-  MarkDocumentEdited();
 }
 
 //-------------------------------------------------------------------------------------------------

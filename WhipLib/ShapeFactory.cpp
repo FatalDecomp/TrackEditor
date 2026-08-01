@@ -1410,15 +1410,15 @@ void CShapeFactory::MakeSigns(CTrack *pTrack, std::vector<CShapeData *> &signAy,
 
     glm::vec3 center; //sign origin is midpoint of centerline
     if (i + 1 < pTrack->m_chunkAy.size())
-      center = (pTrack->m_chunkAy[i + 1].math.center - pTrack->m_chunkAy[i].math.center) * 0.5f;
+      center = (pTrack->m_chunkMathAy[i + 1].center - pTrack->m_chunkMathAy[i].center) * 0.5f;
     else
-      center = (pTrack->m_chunkAy[i].math.center - pTrack->m_chunkAy[0].math.center) * 0.5f;
-    glm::mat4 translateMat = glm::translate(pTrack->m_chunkAy[i].math.center + center);
+      center = (pTrack->m_chunkMathAy[i].center - pTrack->m_chunkMathAy[0].center) * 0.5f;
+    glm::mat4 translateMat = glm::translate(pTrack->m_chunkMathAy[i].center + center);
 
     glm::mat4 scaleMatWidth = glm::scale(glm::vec3(fLen, fLen, fLen));
     glm::mat4 scaleMatHeight = glm::scale(glm::vec3(fHeight, fHeight, fHeight));
-    glm::vec3 widthVec = glm::vec3(scaleMatWidth * glm::vec4(pTrack->m_chunkAy[i].math.pitchAxis, 1.0f));
-    glm::vec3 normal = glm::normalize(glm::cross(pTrack->m_chunkAy[i].math.nextChunkPitched, pTrack->m_chunkAy[i].math.pitchAxis));
+    glm::vec3 widthVec = glm::vec3(scaleMatWidth * glm::vec4(pTrack->m_chunkMathAy[i].pitchAxis, 1.0f));
+    glm::vec3 normal = glm::normalize(glm::cross(pTrack->m_chunkMathAy[i].nextChunkPitched, pTrack->m_chunkMathAy[i].pitchAxis));
     glm::vec3 heightVec = glm::vec3(scaleMatHeight * glm::vec4(normal, 1.0f));
     glm::vec3 signPos = widthVec + heightVec;
     glm::vec3 signPosTranslated = glm::vec3(translateMat * glm::vec4(signPos, 1.0f));
@@ -1426,10 +1426,10 @@ void CShapeFactory::MakeSigns(CTrack *pTrack, std::vector<CShapeData *> &signAy,
     bool bBillboarded = g_signAy[pTrack->m_chunkAy[i].iSignType].bBillboarded;
 
     glm::mat4 signYawMat = glm::rotate(glm::radians((float)pTrack->m_chunkAy[i].dSignYaw * -1.0f), normal);// glm::vec3(0, 1, 0));
-    glm::mat4 signPitchMat = glm::rotate(glm::radians((float)pTrack->m_chunkAy[i].dSignPitch * -1.0f), pTrack->m_chunkAy[i].math.pitchAxis); //glm::vec3(1, 0, 0));
-    glm::mat4 signRollMat = glm::rotate(glm::radians((float)pTrack->m_chunkAy[i].dSignRoll * -1.0f), glm::normalize(pTrack->m_chunkAy[i].math.nextChunkPitched));// glm::vec3(0, 0, 1));
+    glm::mat4 signPitchMat = glm::rotate(glm::radians((float)pTrack->m_chunkAy[i].dSignPitch * -1.0f), pTrack->m_chunkMathAy[i].pitchAxis); //glm::vec3(1, 0, 0));
+    glm::mat4 signRollMat = glm::rotate(glm::radians((float)pTrack->m_chunkAy[i].dSignRoll * -1.0f), glm::normalize(pTrack->m_chunkMathAy[i].nextChunkPitched));// glm::vec3(0, 0, 1));
     pNewSign->m_modelToWorldMatrix = glm::translate(signPosTranslated) * 
-      signRollMat * signPitchMat * (bBillboarded ? pTrack->m_chunkAy[i].math.yawMat : signYawMat) *
+      signRollMat * signPitchMat * (bBillboarded ? pTrack->m_chunkMathAy[i].yawMat : signYawMat) *
       glm::rotate(glm::radians(-90.0f), glm::vec3(0, 0, 1)) * //sign starts on its side
       glm::rotate(glm::radians(-90.0f), glm::vec3(0, 1, 0)); //track starts facing z positive, sign starts facing x positive
     
@@ -1452,15 +1452,15 @@ void CShapeFactory::MakeAudio(CTrack *pTrack, std::vector<CShapeData *> &audioAy
     MakeAudioMarker(&pNewMarker, pTrack->m_pTex);
 
     float fHeight = (float)1000.0f * -1.0f;
-    glm::mat4 translateMat = glm::translate(pTrack->m_chunkAy[i].math.centerStunt);
+    glm::mat4 translateMat = glm::translate(pTrack->m_chunkMathAy[i].centerStunt);
     glm::mat4 scaleMatHeight = glm::scale(glm::vec3(fHeight, fHeight, fHeight));
-    glm::vec3 normal = glm::normalize(glm::cross(pTrack->m_chunkAy[i].math.nextChunkPitched, pTrack->m_chunkAy[i].math.pitchAxis));
-    glm::vec3 heightVec = glm::vec3(scaleMatHeight * pTrack->m_chunkAy[i].math.rollMat * glm::vec4(normal, 1.0f));
+    glm::vec3 normal = glm::normalize(glm::cross(pTrack->m_chunkMathAy[i].nextChunkPitched, pTrack->m_chunkMathAy[i].pitchAxis));
+    glm::vec3 heightVec = glm::vec3(scaleMatHeight * pTrack->m_chunkMathAy[i].rollMat * glm::vec4(normal, 1.0f));
     glm::vec3 markerPos = heightVec;
     glm::vec3 markerPosTranslated = glm::vec3(translateMat * glm::vec4(markerPos, 1.0f));
 
     pNewMarker->m_modelToWorldMatrix = glm::translate(markerPosTranslated) *
-      pTrack->m_chunkAy[i].math.rollMat * pTrack->m_chunkAy[i].math.pitchMat * pTrack->m_chunkAy[i].math.yawMat;
+      pTrack->m_chunkMathAy[i].rollMat * pTrack->m_chunkMathAy[i].pitchMat * pTrack->m_chunkMathAy[i].yawMat;
 
     //add sign to array
     audioAy.push_back(pNewMarker);
@@ -1482,15 +1482,15 @@ void CShapeFactory::MakeStunts(CTrack *pTrack, std::vector<CShapeData *> &stuntA
     MakeStuntMarker(&pNewMarker, pTrack->m_pTex);
 
     float fHeight = (float)1000.0f * -1.0f;
-    glm::mat4 translateMat = glm::translate(pTrack->m_chunkAy[it->first].math.centerStunt);
+    glm::mat4 translateMat = glm::translate(pTrack->m_chunkMathAy[it->first].centerStunt);
     glm::mat4 scaleMatHeight = glm::scale(glm::vec3(fHeight, fHeight, fHeight));
-    glm::vec3 normal = glm::normalize(glm::cross(pTrack->m_chunkAy[it->first].math.nextChunkPitched, pTrack->m_chunkAy[it->first].math.pitchAxis));
-    glm::vec3 heightVec = glm::vec3(scaleMatHeight * pTrack->m_chunkAy[it->first].math.rollMat * glm::vec4(normal, 1.0f));
+    glm::vec3 normal = glm::normalize(glm::cross(pTrack->m_chunkMathAy[it->first].nextChunkPitched, pTrack->m_chunkMathAy[it->first].pitchAxis));
+    glm::vec3 heightVec = glm::vec3(scaleMatHeight * pTrack->m_chunkMathAy[it->first].rollMat * glm::vec4(normal, 1.0f));
     glm::vec3 markerPos = heightVec;
     glm::vec3 markerPosTranslated = glm::vec3(translateMat * glm::vec4(markerPos, 1.0f));
 
     pNewMarker->m_modelToWorldMatrix = glm::translate(markerPosTranslated) *
-      pTrack->m_chunkAy[it->first].math.rollMat * pTrack->m_chunkAy[it->first].math.pitchMat * pTrack->m_chunkAy[it->first].math.yawMat;
+      pTrack->m_chunkMathAy[it->first].rollMat * pTrack->m_chunkMathAy[it->first].pitchMat * pTrack->m_chunkMathAy[it->first].yawMat;
 
     //add sign to array
     stuntAy.push_back(pNewMarker);
@@ -1534,16 +1534,16 @@ void CShapeFactory::GetCarPos(CTrack *pTrack, int iChunk, eShapeSection aiLineSe
   glm::vec3 carLine;
   switch (aiLineSection) {
     case eShapeSection::AILINE1:
-      carLine = pTrack->m_chunkAy[iChunk].math.carLine1;
+      carLine = pTrack->m_chunkMathAy[iChunk].carLine1;
       break;
     case eShapeSection::AILINE2:
-      carLine = pTrack->m_chunkAy[iChunk].math.carLine2;
+      carLine = pTrack->m_chunkMathAy[iChunk].carLine2;
       break;
     case eShapeSection::AILINE3:
-      carLine = pTrack->m_chunkAy[iChunk].math.carLine3;
+      carLine = pTrack->m_chunkMathAy[iChunk].carLine3;
       break;
     case eShapeSection::AILINE4:
-      carLine = pTrack->m_chunkAy[iChunk].math.carLine4;
+      carLine = pTrack->m_chunkMathAy[iChunk].carLine4;
       break;
     default:
       assert(0);
@@ -1553,7 +1553,7 @@ void CShapeFactory::GetCarPos(CTrack *pTrack, int iChunk, eShapeSection aiLineSe
   if (bMillionPlus)
     fRotate = 90.0f;
   modelToWorldMatrix = glm::translate(carLine) *
-    pTrack->m_chunkAy[iChunk].math.rollMat * pTrack->m_chunkAy[iChunk].math.pitchMat * pTrack->m_chunkAy[iChunk].math.yawMat *
+    pTrack->m_chunkMathAy[iChunk].rollMat * pTrack->m_chunkMathAy[iChunk].pitchMat * pTrack->m_chunkMathAy[iChunk].yawMat *
     glm::rotate(glm::radians(fRotate), glm::vec3(0, 0, 1)) * //car starts on its side
     glm::rotate(glm::radians(fRotate), glm::vec3(0, 1, 0)); //track starts facing z positive, car starts facing x positive
 }
@@ -1596,214 +1596,214 @@ tVertex *CShapeFactory::MakeVerts(uint32 &numVertices, eShapeSection section, CT
     switch (section) {
       case eShapeSection::CENTER:
         ApplyVerticesSingleSection(i, vertices, uiNumVertsPerChunk,
-                                   pTrack->m_chunkAy[i].math.lLane,
-                                   pTrack->m_chunkAy[i].math.rLane,
-                                   pTrack->m_chunkAy[iChunkIndex].math.lLane,
-                                   pTrack->m_chunkAy[iChunkIndex].math.rLane,
+                                   pTrack->m_chunkMathAy[i].lLane,
+                                   pTrack->m_chunkMathAy[i].rLane,
+                                   pTrack->m_chunkMathAy[iChunkIndex].lLane,
+                                   pTrack->m_chunkMathAy[iChunkIndex].rLane,
                                    backModeling);
         ApplyNormalsAndTexCoords(i, iChunkIndex, vertices, uiNumVertsPerChunk, pTrack, pTexture, pTrack->m_chunkAy[iChunkIndex].iCenterSurfaceType, eVertOrder::SURFACE, backModeling);
         break;
       case eShapeSection::LSHOULDER:
         ApplyVerticesSingleSection(i, vertices, uiNumVertsPerChunk,
-                                   pTrack->m_chunkAy[i].math.lShoulder,
-                                   pTrack->m_chunkAy[i].math.lLane,
-                                   pTrack->m_chunkAy[iChunkIndex].math.lShoulder,
-                                   pTrack->m_chunkAy[iChunkIndex].math.lLane,
+                                   pTrack->m_chunkMathAy[i].lShoulder,
+                                   pTrack->m_chunkMathAy[i].lLane,
+                                   pTrack->m_chunkMathAy[iChunkIndex].lShoulder,
+                                   pTrack->m_chunkMathAy[iChunkIndex].lLane,
                                    backModeling);
         ApplyNormalsAndTexCoords(i, iChunkIndex, vertices, uiNumVertsPerChunk, pTrack, pTexture, pTrack->m_chunkAy[iChunkIndex].iLeftSurfaceType, eVertOrder::SURFACE, backModeling);
         break;
       case eShapeSection::RSHOULDER:
         ApplyVerticesSingleSection(i, vertices, uiNumVertsPerChunk,
-                                   pTrack->m_chunkAy[i].math.rLane,
-                                   pTrack->m_chunkAy[i].math.rShoulder,
-                                   pTrack->m_chunkAy[iChunkIndex].math.rLane,
-                                   pTrack->m_chunkAy[iChunkIndex].math.rShoulder,
+                                   pTrack->m_chunkMathAy[i].rLane,
+                                   pTrack->m_chunkMathAy[i].rShoulder,
+                                   pTrack->m_chunkMathAy[iChunkIndex].rLane,
+                                   pTrack->m_chunkMathAy[iChunkIndex].rShoulder,
                                    backModeling);
         ApplyNormalsAndTexCoords(i, iChunkIndex, vertices, uiNumVertsPerChunk, pTrack, pTexture, pTrack->m_chunkAy[iChunkIndex].iRightSurfaceType, eVertOrder::SURFACE, backModeling);
         break;
       case eShapeSection::LWALL:
         ApplyVerticesSingleSection(i, vertices, uiNumVertsPerChunk,
-                                   pTrack->m_chunkAy[i].math.lWall, 
-                                   pTrack->m_chunkAy[i].math.lWallBottomAttach, 
-                                   pTrack->m_chunkAy[iChunkIndex].math.lWall,
-                                   pTrack->m_chunkAy[iChunkIndex].math.lWallBottomAttach,
+                                   pTrack->m_chunkMathAy[i].lWall,
+                                   pTrack->m_chunkMathAy[i].lWallBottomAttach,
+                                   pTrack->m_chunkMathAy[iChunkIndex].lWall,
+                                   pTrack->m_chunkMathAy[iChunkIndex].lWallBottomAttach,
                                    backModeling);
         ApplyNormalsAndTexCoords(i, iChunkIndex, vertices, uiNumVertsPerChunk, pTrack, pTexture, pTrack->m_chunkAy[iChunkIndex].iLeftWallType, eVertOrder::LWALL, backModeling);
         break;
       case eShapeSection::RWALL:
         ApplyVerticesSingleSection(i, vertices, uiNumVertsPerChunk,
-                                   pTrack->m_chunkAy[i].math.rWallBottomAttach, 
-                                   pTrack->m_chunkAy[i].math.rWall, 
-                                   pTrack->m_chunkAy[iChunkIndex].math.rWallBottomAttach,
-                                   pTrack->m_chunkAy[iChunkIndex].math.rWall,
+                                   pTrack->m_chunkMathAy[i].rWallBottomAttach,
+                                   pTrack->m_chunkMathAy[i].rWall,
+                                   pTrack->m_chunkMathAy[iChunkIndex].rWallBottomAttach,
+                                   pTrack->m_chunkMathAy[iChunkIndex].rWall,
                                    backModeling);
         ApplyNormalsAndTexCoords(i, iChunkIndex, vertices, uiNumVertsPerChunk, pTrack, pTexture, pTrack->m_chunkAy[iChunkIndex].iRightWallType, eVertOrder::RWALL, backModeling);
         break;
       case eShapeSection::ROOF:
         ApplyVerticesSingleSection(i, vertices, uiNumVertsPerChunk,
-                                   pTrack->m_chunkAy[i].math.rWall, 
-                                   pTrack->m_chunkAy[i].math.lWall, 
-                                   pTrack->m_chunkAy[iChunkIndex].math.rWall,
-                                   pTrack->m_chunkAy[iChunkIndex].math.lWall,
+                                   pTrack->m_chunkMathAy[i].rWall,
+                                   pTrack->m_chunkMathAy[i].lWall,
+                                   pTrack->m_chunkMathAy[iChunkIndex].rWall,
+                                   pTrack->m_chunkMathAy[iChunkIndex].lWall,
                                    backModeling);
         ApplyNormalsAndTexCoords(i, iChunkIndex, vertices, uiNumVertsPerChunk, pTrack, pTexture, pTrack->m_chunkAy[iChunkIndex].iRoofType, eVertOrder::SURFACE, backModeling);
         break;
       case eShapeSection::OWALLFLOOR:
         ApplyVerticesSingleSection(i, vertices, uiNumVertsPerChunk,
-                                   pTrack->m_chunkAy[i].math.lFloor, 
-                                   pTrack->m_chunkAy[i].math.rFloor, 
-                                   pTrack->m_chunkAy[iChunkIndex].math.lFloor,
-                                   pTrack->m_chunkAy[iChunkIndex].math.rFloor,
+                                   pTrack->m_chunkMathAy[i].lFloor,
+                                   pTrack->m_chunkMathAy[i].rFloor,
+                                   pTrack->m_chunkMathAy[iChunkIndex].lFloor,
+                                   pTrack->m_chunkMathAy[iChunkIndex].rFloor,
                                    backModeling);
         ApplyNormalsAndTexCoords(i, iChunkIndex, vertices, uiNumVertsPerChunk, pTrack, pTexture, pTrack->m_chunkAy[iChunkIndex].iOuterFloorType, eVertOrder::SURFACE, backModeling);
         break;
       case eShapeSection::LLOWALL:
         ApplyVerticesSingleSection(i, vertices, uiNumVertsPerChunk,
-                                   pTrack->m_chunkAy[i].math.lloWall, 
-                                   pTrack->m_chunkAy[i].math.lloWallBottomAttach, 
-                                   pTrack->m_chunkAy[iChunkIndex].math.lloWall,
-                                   pTrack->m_chunkAy[iChunkIndex].math.lloWallBottomAttach,
+                                   pTrack->m_chunkMathAy[i].lloWall,
+                                   pTrack->m_chunkMathAy[i].lloWallBottomAttach,
+                                   pTrack->m_chunkMathAy[iChunkIndex].lloWall,
+                                   pTrack->m_chunkMathAy[iChunkIndex].lloWallBottomAttach,
                                    backModeling);
         ApplyNormalsAndTexCoords(i, iChunkIndex, vertices, uiNumVertsPerChunk, pTrack, pTexture, pTrack->m_chunkAy[iChunkIndex].iLLOuterWallType, eVertOrder::OWALL, backModeling);
         break;
       case eShapeSection::RLOWALL:
         ApplyVerticesSingleSection(i, vertices, uiNumVertsPerChunk,
-                                   pTrack->m_chunkAy[i].math.rloWallBottomAttach, 
-                                   pTrack->m_chunkAy[i].math.rloWall, 
-                                   pTrack->m_chunkAy[iChunkIndex].math.rloWallBottomAttach,
-                                   pTrack->m_chunkAy[iChunkIndex].math.rloWall,
+                                   pTrack->m_chunkMathAy[i].rloWallBottomAttach,
+                                   pTrack->m_chunkMathAy[i].rloWall,
+                                   pTrack->m_chunkMathAy[iChunkIndex].rloWallBottomAttach,
+                                   pTrack->m_chunkMathAy[iChunkIndex].rloWall,
                                    backModeling);
         ApplyNormalsAndTexCoords(i, iChunkIndex, vertices, uiNumVertsPerChunk, pTrack, pTexture, pTrack->m_chunkAy[iChunkIndex].iRLOuterWallType, eVertOrder::OWALL, backModeling);
         break;
       case eShapeSection::LUOWALL:
         ApplyVerticesSingleSection(i, vertices, uiNumVertsPerChunk,
-                                   pTrack->m_chunkAy[i].math.luoWall, 
-                                   pTrack->m_chunkAy[i].math.lloWall, 
-                                   pTrack->m_chunkAy[iChunkIndex].math.luoWall,
-                                   pTrack->m_chunkAy[iChunkIndex].math.lloWall,
+                                   pTrack->m_chunkMathAy[i].luoWall,
+                                   pTrack->m_chunkMathAy[i].lloWall,
+                                   pTrack->m_chunkMathAy[iChunkIndex].luoWall,
+                                   pTrack->m_chunkMathAy[iChunkIndex].lloWall,
                                    backModeling);
         ApplyNormalsAndTexCoords(i, iChunkIndex, vertices, uiNumVertsPerChunk, pTrack, pTexture, pTrack->m_chunkAy[iChunkIndex].iLUOuterWallType, eVertOrder::OWALL, backModeling);
         break;
       case eShapeSection::RUOWALL:
         ApplyVerticesSingleSection(i, vertices, uiNumVertsPerChunk,
-                                   pTrack->m_chunkAy[i].math.rloWall, 
-                                   pTrack->m_chunkAy[i].math.ruoWall, 
-                                   pTrack->m_chunkAy[iChunkIndex].math.rloWall,
-                                   pTrack->m_chunkAy[iChunkIndex].math.ruoWall,
+                                   pTrack->m_chunkMathAy[i].rloWall,
+                                   pTrack->m_chunkMathAy[i].ruoWall,
+                                   pTrack->m_chunkMathAy[iChunkIndex].rloWall,
+                                   pTrack->m_chunkMathAy[iChunkIndex].ruoWall,
                                    backModeling);
         ApplyNormalsAndTexCoords(i, iChunkIndex, vertices, uiNumVertsPerChunk, pTrack, pTexture, pTrack->m_chunkAy[iChunkIndex].iRUOuterWallType, eVertOrder::OWALL, backModeling);
         break;
       case eShapeSection::SELECTED:
-        vertices[i * uiNumVertsPerChunk + 0].position = pTrack->m_chunkAy[i].math.luoWall;
-        vertices[i * uiNumVertsPerChunk + 1].position = pTrack->m_chunkAy[i].math.ruoWall;
-        vertices[i * uiNumVertsPerChunk + 2].position = pTrack->m_chunkAy[i].math.lloWallBottomAttach;
-        vertices[i * uiNumVertsPerChunk + 3].position = pTrack->m_chunkAy[i].math.rloWallBottomAttach;
-        vertices[i * uiNumVertsPerChunk + 4].position = pTrack->m_chunkAy[iChunkIndex].math.luoWall;
-        vertices[i * uiNumVertsPerChunk + 5].position = pTrack->m_chunkAy[iChunkIndex].math.ruoWall;
-        vertices[i * uiNumVertsPerChunk + 6].position = pTrack->m_chunkAy[iChunkIndex].math.lloWallBottomAttach;
-        vertices[i * uiNumVertsPerChunk + 7].position = pTrack->m_chunkAy[iChunkIndex].math.rloWallBottomAttach;
+        vertices[i * uiNumVertsPerChunk + 0].position = pTrack->m_chunkMathAy[i].luoWall;
+        vertices[i * uiNumVertsPerChunk + 1].position = pTrack->m_chunkMathAy[i].ruoWall;
+        vertices[i * uiNumVertsPerChunk + 2].position = pTrack->m_chunkMathAy[i].lloWallBottomAttach;
+        vertices[i * uiNumVertsPerChunk + 3].position = pTrack->m_chunkMathAy[i].rloWallBottomAttach;
+        vertices[i * uiNumVertsPerChunk + 4].position = pTrack->m_chunkMathAy[iChunkIndex].luoWall;
+        vertices[i * uiNumVertsPerChunk + 5].position = pTrack->m_chunkMathAy[iChunkIndex].ruoWall;
+        vertices[i * uiNumVertsPerChunk + 6].position = pTrack->m_chunkMathAy[iChunkIndex].lloWallBottomAttach;
+        vertices[i * uiNumVertsPerChunk + 7].position = pTrack->m_chunkMathAy[iChunkIndex].rloWallBottomAttach;
         break;
       case eShapeSection::AILINE1:
-        vertices[i * uiNumVertsPerChunk + 0].position = pTrack->m_chunkAy[i].math.aiLine1;
+        vertices[i * uiNumVertsPerChunk + 0].position = pTrack->m_chunkMathAy[i].aiLine1;
         break;
       case eShapeSection::AILINE2:
-        vertices[i * uiNumVertsPerChunk + 0].position = pTrack->m_chunkAy[i].math.aiLine2;
+        vertices[i * uiNumVertsPerChunk + 0].position = pTrack->m_chunkMathAy[i].aiLine2;
         break;
       case eShapeSection::AILINE3:
-        vertices[i * uiNumVertsPerChunk + 0].position = pTrack->m_chunkAy[i].math.aiLine3;
+        vertices[i * uiNumVertsPerChunk + 0].position = pTrack->m_chunkMathAy[i].aiLine3;
         break;
       case eShapeSection::AILINE4:
-        vertices[i * uiNumVertsPerChunk + 0].position = pTrack->m_chunkAy[i].math.aiLine4;
+        vertices[i * uiNumVertsPerChunk + 0].position = pTrack->m_chunkMathAy[i].aiLine4;
         break;
       case eShapeSection::CARLINE1:
-        vertices[i * uiNumVertsPerChunk + 0].position = pTrack->m_chunkAy[i].math.carLine1;
+        vertices[i * uiNumVertsPerChunk + 0].position = pTrack->m_chunkMathAy[i].carLine1;
         break;
       case eShapeSection::CARLINE2:
-        vertices[i * uiNumVertsPerChunk + 0].position = pTrack->m_chunkAy[i].math.carLine2;
+        vertices[i * uiNumVertsPerChunk + 0].position = pTrack->m_chunkMathAy[i].carLine2;
         break;
       case eShapeSection::CARLINE3:
-        vertices[i * uiNumVertsPerChunk + 0].position = pTrack->m_chunkAy[i].math.carLine3;
+        vertices[i * uiNumVertsPerChunk + 0].position = pTrack->m_chunkMathAy[i].carLine3;
         break;
       case eShapeSection::CARLINE4:
-        vertices[i * uiNumVertsPerChunk + 0].position = pTrack->m_chunkAy[i].math.carLine4;
+        vertices[i * uiNumVertsPerChunk + 0].position = pTrack->m_chunkMathAy[i].carLine4;
         break;
       case eShapeSection::EXPORT:
         //center
         ApplyVerticesSingleSection(i, vertices, uiNumVertsPerChunk,
-                                   pTrack->m_chunkAy[i].math.lLane,
-                                   pTrack->m_chunkAy[i].math.rLane,
-                                   pTrack->m_chunkAy[iChunkIndex].math.lLane,
-                                   pTrack->m_chunkAy[iChunkIndex].math.rLane,
+                                   pTrack->m_chunkMathAy[i].lLane,
+                                   pTrack->m_chunkMathAy[i].rLane,
+                                   pTrack->m_chunkMathAy[iChunkIndex].lLane,
+                                   pTrack->m_chunkMathAy[iChunkIndex].rLane,
                                    backModeling, iExportOffset * 0);
         //lshoulder
         ApplyVerticesSingleSection(i, vertices, uiNumVertsPerChunk,
-                                   pTrack->m_chunkAy[i].math.lShoulder,
-                                   pTrack->m_chunkAy[i].math.lLane,
-                                   pTrack->m_chunkAy[iChunkIndex].math.lShoulder,
-                                   pTrack->m_chunkAy[iChunkIndex].math.lLane,
+                                   pTrack->m_chunkMathAy[i].lShoulder,
+                                   pTrack->m_chunkMathAy[i].lLane,
+                                   pTrack->m_chunkMathAy[iChunkIndex].lShoulder,
+                                   pTrack->m_chunkMathAy[iChunkIndex].lLane,
                                    backModeling, iExportOffset * 1);
         //rshoulder
         ApplyVerticesSingleSection(i, vertices, uiNumVertsPerChunk,
-                                   pTrack->m_chunkAy[i].math.rLane,
-                                   pTrack->m_chunkAy[i].math.rShoulder,
-                                   pTrack->m_chunkAy[iChunkIndex].math.rLane,
-                                   pTrack->m_chunkAy[iChunkIndex].math.rShoulder,
+                                   pTrack->m_chunkMathAy[i].rLane,
+                                   pTrack->m_chunkMathAy[i].rShoulder,
+                                   pTrack->m_chunkMathAy[iChunkIndex].rLane,
+                                   pTrack->m_chunkMathAy[iChunkIndex].rShoulder,
                                    backModeling, iExportOffset * 2);
         //lwall
         ApplyVerticesSingleSection(i, vertices, uiNumVertsPerChunk,
-                                   pTrack->m_chunkAy[i].math.lWall,
-                                   pTrack->m_chunkAy[i].math.lWallBottomAttach,
-                                   pTrack->m_chunkAy[iChunkIndex].math.lWall,
-                                   pTrack->m_chunkAy[iChunkIndex].math.lWallBottomAttach,
+                                   pTrack->m_chunkMathAy[i].lWall,
+                                   pTrack->m_chunkMathAy[i].lWallBottomAttach,
+                                   pTrack->m_chunkMathAy[iChunkIndex].lWall,
+                                   pTrack->m_chunkMathAy[iChunkIndex].lWallBottomAttach,
                                    backModeling, iExportOffset * 3);
         //rwall
         ApplyVerticesSingleSection(i, vertices, uiNumVertsPerChunk,
-                                   pTrack->m_chunkAy[i].math.rWallBottomAttach,
-                                   pTrack->m_chunkAy[i].math.rWall,
-                                   pTrack->m_chunkAy[iChunkIndex].math.rWallBottomAttach,
-                                   pTrack->m_chunkAy[iChunkIndex].math.rWall,
+                                   pTrack->m_chunkMathAy[i].rWallBottomAttach,
+                                   pTrack->m_chunkMathAy[i].rWall,
+                                   pTrack->m_chunkMathAy[iChunkIndex].rWallBottomAttach,
+                                   pTrack->m_chunkMathAy[iChunkIndex].rWall,
                                    backModeling, iExportOffset * 4);
         //roof
         ApplyVerticesSingleSection(i, vertices, uiNumVertsPerChunk,
-                                   pTrack->m_chunkAy[i].math.rWall,
-                                   pTrack->m_chunkAy[i].math.lWall,
-                                   pTrack->m_chunkAy[iChunkIndex].math.rWall,
-                                   pTrack->m_chunkAy[iChunkIndex].math.lWall,
+                                   pTrack->m_chunkMathAy[i].rWall,
+                                   pTrack->m_chunkMathAy[i].lWall,
+                                   pTrack->m_chunkMathAy[iChunkIndex].rWall,
+                                   pTrack->m_chunkMathAy[iChunkIndex].lWall,
                                    backModeling, iExportOffset * 5);
         //owallfloor
         ApplyVerticesSingleSection(i, vertices, uiNumVertsPerChunk,
-                                   pTrack->m_chunkAy[i].math.lFloor,
-                                   pTrack->m_chunkAy[i].math.rFloor,
-                                   pTrack->m_chunkAy[iChunkIndex].math.lFloor,
-                                   pTrack->m_chunkAy[iChunkIndex].math.rFloor,
+                                   pTrack->m_chunkMathAy[i].lFloor,
+                                   pTrack->m_chunkMathAy[i].rFloor,
+                                   pTrack->m_chunkMathAy[iChunkIndex].lFloor,
+                                   pTrack->m_chunkMathAy[iChunkIndex].rFloor,
                                    backModeling, iExportOffset * 6);
         //llowall
         ApplyVerticesSingleSection(i, vertices, uiNumVertsPerChunk,
-                                   pTrack->m_chunkAy[i].math.lloWall,
-                                   pTrack->m_chunkAy[i].math.lloWallBottomAttach,
-                                   pTrack->m_chunkAy[iChunkIndex].math.lloWall,
-                                   pTrack->m_chunkAy[iChunkIndex].math.lloWallBottomAttach,
+                                   pTrack->m_chunkMathAy[i].lloWall,
+                                   pTrack->m_chunkMathAy[i].lloWallBottomAttach,
+                                   pTrack->m_chunkMathAy[iChunkIndex].lloWall,
+                                   pTrack->m_chunkMathAy[iChunkIndex].lloWallBottomAttach,
                                    backModeling, iExportOffset * 7);
         //rlowall
         ApplyVerticesSingleSection(i, vertices, uiNumVertsPerChunk,
-                                   pTrack->m_chunkAy[i].math.rloWallBottomAttach,
-                                   pTrack->m_chunkAy[i].math.rloWall,
-                                   pTrack->m_chunkAy[iChunkIndex].math.rloWallBottomAttach,
-                                   pTrack->m_chunkAy[iChunkIndex].math.rloWall,
+                                   pTrack->m_chunkMathAy[i].rloWallBottomAttach,
+                                   pTrack->m_chunkMathAy[i].rloWall,
+                                   pTrack->m_chunkMathAy[iChunkIndex].rloWallBottomAttach,
+                                   pTrack->m_chunkMathAy[iChunkIndex].rloWall,
                                    backModeling, iExportOffset * 8);
         //luowall
         ApplyVerticesSingleSection(i, vertices, uiNumVertsPerChunk,
-                                   pTrack->m_chunkAy[i].math.luoWall,
-                                   pTrack->m_chunkAy[i].math.lloWall,
-                                   pTrack->m_chunkAy[iChunkIndex].math.luoWall,
-                                   pTrack->m_chunkAy[iChunkIndex].math.lloWall,
+                                   pTrack->m_chunkMathAy[i].luoWall,
+                                   pTrack->m_chunkMathAy[i].lloWall,
+                                   pTrack->m_chunkMathAy[iChunkIndex].luoWall,
+                                   pTrack->m_chunkMathAy[iChunkIndex].lloWall,
                                    backModeling, iExportOffset * 9);
         //ruowall
         ApplyVerticesSingleSection(i, vertices, uiNumVertsPerChunk,
-                                   pTrack->m_chunkAy[i].math.rloWall,
-                                   pTrack->m_chunkAy[i].math.ruoWall,
-                                   pTrack->m_chunkAy[iChunkIndex].math.rloWall,
-                                   pTrack->m_chunkAy[iChunkIndex].math.ruoWall,
+                                   pTrack->m_chunkMathAy[i].rloWall,
+                                   pTrack->m_chunkMathAy[i].ruoWall,
+                                   pTrack->m_chunkMathAy[iChunkIndex].rloWall,
+                                   pTrack->m_chunkMathAy[iChunkIndex].ruoWall,
                                    backModeling, iExportOffset * 10);
         //center
         ApplyNormalsAndTexCoords(i, iChunkIndex, vertices, uiNumVertsPerChunk,
@@ -1851,7 +1851,7 @@ tVertex *CShapeFactory::MakeVerts(uint32 &numVertices, eShapeSection section, CT
                                  eVertOrder::OWALL, backModeling, iExportOffset * 10);
         break;
       case eShapeSection::CENTERLINE:
-        vertices[i * uiNumVertsPerChunk + 0].position = pTrack->m_chunkAy[i].math.center;
+        vertices[i * uiNumVertsPerChunk + 0].position = pTrack->m_chunkMathAy[i].center;
         break;
       default:
         assert(0); //shape not implemented

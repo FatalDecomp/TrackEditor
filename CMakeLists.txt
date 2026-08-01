@@ -14,6 +14,7 @@ if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/external/ROLLER/CMakeLists.txt")
 endif()
 
 add_subdirectory(external/ROLLER)
+add_subdirectory(TrackModel)
 
 if(NOT TARGET ROLLER::core)
     message(FATAL_ERROR "The ROLLER submodule did not provide ROLLER::core")
@@ -28,6 +29,14 @@ endif()
 
 include(CTest)
 if(BUILD_TESTING)
+    add_executable(trackeditor-e3-s5a-track-model-test
+        tests/track_model_test.cpp)
+    target_compile_features(trackeditor-e3-s5a-track-model-test PRIVATE cxx_std_17)
+    target_link_libraries(trackeditor-e3-s5a-track-model-test PRIVATE
+        TrackEditor::track-model)
+    add_test(NAME trackeditor-e3-s5a-track-model
+             COMMAND trackeditor-e3-s5a-track-model-test)
+
     find_package(Python3 COMPONENTS Interpreter QUIET)
     if(Python3_Interpreter_FOUND)
         add_test(
@@ -54,6 +63,11 @@ if(BUILD_TESTING)
             NAME trackeditor-e3-s4-whiplib-engine-contract
             COMMAND "${Python3_EXECUTABLE}"
                     "${CMAKE_CURRENT_SOURCE_DIR}/tests/test_e3_s4_whiplib_engine.py"
+                    -v)
+        add_test(
+            NAME trackeditor-e3-s5a-track-model-contract
+            COMMAND "${Python3_EXECUTABLE}"
+                    "${CMAKE_CURRENT_SOURCE_DIR}/tests/test_e3_s5a_track_model.py"
                     -v)
     endif()
 

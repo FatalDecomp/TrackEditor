@@ -1,7 +1,6 @@
 set(whiplib_sources
     CarHelpers.cpp
     DisasmHelpers.cpp
-    Logging.cpp
     MathHelpers.cpp
     ObjExporter.cpp
     ObjImporter.cpp
@@ -10,7 +9,6 @@ set(whiplib_sources
     ShapeFactory.cpp
     Texture.cpp
     Track.cpp
-    Unmangler.cpp
     WhipLib.cpp)
 
 if(TRACKEDITOR_ENABLE_FBX)
@@ -38,6 +36,8 @@ target_include_directories(WhipLib
         "${PROJECT_SOURCE_DIR}/external/stb"
         "${CMAKE_CURRENT_SOURCE_DIR}/CarPlans"
         "${CMAKE_CURRENT_SOURCE_DIR}/SignPlans")
+
+target_link_libraries(WhipLib PUBLIC TrackEditor::track-model)
 
 if(WIN32)
     target_link_libraries(WhipLib PRIVATE Shlwapi)

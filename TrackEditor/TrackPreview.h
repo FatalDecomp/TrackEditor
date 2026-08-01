@@ -7,12 +7,6 @@
 #include "Types.h"
 //-------------------------------------------------------------------------------------------------
 #define DEFAULT_HISTORY_MAX_SIZE 256 //approx 200KB per saved track
-struct tTrackHistory
-{
-  std::string sDescription;
-  std::vector<uint8> byteAy;
-};
-typedef std::vector<tTrackHistory> CHistoryAy;
 //-------------------------------------------------------------------------------------------------
 enum eExportType
 {
@@ -89,7 +83,6 @@ signals:
   void FrameStateChanged();
 
 private:
-  void LoadHistory(const tTrackHistory *pHistory);
   bool SaveTrack_Internal(const QString &sFilename);
   void UpdateReferenceModelPos_Internal();
   void QueueLoadAndRender();
@@ -112,7 +105,6 @@ private:
   QString m_sTrackFile;
   QString m_sDocumentAssetRoot;
   QString m_sLastCarTex;
-  int m_iHistoryIndex;
   CEditorRenderService *m_pRenderService;
   uint64_t m_ullDocumentId;
   CDocumentFrameState m_FrameState;

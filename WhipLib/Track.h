@@ -1,35 +1,10 @@
 #ifndef _WHIPLIB_TRACK_H
 #define _WHIPLIB_TRACK_H
 //-------------------------------------------------------------------------------------------------
+#include "TrackModel.h"
 #include "glm.hpp"
 #include <vector>
-#include <map>
-#include <string>
 #include "Types.h"
-//-------------------------------------------------------------------------------------------------
-#define STUNT_LENGTH_100_PERCENT 1024
-//-------------------------------------------------------------------------------------------------
-struct tTrackHeader
-{
-  int iNumChunks;
-  int iHeaderUnk1;
-  int iHeaderUnk2;
-  int iFloorDepth;
-};
-//-------------------------------------------------------------------------------------------------
-struct tStunt
-{
-  int iChunkCount;
-  int iNumTicks;
-  int iTickStartIdx;
-  int iTimingGroup;
-  int iHeight;
-  int iTimeBulging;
-  int iTimeFlat;
-  int iRampSideLength;
-  int iFlags;
-  int iTickCurrIdx;
-};
 //-------------------------------------------------------------------------------------------------
 struct tChunkMath
 {
@@ -70,139 +45,21 @@ struct tChunkMath
   glm::mat4 pitchMat;
   glm::mat4 rollMat;
 };
-//-------------------------------------------------------------------------------------------------
-struct tGeometryChunk
-{
-  void Clear();
-  void Default();
-
-  //line 1
-  int iLeftShoulderWidth;
-  int iLeftLaneWidth;
-  int iRightLaneWidth;
-  int iRightShoulderWidth;
-  int iLeftShoulderHeight;
-  int iRightShoulderHeight;
-  int iLength;
-  double dYaw;
-  double dPitch;
-  double dRoll;
-  int iAILine1;
-  int iAILine2;
-  int iAILine3;
-  int iAILine4;
-  int iTrackGrip;
-  int iLeftShoulderGrip;
-  int iRightShoulderGrip;
-  int iAIMaxSpeed;
-  int iGroundHeight;
-  int iAudioAboveTrigger;
-  int iAudioTriggerSpeed;
-  int iAudioBelowTrigger;
-  //line 2
-  int iLeftSurfaceType;
-  int iCenterSurfaceType;
-  int iRightSurfaceType;
-  int iLeftWallType;
-  int iRightWallType;
-  int iRoofType;
-  int iLUOuterWallType;
-  int iLLOuterWallType;
-  int iOuterFloorType;
-  int iRLOuterWallType;
-  int iRUOuterWallType;
-  int iEnvironmentFloorType;
-  int iSignType;
-  int iSignHorizOffset;
-  int iSignVertOffset;
-  double dSignYaw;
-  double dSignPitch;
-  double dSignRoll;
-  //line 3
-  int iLUOuterWallHOffset;
-  int iLLOuterWallHOffset;
-  int iLOuterFloorHOffset;
-  int iROuterFloorHOffset;
-  int iRLOuterWallHOffset;
-  int iRUOuterWallHOffset;
-  int iLUOuterWallHeight;
-  int iLLOuterWallHeight;
-  int iLOuterFloorHeight;
-  int iROuterFloorHeight;
-  int iRLOuterWallHeight;
-  int iRUOuterWallHeight;
-  int iRoofHeight;
-  int iNearForward;
-  int iNearForwardExStart;
-  int iNearForwardEx;
-  int iLeftSubdivDist;
-  int iCenterSubdivDist;
-  int iRightSubdivDist;
-  int iLWallSubdivDist;
-  int iRWallSubdivDist;
-  int iRoofSubdivDist;
-  int iLUOuterWallSubdivDist;
-  int iLLOuterWallSubdivDist;
-  int iOuterFloorSubdivDist;
-  int iRLOuterWallSubdivDist;
-  int iRUOuterWallSubdivDist;
-  int iNearBackward;
-  int iNearBackwardExStart;
-  int iNearBackwardEx;
-
-  //additional data
-  int iSignTexture;
-
-  //math
-  tChunkMath math;
-};
-typedef std::vector<tGeometryChunk> CChunkAy;
-//-------------------------------------------------------------------------------------------------
-typedef std::map<int, int> CSignMap;
-typedef std::map<int, tStunt> CStuntMap;
-//-------------------------------------------------------------------------------------------------
-struct tRaceInfo
-{
-  int iTrackNumber;
-  int iImpossibleLaps;
-  int iHardLaps;
-  int iTrickyLaps;
-  int iMediumLaps;
-  int iEasyLaps;
-  int iGirlieLaps;
-  double dTrackMapSize;
-  int iTrackMapFidelity;
-  double dPreviewSize;
-};
-//-------------------------------------------------------------------------------------------------
-enum class eFileSection
-{
-  HEADER = 0,
-  GEOMETRY,
-  SIGNS,
-  STUNTS,
-  TEXTURE,
-  TRACK_NUM,
-  LAPS,
-  MAP,
-  END
-};
+typedef std::vector<tChunkMath> CChunkMathAy;
 //-------------------------------------------------------------------------------------------------
 class CTexture;
 class CPalette;
 //-------------------------------------------------------------------------------------------------
 
-class CTrack
+class CTrack : public CTrackModel
 {
 public:
   CTrack();
-  ~CTrack();
+  ~CTrack() override;
 
-  void ClearData();
-  bool LoadTrack(const std::string &sFilename);
+  void ClearData() override;
   bool LoadTextures();
-  bool ProcessTrackData(const uint8 *pData, size_t length);
-  void GetTrackData(std::vector<uint8> &data);
+  bool ProcessTrackData(const uint8 *pData, size_t length) override;
   void GenerateTrackMath();
   void ResetStunts();
   void UpdateStunts();
@@ -215,19 +72,9 @@ public:
                       glm::vec3 &p0, glm::vec3 &p1, glm::vec3 &p2,
                       const glm::vec3 &peg1, const glm::vec3 &peg2);
 
-  static unsigned int GetSignedBitValueFromInt(int iValue);
-  static int GetIntValueFromSignedBit(unsigned int uiValue);
   static bool ShouldDrawSurfaceType(int iSurfaceType);
 
-  tTrackHeader m_header;
-  CChunkAy m_chunkAy;
-  CStuntMap m_stuntMap;
-  CSignMap m_backsMap;
-  std::string m_sTrackFile;
-  std::string m_sTrackFileFolder;
-  std::string m_sTextureFile;
-  std::string m_sBuildingFile;
-  tRaceInfo m_raceInfo;
+  CChunkMathAy m_chunkMathAy;
   int m_iAILineHeight;
 
   CPalette *m_pPal;
@@ -235,11 +82,6 @@ public:
   CTexture *m_pBld;
 
 protected:
-  bool IsNumber(const std::string &str);
-  void ProcessSign(const std::vector<std::string> &lineAy, eFileSection &section);
-  void WriteToVector(std::vector<uint8> &data, const char *szText);
-  void GenerateChunkString(tGeometryChunk &chunk, char *szBuf, int iSize);
-
   void GetCenter(int i, glm::vec3 prevCenter,
                  glm::vec3 &center, glm::vec3 &pitchAxis, glm::vec3 &nextChunkPitched, glm::vec3 &normal,
                  glm::mat4 &yawMat, glm::mat4 &pitchMat, glm::mat4 &rollMat);
