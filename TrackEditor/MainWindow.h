@@ -3,6 +3,7 @@
 //-------------------------------------------------------------------------------------------------
 #include "ui_MainWindow.h"
 #include "QtUserKeyMapper.h"
+#include <QElapsedTimer>
 //-------------------------------------------------------------------------------------------------
 class CMainWindowPrivate;
 class CTrack;
@@ -117,6 +118,7 @@ private:
   QTimer *m_pStuntTimer;
   QTimer *m_pZeroTimer;
   CEditorRenderService *m_pRenderService;
+  QElapsedTimer m_CameraClock;
 };
 
 //-------------------------------------------------------------------------------------------------

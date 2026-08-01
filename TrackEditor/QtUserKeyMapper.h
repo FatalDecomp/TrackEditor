@@ -1,14 +1,14 @@
 #ifndef _TRACKEDITOR_QTUSERKEYMAPPER_H
 #define _TRACKEDITOR_QTUSERKEYMAPPER_H
 //-------------------------------------------------------------------------------------------------
-#include "KeyMapper.h"
-#include "Types.h"
+#include "EditorCameraController.h"
+#include <QSet>
 //-------------------------------------------------------------------------------------------------
 class QKeyEvent;
 class QMouseEvent;
 //-------------------------------------------------------------------------------------------------
 
-class CQtUserKeyMapper : public IKeyMapper
+class CQtUserKeyMapper
 {
 public:
   CQtUserKeyMapper();
@@ -17,10 +17,11 @@ public:
   void QtMouseReleaseEvent(QMouseEvent *pEvent);
   void QtKeyPressEvent(QKeyEvent *pEvent);
   void QtKeyReleaseEvent(QKeyEvent *pEvent);
-  void Update(uint64 &ullActionsPressed, glm::vec2 &mousePos) override;
+  tEditorCameraInput GetCameraInput() const;
 
 private:
-  uint64 m_ullActionsPressed;
+  QSet<int> m_PressedKeys;
+  bool m_bMouseLook;
 };
 
 //-------------------------------------------------------------------------------------------------

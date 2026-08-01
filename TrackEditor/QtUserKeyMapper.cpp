@@ -1,7 +1,6 @@
 #include "QtUserKeyMapper.h"
 #include <Qt>
 #include "qevent.h"
-#include "GameInput.h"
 #include "qcursor.h"
 //-------------------------------------------------------------------------------------------------
 #if defined(_DEBUG) && defined(IS_WINDOWS)
@@ -10,91 +9,58 @@
 //-------------------------------------------------------------------------------------------------
 
 CQtUserKeyMapper::CQtUserKeyMapper()
-  : IKeyMapper()
-  , m_ullActionsPressed(0)
+  : m_bMouseLook(false)
 { }
 
 //-------------------------------------------------------------------------------------------------
 
 void CQtUserKeyMapper::QtMousePressEvent(QMouseEvent *pEvent)
 {
-  (void)(pEvent);
-  m_ullActionsPressed |= ACTION_CLICK;
+  m_bMouseLook = pEvent->buttons() != Qt::NoButton;
 }
 
 //-------------------------------------------------------------------------------------------------
 
 void CQtUserKeyMapper::QtMouseReleaseEvent(QMouseEvent *pEvent)
 {
-  (void)(pEvent);
-  m_ullActionsPressed &= ~ACTION_CLICK;
+  m_bMouseLook = pEvent->buttons() != Qt::NoButton;
 }
 
 //-------------------------------------------------------------------------------------------------
 
 void CQtUserKeyMapper::QtKeyPressEvent(QKeyEvent *pEvent)
 {
-  switch (pEvent->key()) {
-    case Qt::Key_W:
-      m_ullActionsPressed |= ACTION_FORWARD;
-      break;
-    case Qt::Key_A:
-      m_ullActionsPressed |= ACTION_LEFT;
-      break;
-    case Qt::Key_S:
-      m_ullActionsPressed |= ACTION_BACKWARD;
-      break;
-    case Qt::Key_D:
-      m_ullActionsPressed |= ACTION_RIGHT;
-      break;
-    case Qt::Key_R:
-    case Qt::Key_E:
-      m_ullActionsPressed |= ACTION_UP;
-      break;
-    case Qt::Key_F:
-    case Qt::Key_Q:
-      m_ullActionsPressed |= ACTION_DOWN;
-      break;
-  }
+  if (!pEvent->isAutoRepeat())
+    m_PressedKeys.insert(pEvent->key());
 }
 
 //-------------------------------------------------------------------------------------------------
 
 void CQtUserKeyMapper::QtKeyReleaseEvent(QKeyEvent *pEvent)
 {
-  switch (pEvent->key()) {
-    case Qt::Key_W:
-      m_ullActionsPressed &= ~ACTION_FORWARD;
-      break;
-    case Qt::Key_A:
-      m_ullActionsPressed &= ~ACTION_LEFT;
-      break;
-    case Qt::Key_S:
-      m_ullActionsPressed &= ~ACTION_BACKWARD;
-      break;
-    case Qt::Key_D:
-      m_ullActionsPressed &= ~ACTION_RIGHT;
-      break;
-    case Qt::Key_R:
-    case Qt::Key_E:
-      m_ullActionsPressed &= ~ACTION_UP;
-      break;
-    case Qt::Key_F:
-    case Qt::Key_Q:
-      m_ullActionsPressed &= ~ACTION_DOWN;
-      break;
-  }
+  if (!pEvent->isAutoRepeat())
+    m_PressedKeys.remove(pEvent->key());
 }
 
 //-------------------------------------------------------------------------------------------------
 
-void CQtUserKeyMapper::Update(uint64 &ullActionsPressed, glm::vec2 &mousePos)
+tEditorCameraInput CQtUserKeyMapper::GetCameraInput() const
 {
-  ullActionsPressed = m_ullActionsPressed;
+  tEditorCameraInput Input;
+  Input.bMoveForward = m_PressedKeys.contains(Qt::Key_W);
+  Input.bMoveBackward = m_PressedKeys.contains(Qt::Key_S);
+  Input.bStrafeLeft = m_PressedKeys.contains(Qt::Key_A);
+  Input.bStrafeRight = m_PressedKeys.contains(Qt::Key_D);
+  Input.bMoveUp = m_PressedKeys.contains(Qt::Key_R) ||
+                  m_PressedKeys.contains(Qt::Key_E);
+  Input.bMoveDown = m_PressedKeys.contains(Qt::Key_F) ||
+                    m_PressedKeys.contains(Qt::Key_Q);
+  Input.bMouseLook = m_bMouseLook;
 
-  QPoint pos = QCursor::pos();
-  mousePos.x = (float)pos.x();
-  mousePos.y = (float)pos.y();
+  const QPoint Pos = QCursor::pos();
+  Input.fMouseX = static_cast<float>(Pos.x());
+  Input.fMouseY = static_cast<float>(Pos.y());
+  return Input;
 }
 
 //-------------------------------------------------------------------------------------------------

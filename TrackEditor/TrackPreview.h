@@ -2,6 +2,7 @@
 #define _TRACKEDITOR_TRACKPREVIEW_H
 //-------------------------------------------------------------------------------------------------
 #include <QWidget>
+#include "EditorCameraController.h"
 #include "EditorRenderQueue.h"
 #include "Types.h"
 //-------------------------------------------------------------------------------------------------
@@ -33,7 +34,7 @@ public:
                 const QString &sTrackFile = "");
   ~CTrackPreview();
 
-  void UpdateCameraPos();
+  void UpdateCameraPos(float fDeltaSeconds);
   bool LoadTrack(const QString &sFilename);
   void DeleteEnvirFloor();
   void UpdateTrack(bool bUpdatingStunt = false);
@@ -94,6 +95,9 @@ private:
   void QueueLoadAndRender();
   void QueueEditedTrackReload();
   void QueueResizeRender();
+  void ScheduleCameraRender();
+  void ArmCameraRenderTimer();
+  void QueueCameraRender();
   void OnRenderCompleted(const tEdRenderResult &Result);
   QSize DevicePixelSize() const;
 
@@ -112,9 +116,12 @@ private:
   CEditorRenderService *m_pRenderService;
   uint64_t m_ullDocumentId;
   CDocumentFrameState m_FrameState;
-  tEdCameraState m_Camera;
+  CEditorCameraController m_CameraController;
   QTimer *m_pResizeTimer;
   QTimer *m_pEditTimer;
+  QTimer *m_pCameraRenderTimer;
+  uint64_t m_ullCameraRequestId;
+  bool m_bCameraRenderPending;
   bool m_bReloadPending;
 };
 

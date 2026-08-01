@@ -1,7 +1,7 @@
 #include "TrackEditor.h"
 #include "DisplaySettings.h"
+#include "EditorCameraController.h"
 #include "QtHelpers.h"
-#include "NoclipComponent.h"
 //-------------------------------------------------------------------------------------------------
 #if defined(_DEBUG) && defined(IS_WINDOWS)
 #define new new(_CLIENT_BLOCK, __FILE__, __LINE__)
@@ -323,7 +323,7 @@ void CDisplaySettings::UpdatePreviewSelection()
 
 void CDisplaySettings::OnCameraSpeedChanged(int iSpeed)
 {
-  CNoclipComponent::s_fMovementSpeed = (float)iSpeed;
+  CEditorCameraController::SetMovementSpeed((float)iSpeed);
 }
 
 //-------------------------------------------------------------------------------------------------

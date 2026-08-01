@@ -27,9 +27,7 @@
 #include "NewTrackDialog.h"
 #include "PreferencesDialog.h"
 #include "AssignBacksDialog.h"
-#include "NoclipComponent.h"
-#include "GameClock.h"
-#include "GameInput.h"
+#include "EditorCameraController.h"
 #include "qtimer.h"
 #include "MathHelpers.h"
 #if defined (IS_WINDOWS)
@@ -120,8 +118,7 @@ CMainWindow::CMainWindow(const QString &sAppPath, float fDesktopScale,
   twViewer->setTabsClosable(true);
   lblChunkWarning->hide();
   lblStuntWarning->hide();
-  CGameClock::GetGameClock().Init();
-  CGameInput::GetGameInput().Init(&m_keyMapper);
+  m_CameraClock.start();
 
   //setup dock widgets
   p->m_pDebugDataDockWidget = new QDockWidget("Debug Chunk Data", this);
@@ -982,7 +979,10 @@ void CMainWindow::OnDebug()
 
 void CMainWindow::OnAbout()
 {
-  QMessageBox::information(this, "Git Gud", "Click to pan. WASD to move. R or E is up, F or Q is down.");
+  QMessageBox::information(
+      this, "Camera Controls",
+      "Hold a mouse button and move to look. WASD moves; R/E moves up; "
+      "F/Q moves down.");
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -1167,10 +1167,11 @@ void CMainWindow::OnStuntTimer()
 
 void CMainWindow::OnZeroTimer()
 {
-  CGameClock::GetGameClock().NewFrame();
-  CGameInput::GetGameInput().Update();
+  const qint64 iElapsedNanoseconds = m_CameraClock.nsecsElapsed();
+  m_CameraClock.restart();
   if (GetCurrentPreview())
-    GetCurrentPreview()->UpdateCameraPos();
+    GetCurrentPreview()->UpdateCameraPos(
+        static_cast<float>(iElapsedNanoseconds) / 1000000000.0f);
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -1284,7 +1285,7 @@ void CMainWindow::LoadSettings()
   bool bMillionPlus;
   uint32 uiShowModels = p->m_pDisplaySettings->GetDisplaySettings(carModel, aiLine, bMillionPlus);
   bool bAttachLast = p->m_pDisplaySettings->GetAttachLast();
-  int iCameraSpeed = (int)CNoclipComponent::s_fMovementSpeed;
+  int iCameraSpeed = (int)CEditorCameraController::GetMovementSpeed();
   //load display settings
   uiShowModels = settings.value("show_models", uiShowModels).toUInt();
   carModel = (eWhipModel)settings.value("car_model", (int)carModel).toInt();

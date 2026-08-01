@@ -31,6 +31,8 @@ set(trackeditor_sources
     EditSurfaceDialog.cpp
     EditSurfaceDialog.h
     EditSurfaceDialog.ui
+    EditorCameraController.cpp
+    EditorCameraController.h
     EditorRenderQueue.cpp
     EditorRenderQueue.h
     EditorRenderService.cpp

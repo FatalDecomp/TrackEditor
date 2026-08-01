@@ -47,6 +47,11 @@ if(BUILD_TESTING)
             COMMAND "${Python3_EXECUTABLE}"
                     "${CMAKE_CURRENT_SOURCE_DIR}/tests/test_e3_s2_edit_display.py"
                     -v)
+        add_test(
+            NAME trackeditor-e3-s3-camera-input-contract
+            COMMAND "${Python3_EXECUTABLE}"
+                    "${CMAKE_CURRENT_SOURCE_DIR}/tests/test_e3_s3_camera_input.py"
+                    -v)
     endif()
 
     if(TARGET TrackEditor)
@@ -80,6 +85,17 @@ if(BUILD_TESTING)
             Qt5::Gui)
         add_test(NAME trackeditor-e3-s1-render-service
                  COMMAND trackeditor-e3-s1-render-service-test)
+
+        add_executable(trackeditor-e3-s3-camera-input-test
+            tests/editor_camera_controller_test.cpp
+            TrackEditor/EditorCameraController.cpp
+            TrackEditor/EditorCameraController.h)
+        target_compile_features(trackeditor-e3-s3-camera-input-test PRIVATE cxx_std_17)
+        target_include_directories(trackeditor-e3-s3-camera-input-test PRIVATE
+            "${CMAKE_CURRENT_SOURCE_DIR}/TrackEditor"
+            "${CMAKE_CURRENT_SOURCE_DIR}/external/ROLLER/PROJECTS/ROLLER")
+        add_test(NAME trackeditor-e3-s3-camera-input
+                 COMMAND trackeditor-e3-s3-camera-input-test)
 
         add_test(NAME trackeditor-smoke COMMAND TrackEditor --cmake-smoke-test)
         if(WIN32)

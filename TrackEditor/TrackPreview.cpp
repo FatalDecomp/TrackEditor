@@ -72,9 +72,11 @@ CTrackPreview::CTrackPreview(QWidget *pParent,
   , m_pRenderService(pRenderService)
   , m_ullDocumentId(CEditorRenderIds::NextDocumentId())
   , m_FrameState(m_ullDocumentId)
-  , m_Camera{}
   , m_pResizeTimer(new QTimer(this))
   , m_pEditTimer(new QTimer(this))
+  , m_pCameraRenderTimer(new QTimer(this))
+  , m_ullCameraRequestId(0)
+  , m_bCameraRenderPending(false)
   , m_bReloadPending(false)
 {
   p = new CTrackPreviewPrivate;
@@ -94,13 +96,10 @@ CTrackPreview::CTrackPreview(QWidget *pParent,
   connect(m_pEditTimer, &QTimer::timeout,
           this, &CTrackPreview::QueueEditedTrackReload);
 
-  m_Camera.uiStructSize = sizeof(m_Camera);
-  m_Camera.uiVersion = ROLLER_ED_CAMERA_STATE_VERSION;
-  m_Camera.fPosition[0] = -4000.0f;
-  m_Camera.fPosition[1] = 0.0f;
-  m_Camera.fPosition[2] = 1600.0f;
-  m_Camera.fYawDegrees = 0.0f;
-  m_Camera.fPitchDegrees = -25.0f;
+  m_pCameraRenderTimer->setSingleShot(true);
+  m_pCameraRenderTimer->setInterval(16);
+  connect(m_pCameraRenderTimer, &QTimer::timeout,
+          this, &CTrackPreview::QueueCameraRender);
 
   if (!sTrackFile.isEmpty()) {
     m_sDocumentAssetRoot = QFileInfo(sTrackFile).absolutePath();
@@ -126,10 +125,18 @@ CTrackPreview::~CTrackPreview()
 
 //-------------------------------------------------------------------------------------------------
 
-void CTrackPreview::UpdateCameraPos()
+void CTrackPreview::UpdateCameraPos(float fDeltaSeconds)
 {
-  // Camera input is wired to roller-core by E3-S3. E3-S1 deliberately does
-  // not render from this UI timer; frames are produced only by the worker.
+  if (!hasFocus()) {
+    m_CameraController.ResetMouseTracking();
+    return;
+  }
+
+  const tEditorCameraInput Input =
+      g_pMainWindow->m_keyMapper.GetCameraInput();
+  if (m_CameraController.Update(Input, fDeltaSeconds)) {
+    ScheduleCameraRender();
+  }
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -144,9 +151,8 @@ bool CTrackPreview::LoadTrack(const QString &sFilename)
     p->m_track.GenerateTrackMath();
     if (!p->m_track.m_chunkAy.empty()) {
       const glm::vec3 &Center = p->m_track.m_chunkAy.front().math.center;
-      m_Camera.fPosition[0] = Center.x - 4000.0f;
-      m_Camera.fPosition[1] = Center.y;
-      m_Camera.fPosition[2] = Center.z + 1600.0f;
+      m_CameraController.SetPosition(
+          Center.x - 4000.0f, Center.y, Center.z + 1600.0f);
     }
     p->m_historyAy.clear();
     SaveHistory(sFilename + " loaded", false);
@@ -379,8 +385,10 @@ void CTrackPreview::QueueLoadAndRender()
       m_pRenderService->EnqueueSerializedLoadAndRender(
           m_ullDocumentId, m_FrameState.GetDocumentRevision(),
           SerializedTrackData, m_sDocumentAssetRoot, DevicePixelSize(),
-          devicePixelRatioF(), m_Camera);
+          devicePixelRatioF(), m_CameraController.GetCameraState());
   if (ullRequestId != 0) {
+    m_pCameraRenderTimer->stop();
+    m_bCameraRenderPending = false;
     m_bReloadPending = true;
     m_FrameState.BeginRequest(ullRequestId);
   }
@@ -407,7 +415,7 @@ void CTrackPreview::QueueResizeRender()
     const uint64_t ullRequestId = m_pRenderService->EnqueueRender(
         m_ullDocumentId, m_FrameState.GetDocumentRevision(),
         m_FrameState.GetInstalledGeometryEpoch(), DevicePixelSize(),
-        devicePixelRatioF(), m_Camera);
+        devicePixelRatioF(), m_CameraController.GetCameraState());
     if (ullRequestId != 0)
       m_FrameState.BeginRequest(ullRequestId);
   } else if (m_FrameState.GetDisplayState()
@@ -419,17 +427,63 @@ void CTrackPreview::QueueResizeRender()
 
 //-------------------------------------------------------------------------------------------------
 
+void CTrackPreview::ScheduleCameraRender()
+{
+  m_bCameraRenderPending = true;
+  ArmCameraRenderTimer();
+}
+
+//-------------------------------------------------------------------------------------------------
+
+void CTrackPreview::ArmCameraRenderTimer()
+{
+  if (m_bCameraRenderPending && m_ullCameraRequestId == 0
+      && !m_bReloadPending && isVisible()
+      && m_FrameState.GetDisplayState() == eEdFrameDisplayState::CURRENT
+      && !m_pCameraRenderTimer->isActive()) {
+    m_pCameraRenderTimer->start();
+  }
+}
+
+//-------------------------------------------------------------------------------------------------
+
+void CTrackPreview::QueueCameraRender()
+{
+  if (!m_bCameraRenderPending || m_ullCameraRequestId != 0
+      || m_bReloadPending || !isVisible()
+      || m_FrameState.GetDisplayState() != eEdFrameDisplayState::CURRENT) {
+    return;
+  }
+
+  const uint64_t ullRequestId = m_pRenderService->EnqueueRender(
+      m_ullDocumentId, m_FrameState.GetDocumentRevision(),
+      m_FrameState.GetInstalledGeometryEpoch(), DevicePixelSize(),
+      devicePixelRatioF(), m_CameraController.GetCameraState());
+  if (ullRequestId != 0) {
+    m_bCameraRenderPending = false;
+    m_ullCameraRequestId = ullRequestId;
+    m_FrameState.BeginRequest(ullRequestId);
+  }
+}
+
+//-------------------------------------------------------------------------------------------------
+
 void CTrackPreview::OnRenderCompleted(const tEdRenderResult &Result)
 {
   if (Result.Tag.ullDocumentId != m_ullDocumentId)
     return;
-  if (!m_FrameState.ApplyResult(Result))
+  if (Result.Tag.ullRequestId == m_ullCameraRequestId)
+    m_ullCameraRequestId = 0;
+  if (!m_FrameState.ApplyResult(Result)) {
+    ArmCameraRenderTimer();
     return;
+  }
 
   m_bReloadPending = Result.Tag.eResult != ROLLER_ED_RESULT_OK;
 
   update();
   emit FrameStateChanged();
+  ArmCameraRenderTimer();
 }
 
 //-------------------------------------------------------------------------------------------------
