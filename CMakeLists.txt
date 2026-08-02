@@ -88,6 +88,11 @@ if(BUILD_TESTING)
             COMMAND "${Python3_EXECUTABLE}"
                     "${CMAKE_CURRENT_SOURCE_DIR}/tests/test_e3_s5c_geometry_cleanup.py"
                     -v)
+        add_test(
+            NAME trackeditor-e3-s6-multi-document-copy-paste-contract
+            COMMAND "${Python3_EXECUTABLE}"
+                    "${CMAKE_CURRENT_SOURCE_DIR}/tests/test_e3_s6_multi_document_copy_paste.py"
+                    -v)
     endif()
 
     if(TARGET TrackEditor)

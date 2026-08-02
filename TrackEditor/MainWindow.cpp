@@ -630,9 +630,14 @@ void CMainWindow::OnPaste()
       }
     }
 
-    //delete selected chunks
-    if (sbSelChunksTo->value() != sbSelChunksFrom->value())
-      OnDeleteChunkClicked();
+    // Replace the selected range as one atomic paste operation. Calling the
+    // normal delete action here would save a transient, partially edited
+    // history entry that undo could restore instead of the pre-paste track.
+    if (sbSelChunksTo->value() != sbSelChunksFrom->value()) {
+      GetCurrentTrack()->m_chunkAy.erase(
+          GetCurrentTrack()->m_chunkAy.begin() + sbSelChunksFrom->value(),
+          GetCurrentTrack()->m_chunkAy.begin() + sbSelChunksTo->value() + 1);
+    }
     //insert new chunks
     for (int i = 0; i < (int)p->m_clipBoard.size(); ++i) {
       GetCurrentTrack()->m_chunkAy.insert(GetCurrentTrack()->m_chunkAy.begin() + i + sbSelChunksFrom->value(), p->m_clipBoard[i]);

@@ -92,6 +92,15 @@ bool CDocumentFrameState::ApplyResult(const tEdRenderResult &Result)
     return true;
   }
 
+  if (Result.bSceneEmpty) {
+    m_Image = QImage();
+    m_uiInstalledGeometryEpoch = Result.Tag.uiActualGeometryEpoch;
+    m_bExportEnabled = false;
+    m_eDisplayState = eEdFrameDisplayState::PLACEHOLDER;
+    m_sErrorText = Result.sErrorText;
+    return true;
+  }
+
   if (Result.Image.isNull()
       || Result.Tag.uiActualGeometryEpoch != Result.uiRenderedGeometryEpoch) {
     return false;

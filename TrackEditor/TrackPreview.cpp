@@ -342,6 +342,18 @@ void CTrackPreview::QueueLoadAndRender()
   if (!m_pRenderService || m_sTrackFile.isEmpty())
     return;
 
+  if (p->m_track.m_chunkAy.empty()) {
+    const uint64_t ullRequestId = m_pRenderService->EnqueueUnload(
+        m_ullDocumentId, m_FrameState.GetDocumentRevision());
+    if (ullRequestId != 0) {
+      m_pCameraRenderTimer->stop();
+      m_bCameraRenderPending = false;
+      m_bReloadPending = true;
+      m_FrameState.BeginRequest(ullRequestId);
+    }
+    return;
+  }
+
   // GetTrackData serializes the current model through CTrack::WriteToVector.
   // The worker owns this snapshot before materializing its temporary .TRK.
   std::vector<uint8> TrackData;

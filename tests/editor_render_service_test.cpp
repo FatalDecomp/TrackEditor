@@ -285,6 +285,34 @@ int main(int argc, char **argv)
   assert(TabB.CanExport());
   assert(g_uiInitCount.load() == 1);
 
+  TabB.MarkDocumentEdited();
+  const uint64_t ullEmptyTabBRequest = Service.EnqueueUnload(
+      TabB.GetDocumentId(), TabB.GetDocumentRevision());
+  TabB.BeginRequest(ullEmptyTabBRequest);
+  const tEdRenderResult EmptyTabBResult =
+      WaitForResult(Service, ullEmptyTabBRequest);
+  assert(EmptyTabBResult.Tag.eResult == ROLLER_ED_RESULT_OK);
+  assert(EmptyTabBResult.bSceneEmpty);
+  assert(g_uiSceneState == ROLLER_ED_SCENE_EMPTY);
+  assert(TabB.ApplyResult(EmptyTabBResult));
+  assert(TabB.GetDisplayState() == eEdFrameDisplayState::PLACEHOLDER);
+  assert(TabB.GetImage().isNull());
+  assert(!TabB.CanExport());
+
+  TabB.MarkDocumentEdited();
+  const std::vector<uint8_t> RedoneTabBTrackData = {'T', 'A', 'B', 'B', '-', 'R', 'E', 'D', 'O'};
+  const uint64_t ullRedoneTabBRequest = Service.EnqueueSerializedLoadAndRender(
+      TabB.GetDocumentId(), TabB.GetDocumentRevision(), RedoneTabBTrackData,
+      "tab-b-document-assets", QSize(4, 3), 1.0, Camera);
+  TabB.BeginRequest(ullRedoneTabBRequest);
+  const tEdRenderResult RedoneTabBResult =
+      WaitForResult(Service, ullRedoneTabBRequest);
+  assert(g_sLoadedTrackData == "TABB-REDO");
+  assert(RedoneTabBResult.Tag.eResult == ROLLER_ED_RESULT_OK);
+  assert(TabB.ApplyResult(RedoneTabBResult));
+  assert(TabB.GetDisplayState() == eEdFrameDisplayState::CURRENT);
+  assert(TabB.CanExport());
+
   Service.InvalidateDocument(TabB.GetDocumentId());
   TabB.Invalidate();
   Service.InvalidateDocument(Document.GetDocumentId());

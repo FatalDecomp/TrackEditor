@@ -36,6 +36,7 @@ enum class eEdRenderCommandKind
 {
   LOAD_AND_RENDER,
   LOAD_SERIALIZED_AND_RENDER,
+  UNLOAD,
   RENDER_ONLY
 };
 
@@ -58,6 +59,7 @@ struct tEdRenderResult
   tEdRenderResultTag Tag = {};
   uint32_t uiRenderedGeometryEpoch = 0;
   bool bLoadFailed = false;
+  bool bSceneEmpty = false;
   QImage Image;
   std::string sErrorText;
 };

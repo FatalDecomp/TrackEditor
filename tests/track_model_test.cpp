@@ -154,6 +154,37 @@ void TestUndoRedoHistory()
   assert(history.Redo(track));
   assert(track.m_chunkAy[0].iLength == 4000);
 }
+
+void TestMultiDocumentCopyPasteWithEmptyTargetUndo()
+{
+  CTrackModel source;
+  PopulateTrack(source);
+  tGeometryChunk secondChunk = source.m_chunkAy.front();
+  secondChunk.iLength = 2250;
+  source.m_chunkAy.push_back(secondChunk);
+
+  CTrackModel target;
+  CTrackHistory targetHistory;
+  targetHistory.Save(target, "empty target", 8);
+
+  const CChunkAy copiedRows(source.m_chunkAy.begin(), source.m_chunkAy.end());
+  target.m_chunkAy.insert(target.m_chunkAy.end(), copiedRows.begin(), copiedRows.end());
+  targetHistory.Save(target, "pasted rows", 8);
+
+  assert(source.m_chunkAy.size() == 2);
+  assert(target.m_chunkAy.size() == 2);
+  assert(target.m_chunkAy[0].iLength == 1750);
+  assert(target.m_chunkAy[1].iLength == 2250);
+
+  assert(targetHistory.Undo(target));
+  assert(target.m_chunkAy.empty());
+  assert(source.m_chunkAy.size() == 2);
+
+  assert(targetHistory.Redo(target));
+  assert(target.m_chunkAy.size() == 2);
+  assert(target.m_chunkAy[0].iLength == 1750);
+  assert(target.m_chunkAy[1].iLength == 2250);
+}
 }
 
 int main()
@@ -161,5 +192,6 @@ int main()
   TestRoundTripAndCopyPaste();
   TestMangledFileLoad();
   TestUndoRedoHistory();
+  TestMultiDocumentCopyPasteWithEmptyTargetUndo();
   return 0;
 }

@@ -203,6 +203,22 @@ private:
     }
 
     tEdGeometrySizes Sizes = {};
+    if (Request.eKind == eEdRenderCommandKind::UNLOAD) {
+      AssertWorkerThread("RollerEd_UnloadTrack for empty document");
+      const eRollerEdResult eUnloadResult = RollerEd_UnloadTrack();
+      if (eUnloadResult != ROLLER_ED_RESULT_OK) {
+        Result.bLoadFailed = true;
+        SetFacadeFailure(Result, eUnloadResult);
+        return Result;
+      }
+      m_ullActiveDocumentId = Request.Tag.ullDocumentId;
+      if (!QueryGeometry(Result, Sizes))
+        return Result;
+      Result.bSceneEmpty = true;
+      Result.sErrorText = "Track has no geometry chunks";
+      return Result;
+    }
+
     QTemporaryFile TemporaryTrack;
     std::string sTrackPath = Request.sTrackPath;
     if (Request.eKind
@@ -470,6 +486,23 @@ uint64_t CEditorRenderService::EnqueueRender(
   Request.uiWidth = static_cast<uint32_t>(NormalizedSize.width());
   Request.uiHeight = static_cast<uint32_t>(NormalizedSize.height());
   Request.dDevicePixelRatio = dDevicePixelRatio;
+  const uint64_t ullRequestId = Request.Tag.ullRequestId;
+  m_pThread->Enqueue(std::move(Request));
+  return ullRequestId;
+}
+
+uint64_t CEditorRenderService::EnqueueUnload(
+    uint64_t ullDocumentId, uint64_t ullDocumentRevision)
+{
+  Q_ASSERT(QThread::currentThread() == thread());
+  if (!IsDocumentRegistered(ullDocumentId))
+    return 0;
+
+  tEdRenderRequest Request;
+  Request.Tag.ullRequestId = CEditorRenderIds::NextRequestId();
+  Request.Tag.ullDocumentId = ullDocumentId;
+  Request.Tag.ullDocumentRevision = ullDocumentRevision;
+  Request.eKind = eEdRenderCommandKind::UNLOAD;
   const uint64_t ullRequestId = Request.Tag.ullRequestId;
   m_pThread->Enqueue(std::move(Request));
   return ullRequestId;

@@ -157,6 +157,33 @@ void TestRenderFailureDoesNotMasqueradeAsLoadFailure()
   assert(Document.GetImage().pixelColor(0, 0) == QColor(Qt::magenta));
 }
 
+void TestEmptyDocumentClearsItsStaleFrame()
+{
+  CDocumentFrameState Document(CEditorRenderIds::NextDocumentId());
+  const uint64_t ullGoodRequest = CEditorRenderIds::NextRequestId();
+  Document.BeginRequest(ullGoodRequest);
+  assert(Document.ApplyResult(
+      SuccessfulFrame(Document, ullGoodRequest, 77, Qt::darkGreen)));
+
+  Document.MarkDocumentEdited();
+  const uint64_t ullEmptyRequest = CEditorRenderIds::NextRequestId();
+  Document.BeginRequest(ullEmptyRequest);
+  tEdRenderResult EmptyResult;
+  EmptyResult.Tag.ullRequestId = ullEmptyRequest;
+  EmptyResult.Tag.ullDocumentId = Document.GetDocumentId();
+  EmptyResult.Tag.ullDocumentRevision = Document.GetDocumentRevision();
+  EmptyResult.Tag.uiActualGeometryEpoch = 78;
+  EmptyResult.Tag.eResult = ROLLER_ED_RESULT_OK;
+  EmptyResult.bSceneEmpty = true;
+  EmptyResult.sErrorText = "Track has no geometry chunks";
+
+  assert(Document.ApplyResult(EmptyResult));
+  assert(Document.GetDisplayState() == eEdFrameDisplayState::PLACEHOLDER);
+  assert(Document.GetImage().isNull());
+  assert(!Document.CanExport());
+  assert(Document.GetErrorText() == "Track has no geometry chunks");
+}
+
 void TestOwnedErrorAndCloseInvalidation()
 {
   CDocumentFrameState Document(CEditorRenderIds::NextDocumentId());
@@ -183,6 +210,7 @@ int main()
   TestRevisionRejectsInflightCompletionBeforeReplacementIsQueued();
   TestEpochAndExplicitExpectedEpochFlag();
   TestRenderFailureDoesNotMasqueradeAsLoadFailure();
+  TestEmptyDocumentClearsItsStaleFrame();
   TestOwnedErrorAndCloseInvalidation();
   std::cout << "E3-S1 editor render queue tests passed\n";
   return 0;

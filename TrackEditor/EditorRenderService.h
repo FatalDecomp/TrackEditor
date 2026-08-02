@@ -41,6 +41,8 @@ public:
       const QSize &DevicePixelSize,
       double dDevicePixelRatio,
       const tEdCameraState &Camera);
+  uint64_t EnqueueUnload(uint64_t ullDocumentId,
+                         uint64_t ullDocumentRevision);
   uint64_t EnqueueRender(uint64_t ullDocumentId,
                          uint64_t ullDocumentRevision,
                          uint32_t uiExpectedGeometryEpoch,
