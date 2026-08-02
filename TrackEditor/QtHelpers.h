@@ -1,7 +1,7 @@
 #ifndef _TRACKEDITOR_QTHELPERS_H
 #define _TRACKEDITOR_QTHELPERS_H
 //-------------------------------------------------------------------------------------------------
-#include "glm.hpp"
+#include "Palette.h"
 #include "qimage.h"
 //-------------------------------------------------------------------------------------------------
 class QLineEdit;
@@ -26,7 +26,7 @@ namespace QtHelpers
   extern void UpdateSignButtonDisplay(QPushButton *pPushButton, QCheckBox *pCheckbox, QLineEdit *pLineEdit, CTexture *pTex);
   extern void UpdateTextures(QLabel *pLblTex1, QLabel *pLblTex2, CTexture *pTex, CPalette *pPal, int iSurface);
   extern QImage GetQImageFromTile(const tTile &tile, bool bScale = false);
-  extern QImage GetQImageFromColor(const glm::vec3 &color, bool bScale = false);
+  extern QImage GetQImageFromColor(const tPaletteColor &color, bool bScale = false);
 };
 
 //-------------------------------------------------------------------------------------------------

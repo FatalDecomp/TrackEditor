@@ -1,16 +1,12 @@
 #ifndef _TRACKEDITOR_TRACKPREVIEW_H
 #define _TRACKEDITOR_TRACKPREVIEW_H
 //-------------------------------------------------------------------------------------------------
-#include <QGL>
+#include <QWidget>
+#include "EditorCameraController.h"
+#include "EditorRenderQueue.h"
 #include "Types.h"
 //-------------------------------------------------------------------------------------------------
 #define DEFAULT_HISTORY_MAX_SIZE 256 //approx 200KB per saved track
-struct tTrackHistory
-{
-  std::string sDescription;
-  std::vector<uint8> byteAy;
-};
-typedef std::vector<tTrackHistory> CHistoryAy;
 //-------------------------------------------------------------------------------------------------
 enum eExportType
 {
@@ -20,16 +16,19 @@ enum eExportType
 //-------------------------------------------------------------------------------------------------
 class CTrackPreviewPrivate;
 class CTrack;
+class CEditorRenderService;
+class QTimer;
 //-------------------------------------------------------------------------------------------------
-class CTrackPreview : public QGLWidget
+class CTrackPreview : public QWidget
 {
   Q_OBJECT
 
 public:
-  CTrackPreview(QWidget *pParent, const QString &sTrackFile = "");
+  CTrackPreview(QWidget *pParent, CEditorRenderService *pRenderService,
+                const QString &sTrackFile = "");
   ~CTrackPreview();
 
-  void UpdateCameraPos();
+  void UpdateCameraPos(float fDeltaSeconds);
   bool LoadTrack(const QString &sFilename);
   void DeleteEnvirFloor();
   void UpdateTrack(bool bUpdatingStunt = false);
@@ -45,13 +44,16 @@ public:
   QString GetTitle(bool bFullPath);
   const QString &GetFilename() { return m_sTrackFile; };
   void UpdateGeometrySelection();
-  void SaveHistory(const QString &sDescription);
+  void SaveHistory(const QString &sDescription, bool bDocumentEdit = true);
   void Undo();
   void Redo();
   void UpdateReferenceModelPos(double dYaw, double dPitch, double dRoll,
                                int iX, int iY, int iZ,
                                double dScale);
   void UpdateReferenceModelTexture();
+  void Activate();
+  void MarkDocumentEdited();
+  bool CanExport() const { return m_FrameState.CanExport(); }
 
   bool m_bUnsavedChanges;
   int m_iSelFrom;
@@ -67,8 +69,9 @@ public:
   double m_dRefScale;
 
 protected:
-  void initializeGL();
-  void paintGL();
+  void paintEvent(QPaintEvent *pEvent) override;
+  void resizeEvent(QResizeEvent *pEvent) override;
+  void showEvent(QShowEvent *pEvent) override;
   void mousePressEvent(QMouseEvent *pEvent) override;
   void mouseReleaseEvent(QMouseEvent *pEvent) override;
   void mouseMoveEvent(QMouseEvent *pEvent) override;
@@ -77,11 +80,19 @@ protected:
 
 signals:
   void ReferenceModelChanged();
+  void FrameStateChanged();
 
 private:
-  void LoadHistory(const tTrackHistory *pHistory);
   bool SaveTrack_Internal(const QString &sFilename);
   void UpdateReferenceModelPos_Internal();
+  void QueueLoadAndRender();
+  void QueueEditedTrackReload();
+  void QueueResizeRender();
+  void ScheduleCameraRender();
+  void ArmCameraRenderTimer();
+  void QueueCameraRender();
+  void OnRenderCompleted(const tEdRenderResult &Result);
+  QSize DevicePixelSize() const;
 
   CTrackPreviewPrivate *p;
   uint32 m_uiShowModels;
@@ -92,8 +103,18 @@ private:
   int m_iScale;
   bool m_bAlreadySaved;
   QString m_sTrackFile;
+  QString m_sDocumentAssetRoot;
   QString m_sLastCarTex;
-  int m_iHistoryIndex;
+  CEditorRenderService *m_pRenderService;
+  uint64_t m_ullDocumentId;
+  CDocumentFrameState m_FrameState;
+  CEditorCameraController m_CameraController;
+  QTimer *m_pResizeTimer;
+  QTimer *m_pEditTimer;
+  QTimer *m_pCameraRenderTimer;
+  uint64_t m_ullCameraRequestId;
+  bool m_bCameraRenderPending;
+  bool m_bReloadPending;
 };
 
 //-------------------------------------------------------------------------------------------------

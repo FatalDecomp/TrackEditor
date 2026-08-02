@@ -1,15 +1,12 @@
-#include <GL/glew.h>
 #include "gtc/matrix_transform.hpp"
 #include "gtx/transform.hpp"
 #include "ShapeFactory.h"
 #include "ShapeData.h"
-#include "Shader.h"
 #include "Vertex.h"
-#include "VertexBuffer.h"
-#include "IndexBuffer.h"
-#include "VertexArray.h"
 #include "Texture.h"
+#include "TextureMapping.h"
 #include "Track.h"
+#include "TrackGeometry.h"
 #include "SignType.h"
 #include "CarHelpers.h"
 #include <string.h>
@@ -45,13 +42,6 @@
 #define new new(_CLIENT_BLOCK, __FILE__, __LINE__)
 #endif
 //-------------------------------------------------------------------------------------------------
-#if defined (WHIPLIB_DLL)
-  #define OGL_DEFAULT false
-#else
-  #define OGL_DEFAULT true
-#endif
-//-------------------------------------------------------------------------------------------------
-
 CShapeFactory &CShapeFactory::GetShapeFactory()
 {
   static CShapeFactory s_shapeFactory;
@@ -62,7 +52,6 @@ CShapeFactory &CShapeFactory::GetShapeFactory()
 //-------------------------------------------------------------------------------------------------
 
 CShapeFactory::CShapeFactory()
-  : m_bOglRunning(OGL_DEFAULT)
 {
 
 }
@@ -76,7 +65,7 @@ CShapeFactory::~CShapeFactory()
 
 //-------------------------------------------------------------------------------------------------
 
-void CShapeFactory::MakeAxes(CShapeData **pShape, CShader *pShader, CTexture *pTexture)
+void CShapeFactory::MakeAxes(CShapeData **pShape, CTexture *pTexture)
 {
   uint32 uiNumVerts = 4;
   tVertex *vertices = new tVertex[uiNumVerts];
@@ -84,10 +73,10 @@ void CShapeFactory::MakeAxes(CShapeData **pShape, CShader *pShader, CTexture *pT
   vertices[1].position = glm::vec3(0, 500, 0);
   vertices[2].position = glm::vec3(0, 0, 500);
   vertices[3].position = glm::vec3(0, 0, 0);
-  vertices[0].texCoords = pTexture->GetColorCenterCoordinates(0xe7); //red
-  vertices[1].texCoords = pTexture->GetColorCenterCoordinates(0xff); //green
-  vertices[2].texCoords = pTexture->GetColorCenterCoordinates(0xf3); //blue
-  vertices[2].texCoords = pTexture->GetColorCenterCoordinates(0x8f); //white
+  vertices[0].texCoords = TextureMapping::GetColorCenterCoordinates(*pTexture, 0xe7); //red
+  vertices[1].texCoords = TextureMapping::GetColorCenterCoordinates(*pTexture, 0xff); //green
+  vertices[2].texCoords = TextureMapping::GetColorCenterCoordinates(*pTexture, 0xf3); //blue
+  vertices[2].texCoords = TextureMapping::GetColorCenterCoordinates(*pTexture, 0x8f); //white
   uint32 uiNumIndices = 6;
   uint32 *indices = new uint32[uiNumIndices];
   memset(indices, 0, uiNumIndices * sizeof(uint32));
@@ -97,37 +86,26 @@ void CShapeFactory::MakeAxes(CShapeData **pShape, CShader *pShader, CTexture *pT
   indices[3] = 1;
   indices[4] = 3;
   indices[5] = 2;
-  GLenum drawType = GL_LINES;
-
   if (!*pShape) {
-    CVertexBuffer *pVertexBuf = new CVertexBuffer(vertices, uiNumVerts, GL_DYNAMIC_DRAW);
-    CIndexBuffer *pIndexBuf = new CIndexBuffer(indices, uiNumIndices, GL_DYNAMIC_DRAW);
-    CVertexArray *pVertexArray = new CVertexArray(pVertexBuf);
-
-    *pShape = new CShapeData(pVertexBuf, pIndexBuf, pVertexArray, pShader, pTexture, drawType);
+    *pShape = new CShapeData(vertices, uiNumVerts, indices, uiNumIndices,
+                             pTexture, eShapePrimitive::LINES);
   } else {
-    (*pShape)->m_pVertexBuf->Update(vertices, uiNumVerts);
-    (*pShape)->m_pIndexBuf->Update(indices, uiNumIndices);
+    (*pShape)->ReplaceGeometry(vertices, uiNumVerts, indices, uiNumIndices);
   }
-
-  if (vertices)
-    delete[] vertices;
-  if (indices)
-    delete[] indices;
 }
 
 //-------------------------------------------------------------------------------------------------
 
-void CShapeFactory::MakeDebugTri(CShapeData **pShape, CShader *pShader, CTexture *pTexture, const glm::vec3 &p0, const glm::vec3 &p1, const glm::vec3 &p2)
+void CShapeFactory::MakeDebugTri(CShapeData **pShape, CTexture *pTexture, const glm::vec3 &p0, const glm::vec3 &p1, const glm::vec3 &p2)
 {
   uint32 uiNumVerts = 3;
   struct tVertex *vertices = new tVertex[uiNumVerts];
   vertices[0].position = p0;
   vertices[1].position = p1;
   vertices[2].position = p2;
-  vertices[0].texCoords = pTexture->GetColorCenterCoordinates(0xff);
-  vertices[1].texCoords = pTexture->GetColorCenterCoordinates(0xff);
-  vertices[2].texCoords = pTexture->GetColorCenterCoordinates(0xff);
+  vertices[0].texCoords = TextureMapping::GetColorCenterCoordinates(*pTexture, 0xff);
+  vertices[1].texCoords = TextureMapping::GetColorCenterCoordinates(*pTexture, 0xff);
+  vertices[2].texCoords = TextureMapping::GetColorCenterCoordinates(*pTexture, 0xff);
   uint32 uiNumIndices = 6;
   uint32 *indices = new uint32[uiNumIndices];
   indices[0] = 0;
@@ -136,86 +114,51 @@ void CShapeFactory::MakeDebugTri(CShapeData **pShape, CShader *pShader, CTexture
   indices[3] = 2;
   indices[4] = 2;
   indices[5] = 0;
-  GLenum drawType = GL_LINES;
-
   if (!*pShape) {
-    CVertexBuffer *pVertexBuf = new CVertexBuffer(vertices, uiNumVerts, GL_DYNAMIC_DRAW);
-    CIndexBuffer *pIndexBuf = new CIndexBuffer(indices, uiNumIndices, GL_DYNAMIC_DRAW);
-    CVertexArray *pVertexArray = new CVertexArray(pVertexBuf);
-
-    *pShape = new CShapeData(pVertexBuf, pIndexBuf, pVertexArray, pShader, pTexture, drawType);
+    *pShape = new CShapeData(vertices, uiNumVerts, indices, uiNumIndices,
+                             pTexture, eShapePrimitive::LINES);
   } else {
-    (*pShape)->m_pVertexBuf->Update(vertices, uiNumVerts);
-    (*pShape)->m_pIndexBuf->Update(indices, uiNumIndices);
+    (*pShape)->ReplaceGeometry(vertices, uiNumVerts, indices, uiNumIndices);
   }
-
-  if (vertices)
-    delete[] vertices;
-  if (indices)
-    delete[] indices;
 }
 
 //-------------------------------------------------------------------------------------------------
 
-void CShapeFactory::MakeDebugLine(CShapeData **pShape, CShader *pShader, CTexture *pTexture, const glm::vec3 &p0, const glm::vec3 &p1)
+void CShapeFactory::MakeDebugLine(CShapeData **pShape, CTexture *pTexture, const glm::vec3 &p0, const glm::vec3 &p1)
 {
   uint32 uiNumVerts = 2;
   struct tVertex *vertices = new tVertex[uiNumVerts];
   vertices[0].position = p0;
   vertices[1].position = p1;
-  vertices[0].texCoords = pTexture->GetColorCenterCoordinates(0xb7);
-  vertices[1].texCoords = pTexture->GetColorCenterCoordinates(0xb7);
+  vertices[0].texCoords = TextureMapping::GetColorCenterCoordinates(*pTexture, 0xb7);
+  vertices[1].texCoords = TextureMapping::GetColorCenterCoordinates(*pTexture, 0xb7);
   uint32 uiNumIndices = 2;
   uint32 *indices = new uint32[uiNumIndices];
   indices[0] = 0;
   indices[1] = 1;
-  GLenum drawType = GL_LINES;
-
   if (!*pShape) {
-    CVertexBuffer *pVertexBuf = new CVertexBuffer(vertices, uiNumVerts, GL_DYNAMIC_DRAW);
-    CIndexBuffer *pIndexBuf = new CIndexBuffer(indices, uiNumIndices, GL_DYNAMIC_DRAW);
-    CVertexArray *pVertexArray = new CVertexArray(pVertexBuf);
-
-    *pShape = new CShapeData(pVertexBuf, pIndexBuf, pVertexArray, pShader, pTexture, drawType);
+    *pShape = new CShapeData(vertices, uiNumVerts, indices, uiNumIndices,
+                             pTexture, eShapePrimitive::LINES);
   } else {
-    (*pShape)->m_pVertexBuf->Update(vertices, uiNumVerts);
-    (*pShape)->m_pIndexBuf->Update(indices, uiNumIndices);
+    (*pShape)->ReplaceGeometry(vertices, uiNumVerts, indices, uiNumIndices);
   }
-
-  if (vertices)
-    delete[] vertices;
-  if (indices)
-    delete[] indices;
 }
 
 //-------------------------------------------------------------------------------------------------
 
-void CShapeFactory::MakeModel(CShapeData **pShape, CShader *pShader, CTexture *pTexture, eWhipModel model, int iSignSurfaceType, eBackModeling backModeling)
+void CShapeFactory::MakeModel(CShapeData **pShape, CTexture *pTexture, eWhipModel model, int iSignSurfaceType, eBackModeling backModeling)
 {
   uint32 uiNumVerts;
   struct tVertex *vertices = MakeModelVerts(uiNumVerts, pTexture, model, iSignSurfaceType, backModeling);
-  GLenum drawType = GL_TRIANGLES;
 
   if (vertices) {
+    uint32 uiNumIndices;
+    uint32 *indices = MakeModelIndices(uiNumIndices, model, backModeling);
     if (!*pShape) {
-      uint32 uiNumIndices;
-      uint32 *indices = MakeModelIndices(uiNumIndices, model, backModeling);
-
-      CVertexBuffer *pVertexBuf = new CVertexBuffer(vertices, uiNumVerts, GL_DYNAMIC_DRAW);
-      CIndexBuffer *pIndexBuf = new CIndexBuffer(indices, uiNumIndices, GL_DYNAMIC_DRAW);
-      CVertexArray *pVertexArray = new CVertexArray(pVertexBuf);
-
-      *pShape = new CShapeData(pVertexBuf, pIndexBuf, pVertexArray, pShader, pTexture, drawType);
-      (*pShape)->m_vertices = vertices;
-      (*pShape)->m_uiNumVerts = uiNumVerts;
-      (*pShape)->m_indices = indices;
-      (*pShape)->m_uiNumIndices = uiNumIndices;
+      *pShape = new CShapeData(vertices, uiNumVerts, indices, uiNumIndices,
+                               pTexture, eShapePrimitive::TRIANGLES);
     } else {
-      (*pShape)->m_pVertexBuf->Update(vertices, uiNumVerts);
-      if ((*pShape)->m_vertices)
-        delete[](*pShape)->m_vertices;
-      (*pShape)->m_vertices = vertices;
-      (*pShape)->m_uiNumVerts = uiNumVerts;
+      (*pShape)->ReplaceGeometry(vertices, uiNumVerts, indices, uiNumIndices);
     }
   }
 }
@@ -303,7 +246,7 @@ tVertex *CShapeFactory::MakeModelVerts(uint32 &numVertices, CTexture *pTexture, 
     CarHelpers::RemapColor(model, uiUseTex);
     switch (backModeling) {
       case eBackModeling::FRONTS:
-        pTexture->GetTextureCoordinates(uiUseTex,
+        TextureMapping::GetTextureCoordinates(*pTexture, uiUseTex,
                                         vertices[i * iNumVertsPerPol + 1],
                                         vertices[i * iNumVertsPerPol + 0],
                                         vertices[i * iNumVertsPerPol + 2],
@@ -311,7 +254,7 @@ tVertex *CShapeFactory::MakeModelVerts(uint32 &numVertices, CTexture *pTexture, 
         break;
       case eBackModeling::BACKS:
         //default back is the same as the front
-        pTexture->GetTextureCoordinates(uiUseTex,
+        TextureMapping::GetTextureCoordinates(*pTexture, uiUseTex,
                                         vertices[i * iNumVertsPerPol + 1],
                                         vertices[i * iNumVertsPerPol + 0],
                                         vertices[i * iNumVertsPerPol + 2],
@@ -319,7 +262,7 @@ tVertex *CShapeFactory::MakeModelVerts(uint32 &numVertices, CTexture *pTexture, 
         if (GetBacks(model)) {
           uint32 uiBackTex = GetBacks(model)[i];
           if (uiBackTex) {
-            pTexture->GetTextureCoordinates(uiBackTex,
+            TextureMapping::GetTextureCoordinates(*pTexture, uiBackTex,
                                             vertices[i * iNumVertsPerPol + 0],
                                             vertices[i * iNumVertsPerPol + 1],
                                             vertices[i * iNumVertsPerPol + 3],
@@ -328,12 +271,12 @@ tVertex *CShapeFactory::MakeModelVerts(uint32 &numVertices, CTexture *pTexture, 
         }
         break;
       case eBackModeling::FRONTS_AND_BACKS:
-        pTexture->GetTextureCoordinates(uiUseTex,
+        TextureMapping::GetTextureCoordinates(*pTexture, uiUseTex,
                                         vertices[i * iNumVertsPerPol + 1],
                                         vertices[i * iNumVertsPerPol + 0],
                                         vertices[i * iNumVertsPerPol + 2],
                                         vertices[i * iNumVertsPerPol + 3]);
-        pTexture->GetTextureCoordinates(uiUseTex,
+        TextureMapping::GetTextureCoordinates(*pTexture, uiUseTex,
                                         vertices[i * iNumVertsPerPol + 1 + 4],
                                         vertices[i * iNumVertsPerPol + 0 + 4],
                                         vertices[i * iNumVertsPerPol + 2 + 4],
@@ -342,7 +285,7 @@ tVertex *CShapeFactory::MakeModelVerts(uint32 &numVertices, CTexture *pTexture, 
         if (GetBacks(model)) {
           uint32 uiBackTex = GetBacks(model)[i];
           if (uiBackTex) {
-            pTexture->GetTextureCoordinates(uiBackTex,
+            TextureMapping::GetTextureCoordinates(*pTexture, uiBackTex,
                                             vertices[i * iNumVertsPerPol + 0 + 4],
                                             vertices[i * iNumVertsPerPol + 1 + 4],
                                             vertices[i * iNumVertsPerPol + 3 + 4],
@@ -413,28 +356,19 @@ uint32 *CShapeFactory::MakeModelIndices(uint32 &numIndices, eWhipModel model, eB
 
 //-------------------------------------------------------------------------------------------------
 
-void CShapeFactory::MakeAudioMarker(CShapeData **pShape, CShader *pShader, CTexture *pTexture)
+void CShapeFactory::MakeAudioMarker(CShapeData **pShape, CTexture *pTexture)
 {
   uint32 uiNumVerts;
   struct tVertex *vertices = MakeVertsAudioMarker(uiNumVerts, pTexture);
   uint32 uiNumIndices;
   uint32 *indices = MakeIndicesAudioMarker(uiNumIndices);
-  GLenum drawType = GL_TRIANGLES;
-
   if (vertices && indices) {
     if (!*pShape) {
-      CVertexBuffer *pVertexBuf = new CVertexBuffer(vertices, uiNumVerts, GL_DYNAMIC_DRAW);
-      CIndexBuffer *pIndexBuf = new CIndexBuffer(indices, uiNumIndices, GL_DYNAMIC_DRAW);
-      CVertexArray *pVertexArray = new CVertexArray(pVertexBuf);
-
-      *pShape = new CShapeData(pVertexBuf, pIndexBuf, pVertexArray, pShader, pTexture, drawType);
+      *pShape = new CShapeData(vertices, uiNumVerts, indices, uiNumIndices,
+                               pTexture, eShapePrimitive::TRIANGLES);
     } else {
-      (*pShape)->m_pVertexBuf->Update(vertices, uiNumVerts);
-      (*pShape)->m_pIndexBuf->Update(indices, uiNumIndices);
+      (*pShape)->ReplaceGeometry(vertices, uiNumVerts, indices, uiNumIndices);
     }
-
-    delete[] vertices;
-    delete[] indices;
   }
 }
 
@@ -451,12 +385,12 @@ tVertex *CShapeFactory::MakeVertsAudioMarker(uint32 &uiNumVerts, CTexture *pText
   vertices[3].position = glm::vec3(  +0.0f, +500.0f, +0.0f);
   vertices[4].position = glm::vec3(-500.0f, +800.0f, +0.0f);
   vertices[5].position = glm::vec3(-500.0f, -300.0f, +0.0f);
-  vertices[0].texCoords = pTexture->GetColorCenterCoordinates(0x8f);
-  vertices[1].texCoords = pTexture->GetColorCenterCoordinates(0x8f);
-  vertices[2].texCoords = pTexture->GetColorCenterCoordinates(0x8f);
-  vertices[3].texCoords = pTexture->GetColorCenterCoordinates(0x8f);
-  vertices[4].texCoords = pTexture->GetColorCenterCoordinates(0x8f);
-  vertices[5].texCoords = pTexture->GetColorCenterCoordinates(0x8f);
+  vertices[0].texCoords = TextureMapping::GetColorCenterCoordinates(*pTexture, 0x8f);
+  vertices[1].texCoords = TextureMapping::GetColorCenterCoordinates(*pTexture, 0x8f);
+  vertices[2].texCoords = TextureMapping::GetColorCenterCoordinates(*pTexture, 0x8f);
+  vertices[3].texCoords = TextureMapping::GetColorCenterCoordinates(*pTexture, 0x8f);
+  vertices[4].texCoords = TextureMapping::GetColorCenterCoordinates(*pTexture, 0x8f);
+  vertices[5].texCoords = TextureMapping::GetColorCenterCoordinates(*pTexture, 0x8f);
 
   vertices[0 + 6].position = glm::vec3(+0.0f, +0.0f, +0.0f);
   vertices[1 + 6].position = glm::vec3(+500.0f, +0.0f, +0.0f);
@@ -464,12 +398,12 @@ tVertex *CShapeFactory::MakeVertsAudioMarker(uint32 &uiNumVerts, CTexture *pText
   vertices[3 + 6].position = glm::vec3(+0.0f, +500.0f, +0.0f);
   vertices[4 + 6].position = glm::vec3(-500.0f, +800.0f, +0.0f);
   vertices[5 + 6].position = glm::vec3(-500.0f, -300.0f, +0.0f);
-  vertices[0 + 6].texCoords = pTexture->GetColorCenterCoordinates(0x8f);
-  vertices[1 + 6].texCoords = pTexture->GetColorCenterCoordinates(0x8f);
-  vertices[2 + 6].texCoords = pTexture->GetColorCenterCoordinates(0x8f);
-  vertices[3 + 6].texCoords = pTexture->GetColorCenterCoordinates(0x8f);
-  vertices[4 + 6].texCoords = pTexture->GetColorCenterCoordinates(0x8f);
-  vertices[5 + 6].texCoords = pTexture->GetColorCenterCoordinates(0x8f);
+  vertices[0 + 6].texCoords = TextureMapping::GetColorCenterCoordinates(*pTexture, 0x8f);
+  vertices[1 + 6].texCoords = TextureMapping::GetColorCenterCoordinates(*pTexture, 0x8f);
+  vertices[2 + 6].texCoords = TextureMapping::GetColorCenterCoordinates(*pTexture, 0x8f);
+  vertices[3 + 6].texCoords = TextureMapping::GetColorCenterCoordinates(*pTexture, 0x8f);
+  vertices[4 + 6].texCoords = TextureMapping::GetColorCenterCoordinates(*pTexture, 0x8f);
+  vertices[5 + 6].texCoords = TextureMapping::GetColorCenterCoordinates(*pTexture, 0x8f);
 
   return vertices;
 }
@@ -513,28 +447,19 @@ uint32 *CShapeFactory::MakeIndicesAudioMarker(uint32 &uiNumIndices)
 
 //-------------------------------------------------------------------------------------------------
 
-void CShapeFactory::MakeStuntMarker(CShapeData **pShape, CShader *pShader, CTexture *pTexture)
+void CShapeFactory::MakeStuntMarker(CShapeData **pShape, CTexture *pTexture)
 {
   uint32 uiNumVerts;
   struct tVertex *vertices = MakeVertsStuntMarker(uiNumVerts, pTexture);
   uint32 uiNumIndices;
   uint32 *indices = MakeIndicesStuntMarker(uiNumIndices);
-  GLenum drawType = GL_TRIANGLES;
-
   if (vertices && indices) {
     if (!*pShape) {
-      CVertexBuffer *pVertexBuf = new CVertexBuffer(vertices, uiNumVerts, GL_DYNAMIC_DRAW);
-      CIndexBuffer *pIndexBuf = new CIndexBuffer(indices, uiNumIndices, GL_DYNAMIC_DRAW);
-      CVertexArray *pVertexArray = new CVertexArray(pVertexBuf);
-
-      *pShape = new CShapeData(pVertexBuf, pIndexBuf, pVertexArray, pShader, pTexture, drawType);
+      *pShape = new CShapeData(vertices, uiNumVerts, indices, uiNumIndices,
+                               pTexture, eShapePrimitive::TRIANGLES);
     } else {
-      (*pShape)->m_pVertexBuf->Update(vertices, uiNumVerts);
-      (*pShape)->m_pIndexBuf->Update(indices, uiNumIndices);
+      (*pShape)->ReplaceGeometry(vertices, uiNumVerts, indices, uiNumIndices);
     }
-
-    delete[] vertices;
-    delete[] indices;
   }
 }
 
@@ -553,13 +478,13 @@ tVertex *CShapeFactory::MakeVertsStuntMarker(uint32 &uiNumVerts, CTexture *pText
   vertices[4].position = glm::vec3(+0.0f  , -100.0f, +0.0f);
   vertices[5].position = glm::vec3(-300.0f, -400.0f, +0.0f);
   vertices[6].position = glm::vec3(-400.0f, -300.0f, +0.0f);
-  vertices[0].texCoords = pTexture->GetColorCenterCoordinates(0xff);
-  vertices[1].texCoords = pTexture->GetColorCenterCoordinates(0xff);
-  vertices[2].texCoords = pTexture->GetColorCenterCoordinates(0xff);
-  vertices[3].texCoords = pTexture->GetColorCenterCoordinates(0xff);
-  vertices[4].texCoords = pTexture->GetColorCenterCoordinates(0xff);
-  vertices[5].texCoords = pTexture->GetColorCenterCoordinates(0xff);
-  vertices[6].texCoords = pTexture->GetColorCenterCoordinates(0xff);
+  vertices[0].texCoords = TextureMapping::GetColorCenterCoordinates(*pTexture, 0xff);
+  vertices[1].texCoords = TextureMapping::GetColorCenterCoordinates(*pTexture, 0xff);
+  vertices[2].texCoords = TextureMapping::GetColorCenterCoordinates(*pTexture, 0xff);
+  vertices[3].texCoords = TextureMapping::GetColorCenterCoordinates(*pTexture, 0xff);
+  vertices[4].texCoords = TextureMapping::GetColorCenterCoordinates(*pTexture, 0xff);
+  vertices[5].texCoords = TextureMapping::GetColorCenterCoordinates(*pTexture, 0xff);
+  vertices[6].texCoords = TextureMapping::GetColorCenterCoordinates(*pTexture, 0xff);
 
   vertices[0 + 7].position = glm::vec3(+0.0f, +100.0f, +0.0f);
   vertices[1 + 7].position = glm::vec3(+100.0f, +0.0f, +0.0f);
@@ -568,13 +493,13 @@ tVertex *CShapeFactory::MakeVertsStuntMarker(uint32 &uiNumVerts, CTexture *pText
   vertices[4 + 7].position = glm::vec3(+0.0f, -100.0f, +0.0f);
   vertices[5 + 7].position = glm::vec3(-300.0f, -400.0f, +0.0f);
   vertices[6 + 7].position = glm::vec3(-400.0f, -300.0f, +0.0f);
-  vertices[0 + 7].texCoords = pTexture->GetColorCenterCoordinates(0xff);
-  vertices[1 + 7].texCoords = pTexture->GetColorCenterCoordinates(0xff);
-  vertices[2 + 7].texCoords = pTexture->GetColorCenterCoordinates(0xff);
-  vertices[3 + 7].texCoords = pTexture->GetColorCenterCoordinates(0xff);
-  vertices[4 + 7].texCoords = pTexture->GetColorCenterCoordinates(0xff);
-  vertices[5 + 7].texCoords = pTexture->GetColorCenterCoordinates(0xff);
-  vertices[6 + 7].texCoords = pTexture->GetColorCenterCoordinates(0xff);
+  vertices[0 + 7].texCoords = TextureMapping::GetColorCenterCoordinates(*pTexture, 0xff);
+  vertices[1 + 7].texCoords = TextureMapping::GetColorCenterCoordinates(*pTexture, 0xff);
+  vertices[2 + 7].texCoords = TextureMapping::GetColorCenterCoordinates(*pTexture, 0xff);
+  vertices[3 + 7].texCoords = TextureMapping::GetColorCenterCoordinates(*pTexture, 0xff);
+  vertices[4 + 7].texCoords = TextureMapping::GetColorCenterCoordinates(*pTexture, 0xff);
+  vertices[5 + 7].texCoords = TextureMapping::GetColorCenterCoordinates(*pTexture, 0xff);
+  vertices[6 + 7].texCoords = TextureMapping::GetColorCenterCoordinates(*pTexture, 0xff);
 
   return vertices;
 }
@@ -1342,185 +1267,142 @@ uint32 *CShapeFactory::MakeIndicesSurfaceWireframe(uint32 &numIndices, CTrack *p
 
 //-------------------------------------------------------------------------------------------------
 
-void CShapeFactory::MakeTrackSurface(CShapeData **pShape, CShader *pShader, CTrack *pTrack, eShapeSection section, bool bAttachLast, bool bWireframe, eBackModeling backModeling)
+void CShapeFactory::MakeTrackSurface(CShapeData **pShape, CTrack *pTrack, eShapeSection section, bool bAttachLast, bool bWireframe, eBackModeling backModeling)
 {
   uint32 uiNumVerts;
   struct tVertex *vertices = NULL;
-  vertices = MakeVerts(uiNumVerts, section, pTrack, pTrack->m_pTex, backModeling);
+  vertices = MakeVerts(uiNumVerts, section, pTrack, pTrack->m_assets.GetMainTexture(), backModeling);
   if (!vertices)
     return;
 
   if (bWireframe) {
     for (uint32 i = 0; i < uiNumVerts; ++i) {
-      vertices[i].texCoords = pTrack->m_pTex->GetColorCenterCoordinates(0xCF);
+      vertices[i].texCoords = TextureMapping::GetColorCenterCoordinates(*pTrack->m_assets.GetMainTexture(), 0xCF);
     }
   }
 
-  if (!(*pShape)) {
-    uint32 uiNumIndices;
-    uint32 *indices = NULL;
-    GLenum drawType = GL_TRIANGLES;
-    if (!bWireframe) {
-      if (section == eShapeSection::EXPORT)
-        indices = MakeIndicesExport(uiNumIndices, pTrack, backModeling);
-      else
-        indices = MakeIndicesSingleSection(uiNumIndices, section, pTrack, bAttachLast, backModeling);
-    } else {
-      indices = MakeIndicesSingleSectionWireframe(uiNumIndices, section, pTrack, bAttachLast);
-      drawType = GL_LINES;
-    }
-
-    CVertexBuffer *pVertexBuf = new CVertexBuffer(vertices, uiNumVerts, GL_DYNAMIC_DRAW);
-    CIndexBuffer *pIndexBuf = new CIndexBuffer(indices, uiNumIndices);
-    CVertexArray *pVertexArray = new CVertexArray(pVertexBuf);
-
-    (*pShape) = new CShapeData(pVertexBuf, pIndexBuf, pVertexArray, pShader, pTrack->m_pTex, drawType);
-    (*pShape)->m_vertices = vertices;
-    (*pShape)->m_uiNumVerts = uiNumVerts;
-    (*pShape)->m_indices = indices;
-    (*pShape)->m_uiNumIndices = uiNumIndices;
-
+  uint32 uiNumIndices;
+  uint32 *indices = NULL;
+  eShapePrimitive drawType = eShapePrimitive::TRIANGLES;
+  if (!bWireframe) {
+    if (section == eShapeSection::EXPORT)
+      indices = MakeIndicesExport(uiNumIndices, pTrack, backModeling);
+    else
+      indices = MakeIndicesSingleSection(uiNumIndices, section, pTrack, bAttachLast, backModeling);
   } else {
-    (*pShape)->m_pVertexBuf->Update(vertices, uiNumVerts);
-    if ((*pShape)->m_vertices)
-      delete[](*pShape)->m_vertices;
-    (*pShape)->m_vertices = vertices;
-    (*pShape)->m_uiNumVerts = uiNumVerts;
+    indices = MakeIndicesSingleSectionWireframe(uiNumIndices, section, pTrack, bAttachLast);
+    drawType = eShapePrimitive::LINES;
+  }
+
+  if (!(*pShape)) {
+    (*pShape) = new CShapeData(vertices, uiNumVerts, indices, uiNumIndices,
+                               pTrack->m_assets.GetMainTexture(), drawType);
+  } else {
+    (*pShape)->ReplaceGeometry(vertices, uiNumVerts, indices, uiNumIndices);
+    (*pShape)->m_drawType = drawType;
   }
 }
 
 //-------------------------------------------------------------------------------------------------
 
-void CShapeFactory::MakeEnvirFloor(CShapeData **pShape, CShader *pShader, CTrack *pTrack, int iIndex)
+void CShapeFactory::MakeEnvirFloor(CShapeData **pShape, CTrack *pTrack, int iIndex)
 {
   uint32 uiNumVerts;
   struct tVertex *vertices = NULL;
-  vertices = MakeVertsEnvirFloor(uiNumVerts, pTrack, pTrack->m_pTex, iIndex);
+  vertices = MakeVertsEnvirFloor(uiNumVerts, pTrack, pTrack->m_assets.GetMainTexture(), iIndex);
   if (!vertices)
     return;
 
+  uint32 uiNumIndices;
+  uint32 *indices = MakeIndicesEnvirFloor(uiNumIndices);
   if (!(*pShape)) {
-    uint32 uiNumIndices;
-    uint32 *indices = NULL;
-    GLenum drawType = GL_TRIANGLES;
-    indices = MakeIndicesEnvirFloor(uiNumIndices);
-
-    CVertexBuffer *pVertexBuf = new CVertexBuffer(vertices, uiNumVerts, GL_DYNAMIC_DRAW);
-    CIndexBuffer *pIndexBuf = new CIndexBuffer(indices, uiNumIndices);
-    CVertexArray *pVertexArray = new CVertexArray(pVertexBuf);
-    (*pShape) = new CShapeData(pVertexBuf, pIndexBuf, pVertexArray, pShader, pTrack->m_pTex, drawType);
-
-    if (indices)
-      delete[] indices;
+    (*pShape) = new CShapeData(vertices, uiNumVerts, indices, uiNumIndices,
+                               pTrack->m_assets.GetMainTexture(), eShapePrimitive::TRIANGLES);
   } else {
-    (*pShape)->m_pVertexBuf->Update(vertices, uiNumVerts);
+    (*pShape)->ReplaceGeometry(vertices, uiNumVerts, indices, uiNumIndices);
   }
-
-  if (vertices)
-    delete[] vertices;
 }
 
 //-------------------------------------------------------------------------------------------------
 
-void CShapeFactory::MakeAILine(CShapeData **pShape, CShader *pShader, CTrack *pTrack, eShapeSection section, bool bAttachLast)
+void CShapeFactory::MakeAILine(CShapeData **pShape, CTrack *pTrack, eShapeSection section, bool bAttachLast)
 {
   uint32 uiNumVerts;
-  struct tVertex *vertices = MakeVerts(uiNumVerts, section, pTrack, pTrack->m_pTex);
+  struct tVertex *vertices = MakeVerts(uiNumVerts, section, pTrack, pTrack->m_assets.GetMainTexture());
   if (!vertices)
     return;
 
   for (uint32 i = 0; i < uiNumVerts; ++i) {
     switch (section) {
       case eShapeSection::CENTERLINE:
-        vertices[i].texCoords = pTrack->m_pTex->GetColorCenterCoordinates(0xAB);
+        vertices[i].texCoords = TextureMapping::GetColorCenterCoordinates(*pTrack->m_assets.GetMainTexture(), 0xAB);
         break;
       case eShapeSection::AILINE1:
       case eShapeSection::CARLINE1:
-        vertices[i].texCoords = pTrack->m_pTex->GetColorCenterCoordinates(0xE6);
+        vertices[i].texCoords = TextureMapping::GetColorCenterCoordinates(*pTrack->m_assets.GetMainTexture(), 0xE6);
         break;
       case eShapeSection::AILINE2:
       case eShapeSection::CARLINE2:
-        vertices[i].texCoords = pTrack->m_pTex->GetColorCenterCoordinates(0xFF);
+        vertices[i].texCoords = TextureMapping::GetColorCenterCoordinates(*pTrack->m_assets.GetMainTexture(), 0xFF);
         break;
       case eShapeSection::AILINE3:
       case eShapeSection::CARLINE3:
-        vertices[i].texCoords = pTrack->m_pTex->GetColorCenterCoordinates(0xF3);
+        vertices[i].texCoords = TextureMapping::GetColorCenterCoordinates(*pTrack->m_assets.GetMainTexture(), 0xF3);
         break;
       case eShapeSection::AILINE4:
       case eShapeSection::CARLINE4:
-        vertices[i].texCoords = pTrack->m_pTex->GetColorCenterCoordinates(0xCF);
+        vertices[i].texCoords = TextureMapping::GetColorCenterCoordinates(*pTrack->m_assets.GetMainTexture(), 0xCF);
         break;
     }
   }
 
+  uint32 uiNumIndices;
+  uint32 *indices = MakeIndicesCenterline(uiNumIndices, pTrack, bAttachLast);
   if (!(*pShape)) {
-    uint32 uiNumIndices;
-    uint32 *indices = MakeIndicesCenterline(uiNumIndices, pTrack, bAttachLast);
-    GLenum drawType = GL_LINES;
-
-    CVertexBuffer *pVertexBuf = new CVertexBuffer(vertices, uiNumVerts, GL_DYNAMIC_DRAW);
-    CIndexBuffer *pIndexBuf = new CIndexBuffer(indices, uiNumIndices);
-    CVertexArray *pVertexArray = new CVertexArray(pVertexBuf);
-
-    (*pShape) = new CShapeData(pVertexBuf, pIndexBuf, pVertexArray, pShader, pTrack->m_pTex, drawType);
-    (*pShape)->m_vertices = vertices;
-    (*pShape)->m_uiNumVerts = uiNumVerts;
-    (*pShape)->m_indices = indices;
-    (*pShape)->m_uiNumIndices = uiNumIndices;
+    (*pShape) = new CShapeData(vertices, uiNumVerts, indices, uiNumIndices,
+                               pTrack->m_assets.GetMainTexture(), eShapePrimitive::LINES);
   } else {
-    (*pShape)->m_pVertexBuf->Update(vertices, uiNumVerts);
-    if ((*pShape)->m_vertices)
-      delete[](*pShape)->m_vertices;
-    (*pShape)->m_vertices = vertices;
-    (*pShape)->m_uiNumVerts = uiNumVerts;
+    (*pShape)->ReplaceGeometry(vertices, uiNumVerts, indices, uiNumIndices);
   }
 }
 
 //-------------------------------------------------------------------------------------------------
 
-void CShapeFactory::MakeSelectedChunks(CShapeData **pShape, CShader *pShader, CTrack *pTrack, int iStart, int iEnd)
+void CShapeFactory::MakeSelectedChunks(CShapeData **pShape, CTrack *pTrack, int iStart, int iEnd)
 {
   uint32 uiNumVerts;
-  struct tVertex *vertices = MakeVerts(uiNumVerts, eShapeSection::SELECTED, pTrack, pTrack->m_pTex);
+  struct tVertex *vertices = MakeVerts(uiNumVerts, eShapeSection::SELECTED, pTrack, pTrack->m_assets.GetMainTexture());
   if (!vertices)
     return;
 
   for (uint32 i = 0; i < uiNumVerts; ++i) {
-    vertices[i].texCoords = pTrack->m_pTex->GetColorCenterCoordinates(0xDA);
+    vertices[i].texCoords = TextureMapping::GetColorCenterCoordinates(*pTrack->m_assets.GetMainTexture(), 0xDA);
   }
 
   uint32 uiNumIndices;
   uint32 *indices = MakeIndicesSelectedChunks(uiNumIndices, iStart, iEnd, pTrack);
-  GLenum drawType = GL_LINES;
-
   if (!(*pShape)) {
-    CVertexBuffer *pVertexBuf = new CVertexBuffer(vertices, uiNumVerts, GL_DYNAMIC_DRAW);
-    CIndexBuffer *pIndexBuf = new CIndexBuffer(indices, uiNumIndices, GL_DYNAMIC_DRAW);
-    CVertexArray *pVertexArray = new CVertexArray(pVertexBuf);
-
-    (*pShape) = new CShapeData(pVertexBuf, pIndexBuf, pVertexArray, pShader, pTrack->m_pTex, drawType);
+    (*pShape) = new CShapeData(vertices, uiNumVerts, indices, uiNumIndices,
+                               pTrack->m_assets.GetMainTexture(), eShapePrimitive::LINES);
   } else {
-    (*pShape)->m_pVertexBuf->Update(vertices, uiNumVerts);
-    (*pShape)->m_pIndexBuf->Update(indices, uiNumIndices);
+    (*pShape)->ReplaceGeometry(vertices, uiNumVerts, indices, uiNumIndices);
   }
-
-  if (vertices)
-    delete[] vertices;
-  if (indices)
-    delete[] indices;
 }
 
 //-------------------------------------------------------------------------------------------------
 
-void CShapeFactory::MakeSigns(CShader *pShader, CTrack *pTrack, std::vector<CShapeData *> &signAy, eBackModeling backModeling)
+void CShapeFactory::MakeSigns(CTrack *pTrack, std::vector<CShapeData *> &signAy, eBackModeling backModeling)
 {
+  const CTrackGeometry TrackGeometry(*pTrack);
+  const CDerivedTrackChunkAy &chunkGeometryAy = TrackGeometry.GetChunks();
+
   for (int i = 0; i < (int)pTrack->m_chunkAy.size(); ++i) {
     if (pTrack->m_chunkAy[i].iSignType < 0 || pTrack->m_chunkAy[i].iSignType >= g_signAyCount)
       continue; //no signs in this chunk
 
     //make sign
     CShapeData *pNewSign = NULL;
-    MakeModel(&pNewSign, pShader, pTrack->m_pBld, g_signAy[pTrack->m_chunkAy[i].iSignType].modelType, pTrack->m_chunkAy[i].iSignTexture, backModeling);
+    MakeModel(&pNewSign, pTrack->m_assets.GetSignTexture(), g_signAy[pTrack->m_chunkAy[i].iSignType].modelType, pTrack->m_chunkAy[i].iSignTexture, backModeling);
     if (!pNewSign)
       continue;
 
@@ -1533,15 +1415,15 @@ void CShapeFactory::MakeSigns(CShader *pShader, CTrack *pTrack, std::vector<CSha
 
     glm::vec3 center; //sign origin is midpoint of centerline
     if (i + 1 < pTrack->m_chunkAy.size())
-      center = (pTrack->m_chunkAy[i + 1].math.center - pTrack->m_chunkAy[i].math.center) * 0.5f;
+      center = (chunkGeometryAy[i + 1].center - chunkGeometryAy[i].center) * 0.5f;
     else
-      center = (pTrack->m_chunkAy[i].math.center - pTrack->m_chunkAy[0].math.center) * 0.5f;
-    glm::mat4 translateMat = glm::translate(pTrack->m_chunkAy[i].math.center + center);
+      center = (chunkGeometryAy[i].center - chunkGeometryAy[0].center) * 0.5f;
+    glm::mat4 translateMat = glm::translate(chunkGeometryAy[i].center + center);
 
     glm::mat4 scaleMatWidth = glm::scale(glm::vec3(fLen, fLen, fLen));
     glm::mat4 scaleMatHeight = glm::scale(glm::vec3(fHeight, fHeight, fHeight));
-    glm::vec3 widthVec = glm::vec3(scaleMatWidth * glm::vec4(pTrack->m_chunkAy[i].math.pitchAxis, 1.0f));
-    glm::vec3 normal = glm::normalize(glm::cross(pTrack->m_chunkAy[i].math.nextChunkPitched, pTrack->m_chunkAy[i].math.pitchAxis));
+    glm::vec3 widthVec = glm::vec3(scaleMatWidth * glm::vec4(chunkGeometryAy[i].pitchAxis, 1.0f));
+    glm::vec3 normal = glm::normalize(glm::cross(chunkGeometryAy[i].nextChunkPitched, chunkGeometryAy[i].pitchAxis));
     glm::vec3 heightVec = glm::vec3(scaleMatHeight * glm::vec4(normal, 1.0f));
     glm::vec3 signPos = widthVec + heightVec;
     glm::vec3 signPosTranslated = glm::vec3(translateMat * glm::vec4(signPos, 1.0f));
@@ -1549,10 +1431,10 @@ void CShapeFactory::MakeSigns(CShader *pShader, CTrack *pTrack, std::vector<CSha
     bool bBillboarded = g_signAy[pTrack->m_chunkAy[i].iSignType].bBillboarded;
 
     glm::mat4 signYawMat = glm::rotate(glm::radians((float)pTrack->m_chunkAy[i].dSignYaw * -1.0f), normal);// glm::vec3(0, 1, 0));
-    glm::mat4 signPitchMat = glm::rotate(glm::radians((float)pTrack->m_chunkAy[i].dSignPitch * -1.0f), pTrack->m_chunkAy[i].math.pitchAxis); //glm::vec3(1, 0, 0));
-    glm::mat4 signRollMat = glm::rotate(glm::radians((float)pTrack->m_chunkAy[i].dSignRoll * -1.0f), glm::normalize(pTrack->m_chunkAy[i].math.nextChunkPitched));// glm::vec3(0, 0, 1));
+    glm::mat4 signPitchMat = glm::rotate(glm::radians((float)pTrack->m_chunkAy[i].dSignPitch * -1.0f), chunkGeometryAy[i].pitchAxis); //glm::vec3(1, 0, 0));
+    glm::mat4 signRollMat = glm::rotate(glm::radians((float)pTrack->m_chunkAy[i].dSignRoll * -1.0f), glm::normalize(chunkGeometryAy[i].nextChunkPitched));// glm::vec3(0, 0, 1));
     pNewSign->m_modelToWorldMatrix = glm::translate(signPosTranslated) * 
-      signRollMat * signPitchMat * (bBillboarded ? pTrack->m_chunkAy[i].math.yawMat : signYawMat) *
+      signRollMat * signPitchMat * (bBillboarded ? chunkGeometryAy[i].yawMat : signYawMat) *
       glm::rotate(glm::radians(-90.0f), glm::vec3(0, 0, 1)) * //sign starts on its side
       glm::rotate(glm::radians(-90.0f), glm::vec3(0, 1, 0)); //track starts facing z positive, sign starts facing x positive
     
@@ -1563,8 +1445,11 @@ void CShapeFactory::MakeSigns(CShader *pShader, CTrack *pTrack, std::vector<CSha
 
 //-------------------------------------------------------------------------------------------------
 
-void CShapeFactory::MakeAudio(CShader *pShader, CTrack *pTrack, std::vector<CShapeData *> &audioAy)
+void CShapeFactory::MakeAudio(CTrack *pTrack, std::vector<CShapeData *> &audioAy)
 {
+  const CTrackGeometry TrackGeometry(*pTrack);
+  const CDerivedTrackChunkAy &chunkGeometryAy = TrackGeometry.GetChunks();
+
   for (int i = 0; i < (int)pTrack->m_chunkAy.size(); ++i) {
     bool bChunkHasAudio = pTrack->m_chunkAy[i].iAudioTriggerSpeed != 0;
     if (!bChunkHasAudio)
@@ -1572,18 +1457,18 @@ void CShapeFactory::MakeAudio(CShader *pShader, CTrack *pTrack, std::vector<CSha
 
     //make marker
     CShapeData *pNewMarker = NULL;
-    MakeAudioMarker(&pNewMarker, pShader, pTrack->m_pTex);
+    MakeAudioMarker(&pNewMarker, pTrack->m_assets.GetMainTexture());
 
     float fHeight = (float)1000.0f * -1.0f;
-    glm::mat4 translateMat = glm::translate(pTrack->m_chunkAy[i].math.centerStunt);
+    glm::mat4 translateMat = glm::translate(chunkGeometryAy[i].centerStunt);
     glm::mat4 scaleMatHeight = glm::scale(glm::vec3(fHeight, fHeight, fHeight));
-    glm::vec3 normal = glm::normalize(glm::cross(pTrack->m_chunkAy[i].math.nextChunkPitched, pTrack->m_chunkAy[i].math.pitchAxis));
-    glm::vec3 heightVec = glm::vec3(scaleMatHeight * pTrack->m_chunkAy[i].math.rollMat * glm::vec4(normal, 1.0f));
+    glm::vec3 normal = glm::normalize(glm::cross(chunkGeometryAy[i].nextChunkPitched, chunkGeometryAy[i].pitchAxis));
+    glm::vec3 heightVec = glm::vec3(scaleMatHeight * chunkGeometryAy[i].rollMat * glm::vec4(normal, 1.0f));
     glm::vec3 markerPos = heightVec;
     glm::vec3 markerPosTranslated = glm::vec3(translateMat * glm::vec4(markerPos, 1.0f));
 
     pNewMarker->m_modelToWorldMatrix = glm::translate(markerPosTranslated) *
-      pTrack->m_chunkAy[i].math.rollMat * pTrack->m_chunkAy[i].math.pitchMat * pTrack->m_chunkAy[i].math.yawMat;
+      chunkGeometryAy[i].rollMat * chunkGeometryAy[i].pitchMat * chunkGeometryAy[i].yawMat;
 
     //add sign to array
     audioAy.push_back(pNewMarker);
@@ -1592,8 +1477,11 @@ void CShapeFactory::MakeAudio(CShader *pShader, CTrack *pTrack, std::vector<CSha
 
 //-------------------------------------------------------------------------------------------------
 
-void CShapeFactory::MakeStunts(CShader *pShader, CTrack *pTrack, std::vector<CShapeData *> &stuntAy)
+void CShapeFactory::MakeStunts(CTrack *pTrack, std::vector<CShapeData *> &stuntAy)
 {
+  const CTrackGeometry TrackGeometry(*pTrack);
+  const CDerivedTrackChunkAy &chunkGeometryAy = TrackGeometry.GetChunks();
+
   for (CStuntMap::iterator it = pTrack->m_stuntMap.begin(); it != pTrack->m_stuntMap.end(); ++it) {
     if (it->first < 0 || it->first >= pTrack->m_chunkAy.size()) {
       assert(0);
@@ -1602,18 +1490,18 @@ void CShapeFactory::MakeStunts(CShader *pShader, CTrack *pTrack, std::vector<CSh
 
     //make marker
     CShapeData *pNewMarker = NULL;
-    MakeStuntMarker(&pNewMarker, pShader, pTrack->m_pTex);
+    MakeStuntMarker(&pNewMarker, pTrack->m_assets.GetMainTexture());
 
     float fHeight = (float)1000.0f * -1.0f;
-    glm::mat4 translateMat = glm::translate(pTrack->m_chunkAy[it->first].math.centerStunt);
+    glm::mat4 translateMat = glm::translate(chunkGeometryAy[it->first].centerStunt);
     glm::mat4 scaleMatHeight = glm::scale(glm::vec3(fHeight, fHeight, fHeight));
-    glm::vec3 normal = glm::normalize(glm::cross(pTrack->m_chunkAy[it->first].math.nextChunkPitched, pTrack->m_chunkAy[it->first].math.pitchAxis));
-    glm::vec3 heightVec = glm::vec3(scaleMatHeight * pTrack->m_chunkAy[it->first].math.rollMat * glm::vec4(normal, 1.0f));
+    glm::vec3 normal = glm::normalize(glm::cross(chunkGeometryAy[it->first].nextChunkPitched, chunkGeometryAy[it->first].pitchAxis));
+    glm::vec3 heightVec = glm::vec3(scaleMatHeight * chunkGeometryAy[it->first].rollMat * glm::vec4(normal, 1.0f));
     glm::vec3 markerPos = heightVec;
     glm::vec3 markerPosTranslated = glm::vec3(translateMat * glm::vec4(markerPos, 1.0f));
 
     pNewMarker->m_modelToWorldMatrix = glm::translate(markerPosTranslated) *
-      pTrack->m_chunkAy[it->first].math.rollMat * pTrack->m_chunkAy[it->first].math.pitchMat * pTrack->m_chunkAy[it->first].math.yawMat;
+      chunkGeometryAy[it->first].rollMat * chunkGeometryAy[it->first].pitchMat * chunkGeometryAy[it->first].yawMat;
 
     //add sign to array
     stuntAy.push_back(pNewMarker);
@@ -1622,13 +1510,13 @@ void CShapeFactory::MakeStunts(CShader *pShader, CTrack *pTrack, std::vector<CSh
 
 //-------------------------------------------------------------------------------------------------
 
-CShapeData *CShapeFactory::MakeNormalsTest(const CShapeData &data, CShader *pShader)
+CShapeData *CShapeFactory::MakeNormalsTest(const CShapeData &data)
 {
   uint32 uiNumVerts = data.m_uiNumVerts * 2;
   tVertex *vertices = new tVertex[uiNumVerts];
   glm::vec4 white(1.0f, 1.0f, 1.0f, 1.0f);
   for (int i = 0; i < (int)data.m_uiNumVerts; i++) {
-    GLuint vertIndex = i * 2;
+    uint32 vertIndex = i * 2;
     tVertex &v1 = vertices[vertIndex];
     tVertex &v2 = vertices[vertIndex + 1];
     const tVertex &sourceVertex = data.m_vertices[i];
@@ -1643,15 +1531,8 @@ CShapeData *CShapeFactory::MakeNormalsTest(const CShapeData &data, CShader *pSha
   for (int i = 0; i < (int)uiNumIndices; i++)
     indices[i] = i;
 
-  CVertexBuffer *pVertexBuf = new CVertexBuffer(vertices, uiNumVerts);
-  CIndexBuffer *pIndexBuf = new CIndexBuffer(indices, uiNumIndices);
-  CVertexArray *pVertexArray = new CVertexArray(pVertexBuf);
-  CShapeData *pRet = new CShapeData(pVertexBuf, pIndexBuf, pVertexArray, pShader, NULL, GL_LINES);
-  pRet->m_vertices = vertices;
-  pRet->m_uiNumVerts = uiNumVerts;
-  pRet->m_indices = indices;
-  pRet->m_uiNumIndices = uiNumIndices;
-  return pRet;
+  return new CShapeData(vertices, uiNumVerts, indices, uiNumIndices,
+                        NULL, eShapePrimitive::LINES);
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -1661,19 +1542,22 @@ void CShapeFactory::GetCarPos(CTrack *pTrack, int iChunk, eShapeSection aiLineSe
   if (pTrack->m_chunkAy.empty() || iChunk > (int)pTrack->m_chunkAy.size() - 1)
     return;
 
+  const CTrackGeometry TrackGeometry(*pTrack);
+  const CDerivedTrackChunkAy &chunkGeometryAy = TrackGeometry.GetChunks();
+
   glm::vec3 carLine;
   switch (aiLineSection) {
     case eShapeSection::AILINE1:
-      carLine = pTrack->m_chunkAy[iChunk].math.carLine1;
+      carLine = chunkGeometryAy[iChunk].carLine1;
       break;
     case eShapeSection::AILINE2:
-      carLine = pTrack->m_chunkAy[iChunk].math.carLine2;
+      carLine = chunkGeometryAy[iChunk].carLine2;
       break;
     case eShapeSection::AILINE3:
-      carLine = pTrack->m_chunkAy[iChunk].math.carLine3;
+      carLine = chunkGeometryAy[iChunk].carLine3;
       break;
     case eShapeSection::AILINE4:
-      carLine = pTrack->m_chunkAy[iChunk].math.carLine4;
+      carLine = chunkGeometryAy[iChunk].carLine4;
       break;
     default:
       assert(0);
@@ -1683,7 +1567,7 @@ void CShapeFactory::GetCarPos(CTrack *pTrack, int iChunk, eShapeSection aiLineSe
   if (bMillionPlus)
     fRotate = 90.0f;
   modelToWorldMatrix = glm::translate(carLine) *
-    pTrack->m_chunkAy[iChunk].math.rollMat * pTrack->m_chunkAy[iChunk].math.pitchMat * pTrack->m_chunkAy[iChunk].math.yawMat *
+    chunkGeometryAy[iChunk].rollMat * chunkGeometryAy[iChunk].pitchMat * chunkGeometryAy[iChunk].yawMat *
     glm::rotate(glm::radians(fRotate), glm::vec3(0, 0, 1)) * //car starts on its side
     glm::rotate(glm::radians(fRotate), glm::vec3(0, 1, 0)); //track starts facing z positive, car starts facing x positive
 }
@@ -1696,6 +1580,9 @@ tVertex *CShapeFactory::MakeVerts(uint32 &numVertices, eShapeSection section, CT
     numVertices = 0;
     return NULL;
   }
+
+  const CTrackGeometry TrackGeometry(*pTrack);
+  const CDerivedTrackChunkAy &chunkGeometryAy = TrackGeometry.GetChunks();
 
   //get num verts per chunk
   uint32 uiNumVertsPerChunk = 4;
@@ -1726,214 +1613,214 @@ tVertex *CShapeFactory::MakeVerts(uint32 &numVertices, eShapeSection section, CT
     switch (section) {
       case eShapeSection::CENTER:
         ApplyVerticesSingleSection(i, vertices, uiNumVertsPerChunk,
-                                   pTrack->m_chunkAy[i].math.lLane,
-                                   pTrack->m_chunkAy[i].math.rLane,
-                                   pTrack->m_chunkAy[iChunkIndex].math.lLane,
-                                   pTrack->m_chunkAy[iChunkIndex].math.rLane,
+                                   chunkGeometryAy[i].lLane,
+                                   chunkGeometryAy[i].rLane,
+                                   chunkGeometryAy[iChunkIndex].lLane,
+                                   chunkGeometryAy[iChunkIndex].rLane,
                                    backModeling);
         ApplyNormalsAndTexCoords(i, iChunkIndex, vertices, uiNumVertsPerChunk, pTrack, pTexture, pTrack->m_chunkAy[iChunkIndex].iCenterSurfaceType, eVertOrder::SURFACE, backModeling);
         break;
       case eShapeSection::LSHOULDER:
         ApplyVerticesSingleSection(i, vertices, uiNumVertsPerChunk,
-                                   pTrack->m_chunkAy[i].math.lShoulder,
-                                   pTrack->m_chunkAy[i].math.lLane,
-                                   pTrack->m_chunkAy[iChunkIndex].math.lShoulder,
-                                   pTrack->m_chunkAy[iChunkIndex].math.lLane,
+                                   chunkGeometryAy[i].lShoulder,
+                                   chunkGeometryAy[i].lLane,
+                                   chunkGeometryAy[iChunkIndex].lShoulder,
+                                   chunkGeometryAy[iChunkIndex].lLane,
                                    backModeling);
         ApplyNormalsAndTexCoords(i, iChunkIndex, vertices, uiNumVertsPerChunk, pTrack, pTexture, pTrack->m_chunkAy[iChunkIndex].iLeftSurfaceType, eVertOrder::SURFACE, backModeling);
         break;
       case eShapeSection::RSHOULDER:
         ApplyVerticesSingleSection(i, vertices, uiNumVertsPerChunk,
-                                   pTrack->m_chunkAy[i].math.rLane,
-                                   pTrack->m_chunkAy[i].math.rShoulder,
-                                   pTrack->m_chunkAy[iChunkIndex].math.rLane,
-                                   pTrack->m_chunkAy[iChunkIndex].math.rShoulder,
+                                   chunkGeometryAy[i].rLane,
+                                   chunkGeometryAy[i].rShoulder,
+                                   chunkGeometryAy[iChunkIndex].rLane,
+                                   chunkGeometryAy[iChunkIndex].rShoulder,
                                    backModeling);
         ApplyNormalsAndTexCoords(i, iChunkIndex, vertices, uiNumVertsPerChunk, pTrack, pTexture, pTrack->m_chunkAy[iChunkIndex].iRightSurfaceType, eVertOrder::SURFACE, backModeling);
         break;
       case eShapeSection::LWALL:
         ApplyVerticesSingleSection(i, vertices, uiNumVertsPerChunk,
-                                   pTrack->m_chunkAy[i].math.lWall, 
-                                   pTrack->m_chunkAy[i].math.lWallBottomAttach, 
-                                   pTrack->m_chunkAy[iChunkIndex].math.lWall,
-                                   pTrack->m_chunkAy[iChunkIndex].math.lWallBottomAttach,
+                                   chunkGeometryAy[i].lWall,
+                                   chunkGeometryAy[i].lWallBottomAttach,
+                                   chunkGeometryAy[iChunkIndex].lWall,
+                                   chunkGeometryAy[iChunkIndex].lWallBottomAttach,
                                    backModeling);
         ApplyNormalsAndTexCoords(i, iChunkIndex, vertices, uiNumVertsPerChunk, pTrack, pTexture, pTrack->m_chunkAy[iChunkIndex].iLeftWallType, eVertOrder::LWALL, backModeling);
         break;
       case eShapeSection::RWALL:
         ApplyVerticesSingleSection(i, vertices, uiNumVertsPerChunk,
-                                   pTrack->m_chunkAy[i].math.rWallBottomAttach, 
-                                   pTrack->m_chunkAy[i].math.rWall, 
-                                   pTrack->m_chunkAy[iChunkIndex].math.rWallBottomAttach,
-                                   pTrack->m_chunkAy[iChunkIndex].math.rWall,
+                                   chunkGeometryAy[i].rWallBottomAttach,
+                                   chunkGeometryAy[i].rWall,
+                                   chunkGeometryAy[iChunkIndex].rWallBottomAttach,
+                                   chunkGeometryAy[iChunkIndex].rWall,
                                    backModeling);
         ApplyNormalsAndTexCoords(i, iChunkIndex, vertices, uiNumVertsPerChunk, pTrack, pTexture, pTrack->m_chunkAy[iChunkIndex].iRightWallType, eVertOrder::RWALL, backModeling);
         break;
       case eShapeSection::ROOF:
         ApplyVerticesSingleSection(i, vertices, uiNumVertsPerChunk,
-                                   pTrack->m_chunkAy[i].math.rWall, 
-                                   pTrack->m_chunkAy[i].math.lWall, 
-                                   pTrack->m_chunkAy[iChunkIndex].math.rWall,
-                                   pTrack->m_chunkAy[iChunkIndex].math.lWall,
+                                   chunkGeometryAy[i].rWall,
+                                   chunkGeometryAy[i].lWall,
+                                   chunkGeometryAy[iChunkIndex].rWall,
+                                   chunkGeometryAy[iChunkIndex].lWall,
                                    backModeling);
         ApplyNormalsAndTexCoords(i, iChunkIndex, vertices, uiNumVertsPerChunk, pTrack, pTexture, pTrack->m_chunkAy[iChunkIndex].iRoofType, eVertOrder::SURFACE, backModeling);
         break;
       case eShapeSection::OWALLFLOOR:
         ApplyVerticesSingleSection(i, vertices, uiNumVertsPerChunk,
-                                   pTrack->m_chunkAy[i].math.lFloor, 
-                                   pTrack->m_chunkAy[i].math.rFloor, 
-                                   pTrack->m_chunkAy[iChunkIndex].math.lFloor,
-                                   pTrack->m_chunkAy[iChunkIndex].math.rFloor,
+                                   chunkGeometryAy[i].lFloor,
+                                   chunkGeometryAy[i].rFloor,
+                                   chunkGeometryAy[iChunkIndex].lFloor,
+                                   chunkGeometryAy[iChunkIndex].rFloor,
                                    backModeling);
         ApplyNormalsAndTexCoords(i, iChunkIndex, vertices, uiNumVertsPerChunk, pTrack, pTexture, pTrack->m_chunkAy[iChunkIndex].iOuterFloorType, eVertOrder::SURFACE, backModeling);
         break;
       case eShapeSection::LLOWALL:
         ApplyVerticesSingleSection(i, vertices, uiNumVertsPerChunk,
-                                   pTrack->m_chunkAy[i].math.lloWall, 
-                                   pTrack->m_chunkAy[i].math.lloWallBottomAttach, 
-                                   pTrack->m_chunkAy[iChunkIndex].math.lloWall,
-                                   pTrack->m_chunkAy[iChunkIndex].math.lloWallBottomAttach,
+                                   chunkGeometryAy[i].lloWall,
+                                   chunkGeometryAy[i].lloWallBottomAttach,
+                                   chunkGeometryAy[iChunkIndex].lloWall,
+                                   chunkGeometryAy[iChunkIndex].lloWallBottomAttach,
                                    backModeling);
         ApplyNormalsAndTexCoords(i, iChunkIndex, vertices, uiNumVertsPerChunk, pTrack, pTexture, pTrack->m_chunkAy[iChunkIndex].iLLOuterWallType, eVertOrder::OWALL, backModeling);
         break;
       case eShapeSection::RLOWALL:
         ApplyVerticesSingleSection(i, vertices, uiNumVertsPerChunk,
-                                   pTrack->m_chunkAy[i].math.rloWallBottomAttach, 
-                                   pTrack->m_chunkAy[i].math.rloWall, 
-                                   pTrack->m_chunkAy[iChunkIndex].math.rloWallBottomAttach,
-                                   pTrack->m_chunkAy[iChunkIndex].math.rloWall,
+                                   chunkGeometryAy[i].rloWallBottomAttach,
+                                   chunkGeometryAy[i].rloWall,
+                                   chunkGeometryAy[iChunkIndex].rloWallBottomAttach,
+                                   chunkGeometryAy[iChunkIndex].rloWall,
                                    backModeling);
         ApplyNormalsAndTexCoords(i, iChunkIndex, vertices, uiNumVertsPerChunk, pTrack, pTexture, pTrack->m_chunkAy[iChunkIndex].iRLOuterWallType, eVertOrder::OWALL, backModeling);
         break;
       case eShapeSection::LUOWALL:
         ApplyVerticesSingleSection(i, vertices, uiNumVertsPerChunk,
-                                   pTrack->m_chunkAy[i].math.luoWall, 
-                                   pTrack->m_chunkAy[i].math.lloWall, 
-                                   pTrack->m_chunkAy[iChunkIndex].math.luoWall,
-                                   pTrack->m_chunkAy[iChunkIndex].math.lloWall,
+                                   chunkGeometryAy[i].luoWall,
+                                   chunkGeometryAy[i].lloWall,
+                                   chunkGeometryAy[iChunkIndex].luoWall,
+                                   chunkGeometryAy[iChunkIndex].lloWall,
                                    backModeling);
         ApplyNormalsAndTexCoords(i, iChunkIndex, vertices, uiNumVertsPerChunk, pTrack, pTexture, pTrack->m_chunkAy[iChunkIndex].iLUOuterWallType, eVertOrder::OWALL, backModeling);
         break;
       case eShapeSection::RUOWALL:
         ApplyVerticesSingleSection(i, vertices, uiNumVertsPerChunk,
-                                   pTrack->m_chunkAy[i].math.rloWall, 
-                                   pTrack->m_chunkAy[i].math.ruoWall, 
-                                   pTrack->m_chunkAy[iChunkIndex].math.rloWall,
-                                   pTrack->m_chunkAy[iChunkIndex].math.ruoWall,
+                                   chunkGeometryAy[i].rloWall,
+                                   chunkGeometryAy[i].ruoWall,
+                                   chunkGeometryAy[iChunkIndex].rloWall,
+                                   chunkGeometryAy[iChunkIndex].ruoWall,
                                    backModeling);
         ApplyNormalsAndTexCoords(i, iChunkIndex, vertices, uiNumVertsPerChunk, pTrack, pTexture, pTrack->m_chunkAy[iChunkIndex].iRUOuterWallType, eVertOrder::OWALL, backModeling);
         break;
       case eShapeSection::SELECTED:
-        vertices[i * uiNumVertsPerChunk + 0].position = pTrack->m_chunkAy[i].math.luoWall;
-        vertices[i * uiNumVertsPerChunk + 1].position = pTrack->m_chunkAy[i].math.ruoWall;
-        vertices[i * uiNumVertsPerChunk + 2].position = pTrack->m_chunkAy[i].math.lloWallBottomAttach;
-        vertices[i * uiNumVertsPerChunk + 3].position = pTrack->m_chunkAy[i].math.rloWallBottomAttach;
-        vertices[i * uiNumVertsPerChunk + 4].position = pTrack->m_chunkAy[iChunkIndex].math.luoWall;
-        vertices[i * uiNumVertsPerChunk + 5].position = pTrack->m_chunkAy[iChunkIndex].math.ruoWall;
-        vertices[i * uiNumVertsPerChunk + 6].position = pTrack->m_chunkAy[iChunkIndex].math.lloWallBottomAttach;
-        vertices[i * uiNumVertsPerChunk + 7].position = pTrack->m_chunkAy[iChunkIndex].math.rloWallBottomAttach;
+        vertices[i * uiNumVertsPerChunk + 0].position = chunkGeometryAy[i].luoWall;
+        vertices[i * uiNumVertsPerChunk + 1].position = chunkGeometryAy[i].ruoWall;
+        vertices[i * uiNumVertsPerChunk + 2].position = chunkGeometryAy[i].lloWallBottomAttach;
+        vertices[i * uiNumVertsPerChunk + 3].position = chunkGeometryAy[i].rloWallBottomAttach;
+        vertices[i * uiNumVertsPerChunk + 4].position = chunkGeometryAy[iChunkIndex].luoWall;
+        vertices[i * uiNumVertsPerChunk + 5].position = chunkGeometryAy[iChunkIndex].ruoWall;
+        vertices[i * uiNumVertsPerChunk + 6].position = chunkGeometryAy[iChunkIndex].lloWallBottomAttach;
+        vertices[i * uiNumVertsPerChunk + 7].position = chunkGeometryAy[iChunkIndex].rloWallBottomAttach;
         break;
       case eShapeSection::AILINE1:
-        vertices[i * uiNumVertsPerChunk + 0].position = pTrack->m_chunkAy[i].math.aiLine1;
+        vertices[i * uiNumVertsPerChunk + 0].position = chunkGeometryAy[i].aiLine1;
         break;
       case eShapeSection::AILINE2:
-        vertices[i * uiNumVertsPerChunk + 0].position = pTrack->m_chunkAy[i].math.aiLine2;
+        vertices[i * uiNumVertsPerChunk + 0].position = chunkGeometryAy[i].aiLine2;
         break;
       case eShapeSection::AILINE3:
-        vertices[i * uiNumVertsPerChunk + 0].position = pTrack->m_chunkAy[i].math.aiLine3;
+        vertices[i * uiNumVertsPerChunk + 0].position = chunkGeometryAy[i].aiLine3;
         break;
       case eShapeSection::AILINE4:
-        vertices[i * uiNumVertsPerChunk + 0].position = pTrack->m_chunkAy[i].math.aiLine4;
+        vertices[i * uiNumVertsPerChunk + 0].position = chunkGeometryAy[i].aiLine4;
         break;
       case eShapeSection::CARLINE1:
-        vertices[i * uiNumVertsPerChunk + 0].position = pTrack->m_chunkAy[i].math.carLine1;
+        vertices[i * uiNumVertsPerChunk + 0].position = chunkGeometryAy[i].carLine1;
         break;
       case eShapeSection::CARLINE2:
-        vertices[i * uiNumVertsPerChunk + 0].position = pTrack->m_chunkAy[i].math.carLine2;
+        vertices[i * uiNumVertsPerChunk + 0].position = chunkGeometryAy[i].carLine2;
         break;
       case eShapeSection::CARLINE3:
-        vertices[i * uiNumVertsPerChunk + 0].position = pTrack->m_chunkAy[i].math.carLine3;
+        vertices[i * uiNumVertsPerChunk + 0].position = chunkGeometryAy[i].carLine3;
         break;
       case eShapeSection::CARLINE4:
-        vertices[i * uiNumVertsPerChunk + 0].position = pTrack->m_chunkAy[i].math.carLine4;
+        vertices[i * uiNumVertsPerChunk + 0].position = chunkGeometryAy[i].carLine4;
         break;
       case eShapeSection::EXPORT:
         //center
         ApplyVerticesSingleSection(i, vertices, uiNumVertsPerChunk,
-                                   pTrack->m_chunkAy[i].math.lLane,
-                                   pTrack->m_chunkAy[i].math.rLane,
-                                   pTrack->m_chunkAy[iChunkIndex].math.lLane,
-                                   pTrack->m_chunkAy[iChunkIndex].math.rLane,
+                                   chunkGeometryAy[i].lLane,
+                                   chunkGeometryAy[i].rLane,
+                                   chunkGeometryAy[iChunkIndex].lLane,
+                                   chunkGeometryAy[iChunkIndex].rLane,
                                    backModeling, iExportOffset * 0);
         //lshoulder
         ApplyVerticesSingleSection(i, vertices, uiNumVertsPerChunk,
-                                   pTrack->m_chunkAy[i].math.lShoulder,
-                                   pTrack->m_chunkAy[i].math.lLane,
-                                   pTrack->m_chunkAy[iChunkIndex].math.lShoulder,
-                                   pTrack->m_chunkAy[iChunkIndex].math.lLane,
+                                   chunkGeometryAy[i].lShoulder,
+                                   chunkGeometryAy[i].lLane,
+                                   chunkGeometryAy[iChunkIndex].lShoulder,
+                                   chunkGeometryAy[iChunkIndex].lLane,
                                    backModeling, iExportOffset * 1);
         //rshoulder
         ApplyVerticesSingleSection(i, vertices, uiNumVertsPerChunk,
-                                   pTrack->m_chunkAy[i].math.rLane,
-                                   pTrack->m_chunkAy[i].math.rShoulder,
-                                   pTrack->m_chunkAy[iChunkIndex].math.rLane,
-                                   pTrack->m_chunkAy[iChunkIndex].math.rShoulder,
+                                   chunkGeometryAy[i].rLane,
+                                   chunkGeometryAy[i].rShoulder,
+                                   chunkGeometryAy[iChunkIndex].rLane,
+                                   chunkGeometryAy[iChunkIndex].rShoulder,
                                    backModeling, iExportOffset * 2);
         //lwall
         ApplyVerticesSingleSection(i, vertices, uiNumVertsPerChunk,
-                                   pTrack->m_chunkAy[i].math.lWall,
-                                   pTrack->m_chunkAy[i].math.lWallBottomAttach,
-                                   pTrack->m_chunkAy[iChunkIndex].math.lWall,
-                                   pTrack->m_chunkAy[iChunkIndex].math.lWallBottomAttach,
+                                   chunkGeometryAy[i].lWall,
+                                   chunkGeometryAy[i].lWallBottomAttach,
+                                   chunkGeometryAy[iChunkIndex].lWall,
+                                   chunkGeometryAy[iChunkIndex].lWallBottomAttach,
                                    backModeling, iExportOffset * 3);
         //rwall
         ApplyVerticesSingleSection(i, vertices, uiNumVertsPerChunk,
-                                   pTrack->m_chunkAy[i].math.rWallBottomAttach,
-                                   pTrack->m_chunkAy[i].math.rWall,
-                                   pTrack->m_chunkAy[iChunkIndex].math.rWallBottomAttach,
-                                   pTrack->m_chunkAy[iChunkIndex].math.rWall,
+                                   chunkGeometryAy[i].rWallBottomAttach,
+                                   chunkGeometryAy[i].rWall,
+                                   chunkGeometryAy[iChunkIndex].rWallBottomAttach,
+                                   chunkGeometryAy[iChunkIndex].rWall,
                                    backModeling, iExportOffset * 4);
         //roof
         ApplyVerticesSingleSection(i, vertices, uiNumVertsPerChunk,
-                                   pTrack->m_chunkAy[i].math.rWall,
-                                   pTrack->m_chunkAy[i].math.lWall,
-                                   pTrack->m_chunkAy[iChunkIndex].math.rWall,
-                                   pTrack->m_chunkAy[iChunkIndex].math.lWall,
+                                   chunkGeometryAy[i].rWall,
+                                   chunkGeometryAy[i].lWall,
+                                   chunkGeometryAy[iChunkIndex].rWall,
+                                   chunkGeometryAy[iChunkIndex].lWall,
                                    backModeling, iExportOffset * 5);
         //owallfloor
         ApplyVerticesSingleSection(i, vertices, uiNumVertsPerChunk,
-                                   pTrack->m_chunkAy[i].math.lFloor,
-                                   pTrack->m_chunkAy[i].math.rFloor,
-                                   pTrack->m_chunkAy[iChunkIndex].math.lFloor,
-                                   pTrack->m_chunkAy[iChunkIndex].math.rFloor,
+                                   chunkGeometryAy[i].lFloor,
+                                   chunkGeometryAy[i].rFloor,
+                                   chunkGeometryAy[iChunkIndex].lFloor,
+                                   chunkGeometryAy[iChunkIndex].rFloor,
                                    backModeling, iExportOffset * 6);
         //llowall
         ApplyVerticesSingleSection(i, vertices, uiNumVertsPerChunk,
-                                   pTrack->m_chunkAy[i].math.lloWall,
-                                   pTrack->m_chunkAy[i].math.lloWallBottomAttach,
-                                   pTrack->m_chunkAy[iChunkIndex].math.lloWall,
-                                   pTrack->m_chunkAy[iChunkIndex].math.lloWallBottomAttach,
+                                   chunkGeometryAy[i].lloWall,
+                                   chunkGeometryAy[i].lloWallBottomAttach,
+                                   chunkGeometryAy[iChunkIndex].lloWall,
+                                   chunkGeometryAy[iChunkIndex].lloWallBottomAttach,
                                    backModeling, iExportOffset * 7);
         //rlowall
         ApplyVerticesSingleSection(i, vertices, uiNumVertsPerChunk,
-                                   pTrack->m_chunkAy[i].math.rloWallBottomAttach,
-                                   pTrack->m_chunkAy[i].math.rloWall,
-                                   pTrack->m_chunkAy[iChunkIndex].math.rloWallBottomAttach,
-                                   pTrack->m_chunkAy[iChunkIndex].math.rloWall,
+                                   chunkGeometryAy[i].rloWallBottomAttach,
+                                   chunkGeometryAy[i].rloWall,
+                                   chunkGeometryAy[iChunkIndex].rloWallBottomAttach,
+                                   chunkGeometryAy[iChunkIndex].rloWall,
                                    backModeling, iExportOffset * 8);
         //luowall
         ApplyVerticesSingleSection(i, vertices, uiNumVertsPerChunk,
-                                   pTrack->m_chunkAy[i].math.luoWall,
-                                   pTrack->m_chunkAy[i].math.lloWall,
-                                   pTrack->m_chunkAy[iChunkIndex].math.luoWall,
-                                   pTrack->m_chunkAy[iChunkIndex].math.lloWall,
+                                   chunkGeometryAy[i].luoWall,
+                                   chunkGeometryAy[i].lloWall,
+                                   chunkGeometryAy[iChunkIndex].luoWall,
+                                   chunkGeometryAy[iChunkIndex].lloWall,
                                    backModeling, iExportOffset * 9);
         //ruowall
         ApplyVerticesSingleSection(i, vertices, uiNumVertsPerChunk,
-                                   pTrack->m_chunkAy[i].math.rloWall,
-                                   pTrack->m_chunkAy[i].math.ruoWall,
-                                   pTrack->m_chunkAy[iChunkIndex].math.rloWall,
-                                   pTrack->m_chunkAy[iChunkIndex].math.ruoWall,
+                                   chunkGeometryAy[i].rloWall,
+                                   chunkGeometryAy[i].ruoWall,
+                                   chunkGeometryAy[iChunkIndex].rloWall,
+                                   chunkGeometryAy[iChunkIndex].ruoWall,
                                    backModeling, iExportOffset * 10);
         //center
         ApplyNormalsAndTexCoords(i, iChunkIndex, vertices, uiNumVertsPerChunk,
@@ -1981,7 +1868,7 @@ tVertex *CShapeFactory::MakeVerts(uint32 &numVertices, eShapeSection section, CT
                                  eVertOrder::OWALL, backModeling, iExportOffset * 10);
         break;
       case eShapeSection::CENTERLINE:
-        vertices[i * uiNumVertsPerChunk + 0].position = pTrack->m_chunkAy[i].math.center;
+        vertices[i * uiNumVertsPerChunk + 0].position = chunkGeometryAy[i].center;
         break;
       default:
         assert(0); //shape not implemented
@@ -2008,7 +1895,7 @@ tVertex *CShapeFactory::MakeVertsEnvirFloor(uint32 &numVertices, CTrack *pTrack,
   vertices[1].position = glm::vec3(-fPadding, fEnvirFloorDepth, +fPadding);
   vertices[2].position = glm::vec3(+fPadding, fEnvirFloorDepth, -fPadding);
   vertices[3].position = glm::vec3(+fPadding, fEnvirFloorDepth, +fPadding);
-  pTexture->GetTextureCoordinates(
+  TextureMapping::GetTextureCoordinates(*pTexture,
     CTrack::GetSignedBitValueFromInt(pTrack->m_chunkAy[iIndex].iEnvironmentFloorType) & SURFACE_MASK_TEXTURE_INDEX,
     vertices[0], vertices[1], vertices[2], vertices[3]);
 
@@ -2357,7 +2244,7 @@ void CShapeFactory::ApplyNormalsAndTexCoords(int i,
                       vertices[i * uiNumVertsPerChunk + 1 + iOffset],
                       vertices[i * uiNumVertsPerChunk + 2 + iOffset],
                       vertices[i * uiNumVertsPerChunk + 3 + iOffset]);
-          pTexture->GetTextureCoordinates(CTrack::GetSignedBitValueFromInt(iSurfaceType),
+          TextureMapping::GetTextureCoordinates(*pTexture, CTrack::GetSignedBitValueFromInt(iSurfaceType),
                               vertices[i * uiNumVertsPerChunk + 0 + iOffset],
                               vertices[i * uiNumVertsPerChunk + 1 + iOffset],
                               vertices[i * uiNumVertsPerChunk + 2 + iOffset],
@@ -2368,7 +2255,7 @@ void CShapeFactory::ApplyNormalsAndTexCoords(int i,
                       vertices[i * uiNumVertsPerChunk + 0 + iOffset],
                       vertices[i * uiNumVertsPerChunk + 3 + iOffset],
                       vertices[i * uiNumVertsPerChunk + 2 + iOffset]);
-          pTexture->GetTextureCoordinates(CTrack::GetSignedBitValueFromInt(iSurfaceType),
+          TextureMapping::GetTextureCoordinates(*pTexture, CTrack::GetSignedBitValueFromInt(iSurfaceType),
                               vertices[i * uiNumVertsPerChunk + 0 + iOffset],
                               vertices[i * uiNumVertsPerChunk + 1 + iOffset],
                               vertices[i * uiNumVertsPerChunk + 2 + iOffset],
@@ -2377,7 +2264,7 @@ void CShapeFactory::ApplyNormalsAndTexCoords(int i,
             uint32 uiTexIdx = CTrack::GetSignedBitValueFromInt(iSurfaceType) & SURFACE_MASK_TEXTURE_INDEX;
             CSignMap::iterator it = pTrack->m_backsMap.find(uiTexIdx);
             if (it != pTrack->m_backsMap.end()) {
-              pTexture->GetTextureCoordinates(CTrack::GetSignedBitValueFromInt(it->second),
+              TextureMapping::GetTextureCoordinates(*pTexture, CTrack::GetSignedBitValueFromInt(it->second),
                                   vertices[i * uiNumVertsPerChunk + 1 + iOffset],
                                   vertices[i * uiNumVertsPerChunk + 0 + iOffset],
                                   vertices[i * uiNumVertsPerChunk + 3 + iOffset],
@@ -2394,12 +2281,12 @@ void CShapeFactory::ApplyNormalsAndTexCoords(int i,
                       vertices[i * uiNumVertsPerChunk + 0 + 4 + iOffset],
                       vertices[i * uiNumVertsPerChunk + 3 + 4 + iOffset],
                       vertices[i * uiNumVertsPerChunk + 2 + 4 + iOffset]);
-          pTexture->GetTextureCoordinates(CTrack::GetSignedBitValueFromInt(iSurfaceType),
+          TextureMapping::GetTextureCoordinates(*pTexture, CTrack::GetSignedBitValueFromInt(iSurfaceType),
                               vertices[i * uiNumVertsPerChunk + 0 + iOffset],
                               vertices[i * uiNumVertsPerChunk + 1 + iOffset],
                               vertices[i * uiNumVertsPerChunk + 2 + iOffset],
                               vertices[i * uiNumVertsPerChunk + 3 + iOffset]);
-          pTexture->GetTextureCoordinates(CTrack::GetSignedBitValueFromInt(iSurfaceType),
+          TextureMapping::GetTextureCoordinates(*pTexture, CTrack::GetSignedBitValueFromInt(iSurfaceType),
                               vertices[i * uiNumVertsPerChunk + 1 + 4 + iOffset],
                               vertices[i * uiNumVertsPerChunk + 0 + 4 + iOffset],
                               vertices[i * uiNumVertsPerChunk + 3 + 4 + iOffset],
@@ -2408,7 +2295,7 @@ void CShapeFactory::ApplyNormalsAndTexCoords(int i,
             uint32 uiTexIdx = CTrack::GetSignedBitValueFromInt(iSurfaceType) & SURFACE_MASK_TEXTURE_INDEX;
             CSignMap::iterator it = pTrack->m_backsMap.find(uiTexIdx);
             if (it != pTrack->m_backsMap.end()) {
-              pTexture->GetTextureCoordinates(CTrack::GetSignedBitValueFromInt(it->second),
+              TextureMapping::GetTextureCoordinates(*pTexture, CTrack::GetSignedBitValueFromInt(it->second),
                                   vertices[i * uiNumVertsPerChunk + 1 + 4 + iOffset],
                                   vertices[i * uiNumVertsPerChunk + 0 + 4 + iOffset],
                                   vertices[i * uiNumVertsPerChunk + 3 + 4 + iOffset],
@@ -2426,7 +2313,7 @@ void CShapeFactory::ApplyNormalsAndTexCoords(int i,
                       vertices[i * uiNumVertsPerChunk + 0 + iOffset],
                       vertices[i * uiNumVertsPerChunk + 3 + iOffset],
                       vertices[i * uiNumVertsPerChunk + 1 + iOffset]);
-          pTexture->GetTextureCoordinates(CTrack::GetSignedBitValueFromInt(iSurfaceType),
+          TextureMapping::GetTextureCoordinates(*pTexture, CTrack::GetSignedBitValueFromInt(iSurfaceType),
                               vertices[i * uiNumVertsPerChunk + 2 + iOffset],
                               vertices[i * uiNumVertsPerChunk + 0 + iOffset],
                               vertices[i * uiNumVertsPerChunk + 3 + iOffset],
@@ -2437,7 +2324,7 @@ void CShapeFactory::ApplyNormalsAndTexCoords(int i,
                       vertices[i * uiNumVertsPerChunk + 2 + iOffset],
                       vertices[i * uiNumVertsPerChunk + 1 + iOffset],
                       vertices[i * uiNumVertsPerChunk + 3 + iOffset]);
-          pTexture->GetTextureCoordinates(CTrack::GetSignedBitValueFromInt(iSurfaceType),
+          TextureMapping::GetTextureCoordinates(*pTexture, CTrack::GetSignedBitValueFromInt(iSurfaceType),
                               vertices[i * uiNumVertsPerChunk + 2 + iOffset],
                               vertices[i * uiNumVertsPerChunk + 0 + iOffset],
                               vertices[i * uiNumVertsPerChunk + 3 + iOffset],
@@ -2446,7 +2333,7 @@ void CShapeFactory::ApplyNormalsAndTexCoords(int i,
             uint32 uiTexIdx = CTrack::GetSignedBitValueFromInt(iSurfaceType) & SURFACE_MASK_TEXTURE_INDEX;
             CSignMap::iterator it = pTrack->m_backsMap.find(uiTexIdx);
             if (it != pTrack->m_backsMap.end()) {
-              pTexture->GetTextureCoordinates(CTrack::GetSignedBitValueFromInt(it->second),
+              TextureMapping::GetTextureCoordinates(*pTexture, CTrack::GetSignedBitValueFromInt(it->second),
                                   vertices[i * uiNumVertsPerChunk + 0 + iOffset],
                                   vertices[i * uiNumVertsPerChunk + 2 + iOffset],
                                   vertices[i * uiNumVertsPerChunk + 1 + iOffset],
@@ -2463,12 +2350,12 @@ void CShapeFactory::ApplyNormalsAndTexCoords(int i,
                       vertices[i * uiNumVertsPerChunk + 2 + 4 + iOffset],
                       vertices[i * uiNumVertsPerChunk + 1 + 4 + iOffset],
                       vertices[i * uiNumVertsPerChunk + 3 + 4 + iOffset]);
-          pTexture->GetTextureCoordinates(CTrack::GetSignedBitValueFromInt(iSurfaceType),
+          TextureMapping::GetTextureCoordinates(*pTexture, CTrack::GetSignedBitValueFromInt(iSurfaceType),
                               vertices[i * uiNumVertsPerChunk + 2 + iOffset],
                               vertices[i * uiNumVertsPerChunk + 0 + iOffset],
                               vertices[i * uiNumVertsPerChunk + 3 + iOffset],
                               vertices[i * uiNumVertsPerChunk + 1 + iOffset]);
-          pTexture->GetTextureCoordinates(CTrack::GetSignedBitValueFromInt(iSurfaceType),
+          TextureMapping::GetTextureCoordinates(*pTexture, CTrack::GetSignedBitValueFromInt(iSurfaceType),
                               vertices[i * uiNumVertsPerChunk + 2 + 4 + iOffset],
                               vertices[i * uiNumVertsPerChunk + 0 + 4 + iOffset],
                               vertices[i * uiNumVertsPerChunk + 3 + 4 + iOffset],
@@ -2477,7 +2364,7 @@ void CShapeFactory::ApplyNormalsAndTexCoords(int i,
             uint32 uiTexIdx = CTrack::GetSignedBitValueFromInt(iSurfaceType) & SURFACE_MASK_TEXTURE_INDEX;
             CSignMap::iterator it = pTrack->m_backsMap.find(uiTexIdx);
             if (it != pTrack->m_backsMap.end()) {
-              pTexture->GetTextureCoordinates(CTrack::GetSignedBitValueFromInt(it->second),
+              TextureMapping::GetTextureCoordinates(*pTexture, CTrack::GetSignedBitValueFromInt(it->second),
                                   vertices[i * uiNumVertsPerChunk + 0 + 4 + iOffset],
                                   vertices[i * uiNumVertsPerChunk + 2 + 4 + iOffset],
                                   vertices[i * uiNumVertsPerChunk + 1 + 4 + iOffset],
@@ -2494,7 +2381,7 @@ void CShapeFactory::ApplyNormalsAndTexCoords(int i,
                       vertices[i * uiNumVertsPerChunk + 3 + iOffset],
                       vertices[i * uiNumVertsPerChunk + 0 + iOffset],
                       vertices[i * uiNumVertsPerChunk + 2 + iOffset]);
-          pTexture->GetTextureCoordinates(CTrack::GetSignedBitValueFromInt(iSurfaceType),
+          TextureMapping::GetTextureCoordinates(*pTexture, CTrack::GetSignedBitValueFromInt(iSurfaceType),
                               vertices[i * uiNumVertsPerChunk + 1 + iOffset],
                               vertices[i * uiNumVertsPerChunk + 3 + iOffset],
                               vertices[i * uiNumVertsPerChunk + 0 + iOffset],
@@ -2505,7 +2392,7 @@ void CShapeFactory::ApplyNormalsAndTexCoords(int i,
                       vertices[i * uiNumVertsPerChunk + 1 + iOffset],
                       vertices[i * uiNumVertsPerChunk + 2 + iOffset],
                       vertices[i * uiNumVertsPerChunk + 0 + iOffset]);
-          pTexture->GetTextureCoordinates(CTrack::GetSignedBitValueFromInt(iSurfaceType),
+          TextureMapping::GetTextureCoordinates(*pTexture, CTrack::GetSignedBitValueFromInt(iSurfaceType),
                               vertices[i * uiNumVertsPerChunk + 1 + iOffset],
                               vertices[i * uiNumVertsPerChunk + 3 + iOffset],
                               vertices[i * uiNumVertsPerChunk + 0 + iOffset],
@@ -2514,7 +2401,7 @@ void CShapeFactory::ApplyNormalsAndTexCoords(int i,
             uint32 uiTexIdx = CTrack::GetSignedBitValueFromInt(iSurfaceType) & SURFACE_MASK_TEXTURE_INDEX;
             CSignMap::iterator it = pTrack->m_backsMap.find(uiTexIdx);
             if (it != pTrack->m_backsMap.end()) {
-              pTexture->GetTextureCoordinates(CTrack::GetSignedBitValueFromInt(it->second),
+              TextureMapping::GetTextureCoordinates(*pTexture, CTrack::GetSignedBitValueFromInt(it->second),
                                   vertices[i * uiNumVertsPerChunk + 3 + iOffset],
                                   vertices[i * uiNumVertsPerChunk + 1 + iOffset],
                                   vertices[i * uiNumVertsPerChunk + 2 + iOffset],
@@ -2531,12 +2418,12 @@ void CShapeFactory::ApplyNormalsAndTexCoords(int i,
                       vertices[i * uiNumVertsPerChunk + 1 + 4 + iOffset],
                       vertices[i * uiNumVertsPerChunk + 2 + 4 + iOffset],
                       vertices[i * uiNumVertsPerChunk + 0 + 4 + iOffset]);
-          pTexture->GetTextureCoordinates(CTrack::GetSignedBitValueFromInt(iSurfaceType),
+          TextureMapping::GetTextureCoordinates(*pTexture, CTrack::GetSignedBitValueFromInt(iSurfaceType),
                               vertices[i * uiNumVertsPerChunk + 1 + iOffset],
                               vertices[i * uiNumVertsPerChunk + 3 + iOffset],
                               vertices[i * uiNumVertsPerChunk + 0 + iOffset],
                               vertices[i * uiNumVertsPerChunk + 2 + iOffset]);
-          pTexture->GetTextureCoordinates(CTrack::GetSignedBitValueFromInt(iSurfaceType),
+          TextureMapping::GetTextureCoordinates(*pTexture, CTrack::GetSignedBitValueFromInt(iSurfaceType),
                               vertices[i * uiNumVertsPerChunk + 1 + 4 + iOffset],
                               vertices[i * uiNumVertsPerChunk + 3 + 4 + iOffset],
                               vertices[i * uiNumVertsPerChunk + 0 + 4 + iOffset],
@@ -2545,7 +2432,7 @@ void CShapeFactory::ApplyNormalsAndTexCoords(int i,
             uint32 uiTexIdx = CTrack::GetSignedBitValueFromInt(iSurfaceType) & SURFACE_MASK_TEXTURE_INDEX;
             CSignMap::iterator it = pTrack->m_backsMap.find(uiTexIdx);
             if (it != pTrack->m_backsMap.end()) {
-              pTexture->GetTextureCoordinates(CTrack::GetSignedBitValueFromInt(it->second),
+              TextureMapping::GetTextureCoordinates(*pTexture, CTrack::GetSignedBitValueFromInt(it->second),
                                   vertices[i * uiNumVertsPerChunk + 3 + 4 + iOffset],
                                   vertices[i * uiNumVertsPerChunk + 1 + 4 + iOffset],
                                   vertices[i * uiNumVertsPerChunk + 2 + 4 + iOffset],

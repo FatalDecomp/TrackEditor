@@ -2,16 +2,13 @@
 #include "Logging.h"
 #include "Vertex.h"
 #include "Texture.h"
+#include "TextureMapping.h"
 #include "ShapeData.h"
-#include "VertexBuffer.h"
-#include "VertexArray.h"
-#include "IndexBuffer.h"
 #include <fstream>
 #include <sstream>
 #include <string.h>
 #include <vector>
 #include <glm.hpp>
-#include <GL/glew.h>
 #include "gtc/matrix_transform.hpp"
 #include "gtx/transform.hpp"
 //-------------------------------------------------------------------------------------------------
@@ -41,7 +38,7 @@ CObjImporter::~CObjImporter()
 
 //-------------------------------------------------------------------------------------------------
 
-bool CObjImporter::ImportObj(const std::string &sFile, CShapeData **pShape, CShader *pShader, CTexture *pTexture)
+bool CObjImporter::ImportObj(const std::string &sFile, CShapeData **pShape, CTexture *pTexture)
 {
   if (sFile.empty()) {
     Logging::LogMessage("Reference model filename empty");
@@ -159,7 +156,7 @@ bool CObjImporter::ImportObj(const std::string &sFile, CShapeData **pShape, CSha
         tVertex vertex;
         vertex.position = vAy[ivIdx];
         //vertex.texCoords = vtAy[ivtIdx];
-        vertex.texCoords = pTexture->GetColorCenterCoordinates(0x8c); //light grey
+        vertex.texCoords = TextureMapping::GetColorCenterCoordinates(*pTexture, 0x8c); //light grey
         if(ivnIdx >= 0)
           vertex.normal = vnAy[ivnIdx];
         vertexAy.push_back(vertex);
@@ -180,7 +177,6 @@ bool CObjImporter::ImportObj(const std::string &sFile, CShapeData **pShape, CSha
   tVertex *vertices = new tVertex[uiNumVerts];
   uint32 uiNumIndices = (uint32)vertexAy.size();
   uint32 *indices = new uint32[uiNumIndices];
-  GLenum drawType = GL_TRIANGLES;
   for (int i = 0; i < (int)uiNumVerts; ++i) {
     vertices[i] = vertexAy[i];
     indices[i] = i;
@@ -188,20 +184,11 @@ bool CObjImporter::ImportObj(const std::string &sFile, CShapeData **pShape, CSha
 
   if (vertices && indices) {
     if (!*pShape) {
-      CVertexBuffer *pVertexBuf = new CVertexBuffer(vertices, uiNumVerts, GL_DYNAMIC_DRAW);
-      CIndexBuffer *pIndexBuf = new CIndexBuffer(indices, uiNumIndices, GL_DYNAMIC_DRAW);
-      CVertexArray *pVertexArray = new CVertexArray(pVertexBuf);
-
-      *pShape = new CShapeData(pVertexBuf, pIndexBuf, pVertexArray, pShader, pTexture, drawType);
+      *pShape = new CShapeData(vertices, uiNumVerts, indices, uiNumIndices,
+                               pTexture, eShapePrimitive::TRIANGLES);
     } else {
-      (*pShape)->m_pVertexBuf->Update(vertices, uiNumVerts);
-      (*pShape)->m_pIndexBuf->Update(indices, uiNumIndices);
+      (*pShape)->ReplaceGeometry(vertices, uiNumVerts, indices, uiNumIndices);
     }
-
-    (*pShape)->m_vertices = vertices;
-    (*pShape)->m_uiNumVerts = uiNumVerts;
-
-    delete[] indices;
   }
 
   return bSuccess;

@@ -137,18 +137,18 @@ void CEditGeometryWidget::UpdateGeometrySelection(int iFrom, int iTo)
   lblRShoulderGrip->setText("(" + QString::number(g_pMainWindow->GetCurrentTrack()->m_chunkAy[iFrom].iRightShoulderGrip) + ")");
   lblAISpeed->setText(      "(" + QString::number(g_pMainWindow->GetCurrentTrack()->m_chunkAy[iFrom].iAIMaxSpeed / 10) + "%)");
 
-  QtHelpers::UpdateTextures(lblCTex1, lblCTex2, g_pMainWindow->GetCurrentTrack()->m_pTex, g_pMainWindow->GetCurrentTrack()->m_pPal, g_pMainWindow->GetCurrentTrack()->m_chunkAy[iFrom].iCenterSurfaceType);
-  QtHelpers::UpdateTextures(lblLShoulderTex1, lblLShoulderTex2, g_pMainWindow->GetCurrentTrack()->m_pTex, g_pMainWindow->GetCurrentTrack()->m_pPal, g_pMainWindow->GetCurrentTrack()->m_chunkAy[iFrom].iLeftSurfaceType);
-  QtHelpers::UpdateTextures(lblRShoulderTex1, lblRShoulderTex2, g_pMainWindow->GetCurrentTrack()->m_pTex, g_pMainWindow->GetCurrentTrack()->m_pPal, g_pMainWindow->GetCurrentTrack()->m_chunkAy[iFrom].iRightSurfaceType);
-  QtHelpers::UpdateTextures(lblLWallTex1, lblLWallTex2, g_pMainWindow->GetCurrentTrack()->m_pTex, g_pMainWindow->GetCurrentTrack()->m_pPal, g_pMainWindow->GetCurrentTrack()->m_chunkAy[iFrom].iLeftWallType);
-  QtHelpers::UpdateTextures(lblRWallTex1, lblRWallTex2, g_pMainWindow->GetCurrentTrack()->m_pTex, g_pMainWindow->GetCurrentTrack()->m_pPal, g_pMainWindow->GetCurrentTrack()->m_chunkAy[iFrom].iRightWallType);
-  QtHelpers::UpdateTextures(lblRoofTex1, lblRoofTex2, g_pMainWindow->GetCurrentTrack()->m_pTex, g_pMainWindow->GetCurrentTrack()->m_pPal, g_pMainWindow->GetCurrentTrack()->m_chunkAy[iFrom].iRoofType);
-  QtHelpers::UpdateTextures(lblLLOWallTex1, lblLLOWallTex2, g_pMainWindow->GetCurrentTrack()->m_pTex, g_pMainWindow->GetCurrentTrack()->m_pPal, g_pMainWindow->GetCurrentTrack()->m_chunkAy[iFrom].iLLOuterWallType);
-  QtHelpers::UpdateTextures(lblLUOWallTex1, lblLUOWallTex2, g_pMainWindow->GetCurrentTrack()->m_pTex, g_pMainWindow->GetCurrentTrack()->m_pPal, g_pMainWindow->GetCurrentTrack()->m_chunkAy[iFrom].iLUOuterWallType);
-  QtHelpers::UpdateTextures(lblRLOWallTex1, lblRLOWallTex2, g_pMainWindow->GetCurrentTrack()->m_pTex, g_pMainWindow->GetCurrentTrack()->m_pPal, g_pMainWindow->GetCurrentTrack()->m_chunkAy[iFrom].iRLOuterWallType);
-  QtHelpers::UpdateTextures(lblRUOWallTex1, lblRUOWallTex2, g_pMainWindow->GetCurrentTrack()->m_pTex, g_pMainWindow->GetCurrentTrack()->m_pPal, g_pMainWindow->GetCurrentTrack()->m_chunkAy[iFrom].iRUOuterWallType);
-  QtHelpers::UpdateTextures(lblOFloorTex1, lblOFloorTex2, g_pMainWindow->GetCurrentTrack()->m_pTex, g_pMainWindow->GetCurrentTrack()->m_pPal, g_pMainWindow->GetCurrentTrack()->m_chunkAy[iFrom].iOuterFloorType);
-  QtHelpers::UpdateTextures(lblEnvirFloorTex, NULL, NULL, g_pMainWindow->GetCurrentTrack()->m_pPal, g_pMainWindow->GetCurrentTrack()->m_chunkAy[iFrom].iEnvironmentFloorType);
+  QtHelpers::UpdateTextures(lblCTex1, lblCTex2, g_pMainWindow->GetCurrentTrack()->m_assets.GetMainTexture(), g_pMainWindow->GetCurrentTrack()->m_assets.GetPalette(), g_pMainWindow->GetCurrentTrack()->m_chunkAy[iFrom].iCenterSurfaceType);
+  QtHelpers::UpdateTextures(lblLShoulderTex1, lblLShoulderTex2, g_pMainWindow->GetCurrentTrack()->m_assets.GetMainTexture(), g_pMainWindow->GetCurrentTrack()->m_assets.GetPalette(), g_pMainWindow->GetCurrentTrack()->m_chunkAy[iFrom].iLeftSurfaceType);
+  QtHelpers::UpdateTextures(lblRShoulderTex1, lblRShoulderTex2, g_pMainWindow->GetCurrentTrack()->m_assets.GetMainTexture(), g_pMainWindow->GetCurrentTrack()->m_assets.GetPalette(), g_pMainWindow->GetCurrentTrack()->m_chunkAy[iFrom].iRightSurfaceType);
+  QtHelpers::UpdateTextures(lblLWallTex1, lblLWallTex2, g_pMainWindow->GetCurrentTrack()->m_assets.GetMainTexture(), g_pMainWindow->GetCurrentTrack()->m_assets.GetPalette(), g_pMainWindow->GetCurrentTrack()->m_chunkAy[iFrom].iLeftWallType);
+  QtHelpers::UpdateTextures(lblRWallTex1, lblRWallTex2, g_pMainWindow->GetCurrentTrack()->m_assets.GetMainTexture(), g_pMainWindow->GetCurrentTrack()->m_assets.GetPalette(), g_pMainWindow->GetCurrentTrack()->m_chunkAy[iFrom].iRightWallType);
+  QtHelpers::UpdateTextures(lblRoofTex1, lblRoofTex2, g_pMainWindow->GetCurrentTrack()->m_assets.GetMainTexture(), g_pMainWindow->GetCurrentTrack()->m_assets.GetPalette(), g_pMainWindow->GetCurrentTrack()->m_chunkAy[iFrom].iRoofType);
+  QtHelpers::UpdateTextures(lblLLOWallTex1, lblLLOWallTex2, g_pMainWindow->GetCurrentTrack()->m_assets.GetMainTexture(), g_pMainWindow->GetCurrentTrack()->m_assets.GetPalette(), g_pMainWindow->GetCurrentTrack()->m_chunkAy[iFrom].iLLOuterWallType);
+  QtHelpers::UpdateTextures(lblLUOWallTex1, lblLUOWallTex2, g_pMainWindow->GetCurrentTrack()->m_assets.GetMainTexture(), g_pMainWindow->GetCurrentTrack()->m_assets.GetPalette(), g_pMainWindow->GetCurrentTrack()->m_chunkAy[iFrom].iLUOuterWallType);
+  QtHelpers::UpdateTextures(lblRLOWallTex1, lblRLOWallTex2, g_pMainWindow->GetCurrentTrack()->m_assets.GetMainTexture(), g_pMainWindow->GetCurrentTrack()->m_assets.GetPalette(), g_pMainWindow->GetCurrentTrack()->m_chunkAy[iFrom].iRLOuterWallType);
+  QtHelpers::UpdateTextures(lblRUOWallTex1, lblRUOWallTex2, g_pMainWindow->GetCurrentTrack()->m_assets.GetMainTexture(), g_pMainWindow->GetCurrentTrack()->m_assets.GetPalette(), g_pMainWindow->GetCurrentTrack()->m_chunkAy[iFrom].iRUOuterWallType);
+  QtHelpers::UpdateTextures(lblOFloorTex1, lblOFloorTex2, g_pMainWindow->GetCurrentTrack()->m_assets.GetMainTexture(), g_pMainWindow->GetCurrentTrack()->m_assets.GetPalette(), g_pMainWindow->GetCurrentTrack()->m_chunkAy[iFrom].iOuterFloorType);
+  QtHelpers::UpdateTextures(lblEnvirFloorTex, NULL, NULL, g_pMainWindow->GetCurrentTrack()->m_assets.GetPalette(), g_pMainWindow->GetCurrentTrack()->m_chunkAy[iFrom].iEnvironmentFloorType);
 
   //update roof disabled text
   lblRoofDisabled->setVisible(!g_pMainWindow->GetCurrentTrack()->ShouldShowChunkSection(iFrom, eShapeSection::ROOF) && CTrack::ShouldDrawSurfaceType(g_pMainWindow->GetCurrentTrack()->m_chunkAy[iFrom].iRoofType));

@@ -1,9 +1,11 @@
 #include "TrackEditor.h"
+#include "EditorRenderService.h"
 #include "MainWindow.h"
 #include "qapplication.h"
 #include "qdesktopwidget.h"
 #include <qstring.h>
 #include "qdir.h"
+#include "qmessagebox.h"
 #include <QtCore>
 //-------------------------------------------------------------------------------------------------
 #if defined(_DEBUG) && defined(IS_WINDOWS)
@@ -22,13 +24,31 @@ int main(int argc, char* argv[])
     return 0;
 
   const QString sAppPath = QCoreApplication::applicationDirPath();
+  tRollerEdBootstrapInfo BootstrapInfo = {};
+  BootstrapInfo.uiStructSize = sizeof(BootstrapInfo);
+  BootstrapInfo.uiVersion = ROLLER_ED_BOOTSTRAP_INFO_VERSION;
+  const eRollerEdResult eBootstrapResult = RollerEd_Bootstrap(&BootstrapInfo);
+  if (eBootstrapResult != ROLLER_ED_RESULT_OK) {
+    QMessageBox::critical(nullptr, "Track Editor",
+                          QString("roller-core bootstrap failed (%1)")
+                              .arg(eBootstrapResult));
+    return 1;
+  }
+
+  CEditorRenderService RenderService(sAppPath);
+  RenderService.Start();
   float fScale = app.desktop()->logicalDpiX() / 96.0 * 100.0;
-  CMainWindow *pMainWin = new CMainWindow(sAppPath, fScale);
+  CMainWindow *pMainWin = new CMainWindow(sAppPath, fScale, &RenderService);
   
   int iRetCode = app.exec();
 
   delete pMainWin;
   pMainWin = NULL;
+
+  RenderService.Stop();
+  const eRollerEdResult eTeardownResult = RollerEd_Teardown();
+  if (iRetCode == 0 && eTeardownResult != ROLLER_ED_RESULT_OK)
+    iRetCode = 1;
 
   return iRetCode;
 }

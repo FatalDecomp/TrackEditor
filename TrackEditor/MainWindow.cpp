@@ -1,5 +1,5 @@
-#include <GL/glew.h>
 #include "TrackEditor.h"
+#include "EditorRenderService.h"
 #include "MainWindow.h"
 #include "qmessagebox.h"
 #include "qfiledialog.h"
@@ -27,9 +27,7 @@
 #include "NewTrackDialog.h"
 #include "PreferencesDialog.h"
 #include "AssignBacksDialog.h"
-#include "NoclipComponent.h"
-#include "GameClock.h"
-#include "GameInput.h"
+#include "EditorCameraController.h"
 #include "qtimer.h"
 #include "MathHelpers.h"
 #if defined (IS_WINDOWS)
@@ -97,12 +95,14 @@ public:
 
 //-------------------------------------------------------------------------------------------------
 
-CMainWindow::CMainWindow(const QString &sAppPath, float fDesktopScale)
+CMainWindow::CMainWindow(const QString &sAppPath, float fDesktopScale,
+                         CEditorRenderService *pRenderService)
   : QMainWindow(NULL)
   , m_sAppPath(sAppPath)
   , m_sLastTrackFilesFolder("")
   , m_fDesktopScale(fDesktopScale)
   , m_iNewTrackNum(0)
+  , m_pRenderService(pRenderService)
 {
   //init
   Logging::SetWhipLibLoggingCallback(LogMessageCbStatic);
@@ -118,8 +118,7 @@ CMainWindow::CMainWindow(const QString &sAppPath, float fDesktopScale)
   twViewer->setTabsClosable(true);
   lblChunkWarning->hide();
   lblStuntWarning->hide();
-  CGameClock::GetGameClock().Init();
-  CGameInput::GetGameInput().Init(&m_keyMapper);
+  m_CameraClock.start();
 
   //setup dock widgets
   p->m_pDebugDataDockWidget = new QDockWidget("Debug Chunk Data", this);
@@ -191,12 +190,6 @@ CMainWindow::CMainWindow(const QString &sAppPath, float fDesktopScale)
   m_pSaveHistoryTimer->setInterval(250);
   connect(m_pSaveHistoryTimer, &QTimer::timeout, this, &CMainWindow::OnSaveHistoryTimer, Qt::QueuedConnection);
 
-  //setup stunt timer
-  m_pStuntTimer = new QTimer(this);
-  m_pStuntTimer->setInterval(28);
-  connect(m_pStuntTimer, &QTimer::timeout, this, &CMainWindow::OnStuntTimer);
-  m_pStuntTimer->start();
-
   //setup zero timer
   m_pZeroTimer = new QTimer(this);
   m_pZeroTimer->setInterval(0);
@@ -266,7 +259,6 @@ void CMainWindow::closeEvent(QCloseEvent *pEvent)
   //cleanup
   twViewer->blockSignals(true);
   for (int i = 0; i < (int)p->m_previewAy.size(); ++i) {
-    p->m_previewAy[i]->makeCurrent();
     delete p->m_previewAy[i];
   }
   p->m_previewAy.clear();
@@ -293,7 +285,11 @@ void CMainWindow::LogMessage(const QString &sMsg)
 
 void CMainWindow::SaveHistory(const QString &sDescription)
 {
-  GetCurrentPreview()->m_bUnsavedChanges = true;
+  CTrackPreview *pPreview = GetCurrentPreview();
+  if (!pPreview)
+    return;
+  pPreview->m_bUnsavedChanges = true;
+  pPreview->MarkDocumentEdited();
   m_sHistoryDescription = sDescription;
   m_pSaveHistoryTimer->start();
 }
@@ -312,11 +308,16 @@ void CMainWindow::OnNewTrack()
 {
   CNewTrackDialog dlg(this, ++m_iNewTrackNum);
   if (dlg.exec()) {
-    CTrackPreview *pPreview = new CTrackPreview(this, dlg.GetFilename());
-    connect(pPreview, &CTrackPreview::ReferenceModelChanged, this, &CMainWindow::OnReferenceModelChanged);
+    CTrackPreview *pPreview = new CTrackPreview(
+        this, m_pRenderService, dlg.GetFilename());
+    ConfigurePreview(pPreview);
     pPreview->GetTrack()->m_sBuildingFile = dlg.GetBld().toLatin1().constData();
     pPreview->GetTrack()->m_sTextureFile = dlg.GetTex().toLatin1().constData();
-    pPreview->SaveHistory("New track created");
+    pPreview->GetTrack()->m_assets.LoadFromDocument(
+        pPreview->GetTrack()->m_sTrackFileFolder,
+        pPreview->GetTrack()->m_sTextureFile,
+        pPreview->GetTrack()->m_sBuildingFile);
+    pPreview->SaveHistory("New track created", false);
     m_sLastTrackFilesFolder = dlg.GetFilename().left(dlg.GetFilename().lastIndexOf(QDir::separator()));
     //add to array and create preview window
     p->m_previewAy.push_back(pPreview);
@@ -342,8 +343,8 @@ void CMainWindow::OnLoadTrack()
     }
   }
 
-  CTrackPreview *pPreview = new CTrackPreview(this);
-  connect(pPreview, &CTrackPreview::ReferenceModelChanged, this, &CMainWindow::OnReferenceModelChanged);
+  CTrackPreview *pPreview = new CTrackPreview(this, m_pRenderService);
+  ConfigurePreview(pPreview);
   if (!pPreview->LoadTrack(sFilename)) {
     //load failed
     delete pPreview;
@@ -629,9 +630,14 @@ void CMainWindow::OnPaste()
       }
     }
 
-    //delete selected chunks
-    if (sbSelChunksTo->value() != sbSelChunksFrom->value())
-      OnDeleteChunkClicked();
+    // Replace the selected range as one atomic paste operation. Calling the
+    // normal delete action here would save a transient, partially edited
+    // history entry that undo could restore instead of the pre-paste track.
+    if (sbSelChunksTo->value() != sbSelChunksFrom->value()) {
+      GetCurrentTrack()->m_chunkAy.erase(
+          GetCurrentTrack()->m_chunkAy.begin() + sbSelChunksFrom->value(),
+          GetCurrentTrack()->m_chunkAy.begin() + sbSelChunksTo->value() + 1);
+    }
     //insert new chunks
     for (int i = 0; i < (int)p->m_clipBoard.size(); ++i) {
       GetCurrentTrack()->m_chunkAy.insert(GetCurrentTrack()->m_chunkAy.begin() + i + sbSelChunksFrom->value(), p->m_clipBoard[i]);
@@ -976,18 +982,20 @@ void CMainWindow::OnDebug()
 
 void CMainWindow::OnAbout()
 {
-  QMessageBox::information(this, "Git Gud", "Click to pan. WASD to move. R or E is up, F or Q is down.");
+  QMessageBox::information(
+      this, "Camera Controls",
+      "Hold a mouse button and move to look. WASD moves; R/E moves up; "
+      "F/Q moves down.");
 }
 
 //-------------------------------------------------------------------------------------------------
 
 void CMainWindow::OnTabCloseRequested(int iIndex)
 {
-  if (iIndex > p->m_previewAy.size()) return;
+  if (iIndex < 0 || iIndex >= (int)p->m_previewAy.size()) return;
 
   twViewer->blockSignals(true);
   if (p->m_previewAy[iIndex]->SaveChangesAndContinue()) {
-    p->m_previewAy[iIndex]->makeCurrent();
     delete p->m_previewAy[iIndex];
     p->m_previewAy.erase(p->m_previewAy.begin() + iIndex);
   }
@@ -1000,13 +1008,15 @@ void CMainWindow::OnTabCloseRequested(int iIndex)
 
 void CMainWindow::OnTabChanged(int iIndex)
 {
-  if (iIndex > p->m_previewAy.size()) return;
+  if (iIndex < 0 || iIndex >= (int)p->m_previewAy.size()) {
+    UpdateExportActions();
+    return;
+  }
 
   eWhipModel carModel;
   eShapeSection aiLine;
   bool bMillionPlus;
   uint32 uiShowModels = p->m_pDisplaySettings->GetDisplaySettings(carModel, aiLine, bMillionPlus);
-  p->m_previewAy[iIndex]->makeCurrent();
   p->m_previewAy[iIndex]->ShowModels(uiShowModels);
   p->m_previewAy[iIndex]->UpdateCar(carModel, aiLine, bMillionPlus);
   p->m_previewAy[iIndex]->AttachLast(p->m_pDisplaySettings->GetAttachLast());
@@ -1020,6 +1030,7 @@ void CMainWindow::OnTabChanged(int iIndex)
                                            p->m_previewAy[iIndex]->m_iRefX,   p->m_previewAy[iIndex]->m_iRefY,     p->m_previewAy[iIndex]->m_iRefZ,
                                            p->m_previewAy[iIndex]->m_dRefScale);
 
+  p->m_previewAy[iIndex]->Activate();
   UpdateWindow();
 }
 
@@ -1137,32 +1148,18 @@ void CMainWindow::OnUpdatePreview()
 void CMainWindow::OnSaveHistoryTimer()
 {
   if (GetCurrentPreview())
-    GetCurrentPreview()->SaveHistory(m_sHistoryDescription);
-}
-
-//-------------------------------------------------------------------------------------------------
-
-void CMainWindow::OnStuntTimer()
-{
-  eWhipModel carModel;
-  eShapeSection aiLine;
-  bool bMillionPlus;
-  if (p && p->m_pDisplaySettings && p->m_pDisplaySettings->GetDisplaySettings(carModel, aiLine, bMillionPlus) & ANIMATE_STUNTS) {
-    if (GetCurrentTrack())
-      GetCurrentTrack()->UpdateStunts();
-    if (GetCurrentPreview())
-      GetCurrentPreview()->UpdateTrack(true);
-  }
+    GetCurrentPreview()->SaveHistory(m_sHistoryDescription, false);
 }
 
 //-------------------------------------------------------------------------------------------------
 
 void CMainWindow::OnZeroTimer()
 {
-  CGameClock::GetGameClock().NewFrame();
-  CGameInput::GetGameInput().Update();
+  const qint64 iElapsedNanoseconds = m_CameraClock.nsecsElapsed();
+  m_CameraClock.restart();
   if (GetCurrentPreview())
-    GetCurrentPreview()->UpdateCameraPos();
+    GetCurrentPreview()->UpdateCameraPos(
+        static_cast<float>(iElapsedNanoseconds) / 1000000000.0f);
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -1276,7 +1273,7 @@ void CMainWindow::LoadSettings()
   bool bMillionPlus;
   uint32 uiShowModels = p->m_pDisplaySettings->GetDisplaySettings(carModel, aiLine, bMillionPlus);
   bool bAttachLast = p->m_pDisplaySettings->GetAttachLast();
-  int iCameraSpeed = (int)CNoclipComponent::s_fMovementSpeed;
+  int iCameraSpeed = (int)CEditorCameraController::GetMovementSpeed();
   //load display settings
   uiShowModels = settings.value("show_models", uiShowModels).toUInt();
   carModel = (eWhipModel)settings.value("car_model", (int)carModel).toInt();
@@ -1377,9 +1374,6 @@ void CMainWindow::UpdateWindow(bool bUpdatingTextures)
   }
   setWindowTitle(sCurrentTab + sTitle);
 
-  if (GetCurrentTrack())
-    GetCurrentTrack()->GenerateTrackMath();
-
   if (GetCurrentPreview()) {
     if (bUpdatingTextures) {
       GetCurrentPreview()->UpdateReferenceModelTexture();
@@ -1393,6 +1387,7 @@ void CMainWindow::UpdateWindow(bool bUpdatingTextures)
     lblChunkWarning->setVisible(GetCurrentTrack()->m_chunkAy.size() >= 500);
     lblStuntWarning->setVisible(GetCurrentTrack()->HasPitchedStunt());
   }
+  UpdateExportActions();
   UpdateGeometrySelection();
   emit UpdateWindowSig();
 }
@@ -1408,6 +1403,26 @@ void CMainWindow::UpdateGeometrySelection()
     GetCurrentPreview()->UpdateGeometrySelection();
   }
   emit UpdateGeometrySelectionSig(sbSelChunksFrom->value(), sbSelChunksTo->value());
+}
+
+//-------------------------------------------------------------------------------------------------
+
+void CMainWindow::ConfigurePreview(CTrackPreview *pPreview)
+{
+  connect(pPreview, &CTrackPreview::ReferenceModelChanged,
+          this, &CMainWindow::OnReferenceModelChanged);
+  connect(pPreview, &CTrackPreview::FrameStateChanged,
+          this, &CMainWindow::UpdateExportActions);
+}
+
+//-------------------------------------------------------------------------------------------------
+
+void CMainWindow::UpdateExportActions()
+{
+  const CTrackPreview *pPreview = GetCurrentPreview();
+  const bool bCanExport = pPreview && pPreview->CanExport();
+  actExportOBJ->setEnabled(bCanExport);
+  actExportFBX->setEnabled(bCanExport);
 }
 
 //-------------------------------------------------------------------------------------------------

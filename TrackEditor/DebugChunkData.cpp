@@ -126,7 +126,7 @@ void CDebugChunkData::UpdateGeometrySelection(int iFrom, int iTo)
 
 void CDebugChunkData::UpdateTextures(QLineEdit *pLineEdit, QLabel *pTex1, QLabel *pTex2)
 {
-  if (!g_pMainWindow->GetCurrentTrack() || !g_pMainWindow->GetCurrentTrack()->m_pTex)
+  if (!g_pMainWindow->GetCurrentTrack() || !g_pMainWindow->GetCurrentTrack()->m_assets.GetMainTexture())
     return;
 
   //textures
@@ -139,12 +139,12 @@ void CDebugChunkData::UpdateTextures(QLineEdit *pLineEdit, QLabel *pTex1, QLabel
     int iValue = pLineEdit->text().toInt();
     unsigned int uiSignedBitVal = CTrack::GetSignedBitValueFromInt(iValue);
     iIndex = CTrack::GetIntValueFromSignedBit(uiSignedBitVal & SURFACE_MASK_TEXTURE_INDEX);
-    if (iIndex < g_pMainWindow->GetCurrentTrack()->m_pTex->GetNumTiles()) {
-      pixmap.convertFromImage(QtHelpers::GetQImageFromTile(g_pMainWindow->GetCurrentTrack()->m_pTex->m_pTileAy[iIndex]));
+    if (iIndex < g_pMainWindow->GetCurrentTrack()->m_assets.GetMainTexture()->GetNumTiles()) {
+      pixmap.convertFromImage(QtHelpers::GetQImageFromTile(g_pMainWindow->GetCurrentTrack()->m_assets.GetMainTexture()->m_pTileAy[iIndex]));
       pTex1->setPixmap(pixmap);
 
       if (uiSignedBitVal & SURFACE_FLAG_TEXTURE_PAIR && iIndex > 0) {
-        pixmap.convertFromImage(QtHelpers::GetQImageFromTile(g_pMainWindow->GetCurrentTrack()->m_pTex->m_pTileAy[iIndex + 1]));
+        pixmap.convertFromImage(QtHelpers::GetQImageFromTile(g_pMainWindow->GetCurrentTrack()->m_assets.GetMainTexture()->m_pTileAy[iIndex + 1]));
         pTex2->setPixmap(pixmap);
       } else {
         pTex2->setPixmap(QPixmap());
@@ -160,7 +160,7 @@ void CDebugChunkData::UpdateTextures(QLineEdit *pLineEdit, QLabel *pTex1, QLabel
 
 void CDebugChunkData::UpdateSignTexture(QLineEdit *pLineEdit, QLabel *pTex1)
 {
-  if (!g_pMainWindow->GetCurrentTrack() || !g_pMainWindow->GetCurrentTrack()->m_pBld)
+  if (!g_pMainWindow->GetCurrentTrack() || !g_pMainWindow->GetCurrentTrack()->m_assets.GetSignTexture())
     return;
 
   //textures
@@ -172,8 +172,8 @@ void CDebugChunkData::UpdateSignTexture(QLineEdit *pLineEdit, QLabel *pTex1)
     int iValue = pLineEdit->text().toInt();
     unsigned int uiSignedBitVal = CTrack::GetSignedBitValueFromInt(iValue);
     iIndex = CTrack::GetIntValueFromSignedBit(uiSignedBitVal & SURFACE_MASK_TEXTURE_INDEX);
-    if (iIndex < g_pMainWindow->GetCurrentTrack()->m_pBld->GetNumTiles()) {
-      pixmap.convertFromImage(QtHelpers::GetQImageFromTile(g_pMainWindow->GetCurrentTrack()->m_pBld->m_pTileAy[iIndex]));
+    if (iIndex < g_pMainWindow->GetCurrentTrack()->m_assets.GetSignTexture()->GetNumTiles()) {
+      pixmap.convertFromImage(QtHelpers::GetQImageFromTile(g_pMainWindow->GetCurrentTrack()->m_assets.GetSignTexture()->m_pTileAy[iIndex]));
       pTex1->setPixmap(pixmap);
     }
   } else {

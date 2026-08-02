@@ -1,7 +1,7 @@
 #include "TrackEditor.h"
 #include "DisplaySettings.h"
+#include "EditorCameraController.h"
 #include "QtHelpers.h"
-#include "NoclipComponent.h"
 //-------------------------------------------------------------------------------------------------
 #if defined(_DEBUG) && defined(IS_WINDOWS)
 #define new new(_CLIENT_BLOCK, __FILE__, __LINE__)
@@ -79,7 +79,6 @@ CDisplaySettings::CDisplaySettings(QWidget *pParent)
   connect(ckSigns, &QCheckBox::toggled, this, &CDisplaySettings::UpdatePreviewSelection);
   connect(ckAudio, &QCheckBox::toggled, this, &CDisplaySettings::UpdatePreviewSelection);
   connect(ckStunts, &QCheckBox::toggled, this, &CDisplaySettings::UpdatePreviewSelection);
-  connect(ckAnimateStunts, &QCheckBox::toggled, this, &CDisplaySettings::UpdatePreviewSelection);
   connect(ckTestCar, &QCheckBox::toggled, this, &CDisplaySettings::UpdatePreviewSelection);
   connect(cbTestCarType, SIGNAL(currentIndexChanged(int)), this, SLOT(UpdatePreviewSelection()));
   connect(cbTestCarPos, SIGNAL(currentIndexChanged(int)), this, SLOT(UpdatePreviewSelection()));
@@ -142,7 +141,6 @@ uint32 CDisplaySettings::GetDisplaySettings(eWhipModel &carModel, eShapeSection 
   if (ckSigns->isChecked())               uiShowModels |= SHOW_SIGNS;
   if (ckAudio->isChecked())               uiShowModels |= SHOW_AUDIO;
   if (ckStunts->isChecked())              uiShowModels |= SHOW_STUNTS;
-  if (ckAnimateStunts->isChecked())       uiShowModels |= ANIMATE_STUNTS;
   if (ckRefModel->isChecked())            uiShowModels |= SHOW_REF_MODEL;
   if (ckRefModelWireframe->isChecked())   uiShowModels |= SHOW_REF_WIRE_MODEL;
 
@@ -186,7 +184,6 @@ void CDisplaySettings::SetDisplaySettings(uint32 uiShowModels, eWhipModel carMod
   BLOCK_SIG_AND_DO(ckSigns, setChecked(              uiShowModels & SHOW_SIGNS));
   BLOCK_SIG_AND_DO(ckAudio, setChecked(              uiShowModels & SHOW_AUDIO));
   BLOCK_SIG_AND_DO(ckStunts, setChecked(             uiShowModels & SHOW_STUNTS));
-  BLOCK_SIG_AND_DO(ckAnimateStunts, setChecked(      uiShowModels & ANIMATE_STUNTS));
   BLOCK_SIG_AND_DO(ckRefModel, setChecked(           uiShowModels & SHOW_REF_MODEL));
   BLOCK_SIG_AND_DO(ckRefModelWireframe, setChecked(  uiShowModels & SHOW_REF_WIRE_MODEL));
 
@@ -323,7 +320,7 @@ void CDisplaySettings::UpdatePreviewSelection()
 
 void CDisplaySettings::OnCameraSpeedChanged(int iSpeed)
 {
-  CNoclipComponent::s_fMovementSpeed = (float)iSpeed;
+  CEditorCameraController::SetMovementSpeed((float)iSpeed);
 }
 
 //-------------------------------------------------------------------------------------------------

@@ -4,7 +4,6 @@
 #include <string>
 //-------------------------------------------------------------------------------------------------
 class CShapeData;
-class CShader;
 class CTexture;
 //-------------------------------------------------------------------------------------------------
 
@@ -16,8 +15,8 @@ public:
   CObjImporter(CObjImporter const &) = delete;
   void operator=(CObjImporter const &) = delete;
 
-  //shader and texture come from track
-  bool ImportObj(const std::string &sFile, CShapeData **pShape, CShader *pShader, CTexture *pTexture);
+  //Texture coordinates come from the track texture atlas.
+  bool ImportObj(const std::string &sFile, CShapeData **pShape, CTexture *pTexture);
 
 private:
   CObjImporter();

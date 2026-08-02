@@ -111,7 +111,7 @@ QImage QtHelpers::GetQImageFromTile(const tTile &tile, bool bScale)
 
 //-------------------------------------------------------------------------------------------------
 
-QImage QtHelpers::GetQImageFromColor(const glm::vec3 &color, bool bScale)
+QImage QtHelpers::GetQImageFromColor(const tPaletteColor &color, bool bScale)
 {
   QImage image(TILE_WIDTH, TILE_HEIGHT, QImage::Format_RGB32);
   for (int i = 0; i < TILE_WIDTH; ++i) {

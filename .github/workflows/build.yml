@@ -19,7 +19,7 @@ jobs:
       - name: Install binary dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install --yes libglew-dev libsdl3-dev libsdl3-image-dev ninja-build
+          sudo apt-get install --yes libsdl3-dev libsdl3-image-dev ninja-build
 
       - name: Install dynamic Qt 5.15
         uses: jurplel/install-qt-action@v4
@@ -50,7 +50,7 @@ jobs:
           submodules: recursive
 
       - name: Install binary dependencies
-        run: brew install --force-bottle glew sdl3 sdl3_image ninja
+        run: brew install --force-bottle sdl3 sdl3_image ninja
 
       - name: Install dynamic Qt 5.15
         uses: jurplel/install-qt-action@v4
@@ -89,19 +89,11 @@ jobs:
         shell: pwsh
         run: .\scripts\install-sdl-windows.ps1 -Destination "$env:RUNNER_TEMP\sdl"
 
-      - name: Install GLEW
-        shell: pwsh
-        run: |
-          vcpkg install glew:x64-windows
-          "$env:VCPKG_INSTALLATION_ROOT\installed\x64-windows\bin" |
-            Add-Content -LiteralPath $env:GITHUB_PATH
-
       - name: Configure (without FBX)
         shell: pwsh
         run: |
           cmake -S . -B build -G "Visual Studio 17 2022" -A x64 `
-            -DTRACKEDITOR_ENABLE_FBX=OFF `
-            -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_INSTALLATION_ROOT\scripts\buildsystems\vcpkg.cmake"
+            -DTRACKEDITOR_ENABLE_FBX=OFF
 
       - name: Build
         run: cmake --build build --config Release --parallel
