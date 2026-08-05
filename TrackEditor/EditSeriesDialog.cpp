@@ -4,6 +4,8 @@
 #include "Track.h"
 #include "MainWindow.h"
 #include <qmessagebox.h>
+#include <cfloat>
+#include <cmath>
 //-------------------------------------------------------------------------------------------------
 #if defined(_DEBUG) && defined(IS_WINDOWS)
 #define new new(_CLIENT_BLOCK, __FILE__, __LINE__)
@@ -200,7 +202,7 @@ template <typename T> void CEditSeriesDialog::ApplySeriesToGeometry(int iStartCh
     if (cbRate->currentIndex() == 1) {
       int iNumChunks = (m_iEndChunk - m_iStartChunk);
       double dX = 1.0 / (double)iNumChunks * (double)(i - iStartChunk);
-      tValue = pow(dX, dsbPower->value()) * (tEndValue - tStartValue) + tStartValue;
+      tValue = std::pow(dX, dsbPower->value()) * (tEndValue - tStartValue) + tStartValue;
     }/*else if (cbRate->currentIndex() == 2) {
       int iNumChunks = (m_iEndChunk - m_iStartChunk);
       double dX = (10.0 - 1.0) / (double)iNumChunks * (double)(i - iStartChunk) + 1.0;
