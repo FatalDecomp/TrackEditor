@@ -35,6 +35,10 @@ std::string g_sLoadedTrackPath;
 std::string g_sLoadedAssetRoot;
 std::string g_sLoadedTrackData;
 float g_fCameraX = 0.0f;
+uint32_t g_uiOverlaySurfaceClassMask = 0;
+uint32_t g_uiOverlayWireframeClassMask = 0;
+uint32_t g_uiOverlayFlags = 0;
+uint32_t g_uiOverlayCount = 0;
 uint32_t g_uiGeometryEpoch = 0;
 uint32_t g_uiSceneState = ROLLER_ED_SCENE_EMPTY;
 std::atomic<uint32_t> g_uiInitCount(0);
@@ -149,6 +153,20 @@ extern "C" eRollerEdResult ROLLER_ED_CALL RollerEd_SetCamera(
   return ROLLER_ED_RESULT_OK;
 }
 
+extern "C" eRollerEdResult ROLLER_ED_CALL RollerEd_SetOverlayState(
+    const tEdOverlayState *pState)
+{
+  RecordFacadeThread();
+  assert(pState);
+  assert(pState->uiStructSize == sizeof(*pState));
+  assert(pState->uiVersion == ROLLER_ED_OVERLAY_STATE_VERSION);
+  g_uiOverlaySurfaceClassMask = pState->uiSurfaceClassMask;
+  g_uiOverlayWireframeClassMask = pState->uiWireframeClassMask;
+  g_uiOverlayFlags = pState->uiFlags;
+  ++g_uiOverlayCount;
+  return ROLLER_ED_RESULT_OK;
+}
+
 extern "C" eRollerEdResult ROLLER_ED_CALL RollerEd_RenderFrame(
     uint8_t *pbyPixels, uint32_t uiBufferSize, uint32_t uiRowPitch,
     uint32_t uiWidth, uint32_t uiHeight, eRollerEdPixelFormat eFormat)
@@ -191,21 +209,40 @@ int main(int argc, char **argv)
   Camera.uiStructSize = sizeof(Camera);
   Camera.uiVersion = ROLLER_ED_CAMERA_STATE_VERSION;
   Camera.fPosition[0] = 123.0f;
+  tEdOverlayState Overlay = {};
+  Overlay.uiStructSize = sizeof(Overlay);
+  Overlay.uiVersion = ROLLER_ED_OVERLAY_STATE_VERSION;
+  Overlay.uiFlags = ROLLER_ED_OVERLAY_SHOW_SURFACES
+      | ROLLER_ED_OVERLAY_SHOW_WIREFRAME;
+  Overlay.uiSurfaceClassMask =
+      ROLLER_ED_OVERLAY_CLASS_BIT(ROLLER_ED_SURFACE_CLASS_CENTER);
+  Overlay.uiWireframeClassMask =
+      ROLLER_ED_OVERLAY_CLASS_BIT(ROLLER_ED_SURFACE_CLASS_ROOF);
   const uint64_t ullGoodRequest = Service.EnqueueLoadAndRender(
       Document.GetDocumentId(), Document.GetDocumentRevision(), sTrackPath,
-      sAssetRoot, QSize(4, 3), 1.0, Camera);
+      sAssetRoot, QSize(4, 3), 1.0, Camera, Overlay);
   Document.BeginRequest(ullGoodRequest);
 
   // The queued command must not retain any caller-owned pointer payload.
   sTrackPath = "fail.trk";
   sAssetRoot = "mutated-assets";
   Camera.fPosition[0] = 999.0f;
+  Overlay.uiSurfaceClassMask = 0xffffu;
+  Overlay.uiWireframeClassMask = 0xffffu;
 
   Service.Start();
   const tEdRenderResult GoodResult = WaitForResult(Service, ullGoodRequest);
   assert(g_sLoadedTrackPath == "good.trk");
   assert(g_sLoadedAssetRoot == "document-assets");
   assert(g_fCameraX == 123.0f);
+  // AD-16: the overlay was deep-copied into the command, so mutating the
+  // caller's copy after enqueueing cannot reach the worker.
+  assert(g_uiOverlaySurfaceClassMask
+         == ROLLER_ED_OVERLAY_CLASS_BIT(ROLLER_ED_SURFACE_CLASS_CENTER));
+  assert(g_uiOverlayWireframeClassMask
+         == ROLLER_ED_OVERLAY_CLASS_BIT(ROLLER_ED_SURFACE_CLASS_ROOF));
+  assert((g_uiOverlayFlags & ROLLER_ED_OVERLAY_SHOW_SURFACES) != 0);
+  assert(g_uiOverlayCount == 1);
   assert(GoodResult.Tag.eResult == ROLLER_ED_RESULT_OK);
   assert(GoodResult.Tag.uiActualGeometryEpoch == 1);
   assert(GoodResult.uiRenderedGeometryEpoch == 1);
@@ -216,7 +253,7 @@ int main(int argc, char **argv)
   std::vector<uint8_t> EditedTrackData = {'E', 'D', 'I', 'T'};
   const uint64_t ullEditedRequest = Service.EnqueueSerializedLoadAndRender(
       Document.GetDocumentId(), Document.GetDocumentRevision(), EditedTrackData,
-      "original-document-assets", QSize(4, 3), 1.0, Camera);
+      "original-document-assets", QSize(4, 3), 1.0, Camera, Overlay);
   Document.BeginRequest(ullEditedRequest);
   EditedTrackData.assign({'M', 'U', 'T', 'A', 'T', 'E', 'D'});
   const tEdRenderResult EditedResult = WaitForResult(Service, ullEditedRequest);
@@ -234,7 +271,7 @@ int main(int argc, char **argv)
   const uint64_t ullFailedRequest = Service.EnqueueSerializedLoadAndRender(
       Document.GetDocumentId(), Document.GetDocumentRevision(),
       InvalidTrackData, "original-document-assets", QSize(4, 3), 1.0,
-      Camera);
+      Camera, Overlay);
   Document.BeginRequest(ullFailedRequest);
   const tEdRenderResult FailedResult = WaitForResult(Service, ullFailedRequest);
   const QString sFailedTemporaryTrack =
@@ -252,7 +289,7 @@ int main(int argc, char **argv)
   const uint64_t ullRecoveredRequest = Service.EnqueueSerializedLoadAndRender(
       Document.GetDocumentId(), Document.GetDocumentRevision(),
       RecoveredTrackData, "original-document-assets", QSize(4, 3), 1.0,
-      Camera);
+      Camera, Overlay);
   Document.BeginRequest(ullRecoveredRequest);
   const tEdRenderResult RecoveredResult =
       WaitForResult(Service, ullRecoveredRequest);
@@ -265,7 +302,7 @@ int main(int argc, char **argv)
   const uint64_t ullStaleRequest = Service.EnqueueRender(
       Document.GetDocumentId(), Document.GetDocumentRevision(),
       Document.GetInstalledGeometryEpoch() - 1,
-      QSize(4, 3), 1.0, Camera);
+      QSize(4, 3), 1.0, Camera, Overlay);
   Document.BeginRequest(ullStaleRequest);
   const tEdRenderResult StaleResult = WaitForResult(Service, ullStaleRequest);
   assert(StaleResult.Tag.eResult == ROLLER_ED_RESULT_STALE);
@@ -276,7 +313,7 @@ int main(int argc, char **argv)
   const std::vector<uint8_t> TabBTrackData = {'T', 'A', 'B', 'B'};
   const uint64_t ullTabBRequest = Service.EnqueueSerializedLoadAndRender(
       TabB.GetDocumentId(), TabB.GetDocumentRevision(), TabBTrackData,
-      "tab-b-document-assets", QSize(4, 3), 1.0, Camera);
+      "tab-b-document-assets", QSize(4, 3), 1.0, Camera, Overlay);
   TabB.BeginRequest(ullTabBRequest);
   const tEdRenderResult TabBResult = WaitForResult(Service, ullTabBRequest);
   assert(g_sLoadedTrackData == "TABB");
@@ -303,7 +340,7 @@ int main(int argc, char **argv)
   const std::vector<uint8_t> RedoneTabBTrackData = {'T', 'A', 'B', 'B', '-', 'R', 'E', 'D', 'O'};
   const uint64_t ullRedoneTabBRequest = Service.EnqueueSerializedLoadAndRender(
       TabB.GetDocumentId(), TabB.GetDocumentRevision(), RedoneTabBTrackData,
-      "tab-b-document-assets", QSize(4, 3), 1.0, Camera);
+      "tab-b-document-assets", QSize(4, 3), 1.0, Camera, Overlay);
   TabB.BeginRequest(ullRedoneTabBRequest);
   const tEdRenderResult RedoneTabBResult =
       WaitForResult(Service, ullRedoneTabBRequest);

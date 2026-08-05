@@ -12,6 +12,7 @@ set(trackeditor_sources
     DebugSlider.h
     DisplaySettings.cpp
     DisplaySettings.h
+    DisplaySettingsFlags.h
     DisplaySettings.ui
     EditAudioWidget.cpp
     EditAudioWidget.h
@@ -33,6 +34,8 @@ set(trackeditor_sources
     EditSurfaceDialog.ui
     EditorCameraController.cpp
     EditorCameraController.h
+    EditorOverlaySettings.cpp
+    EditorOverlaySettings.h
     EditorRenderQueue.cpp
     EditorRenderQueue.h
     EditorRenderService.cpp

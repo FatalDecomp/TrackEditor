@@ -32,7 +32,8 @@ public:
                                 const QString &sDocumentAssetRoot,
                                 const QSize &DevicePixelSize,
                                 double dDevicePixelRatio,
-                                const tEdCameraState &Camera);
+                                const tEdCameraState &Camera,
+                                const tEdOverlayState &Overlay);
   uint64_t EnqueueSerializedLoadAndRender(
       uint64_t ullDocumentId,
       uint64_t ullDocumentRevision,
@@ -40,7 +41,8 @@ public:
       const QString &sDocumentAssetRoot,
       const QSize &DevicePixelSize,
       double dDevicePixelRatio,
-      const tEdCameraState &Camera);
+      const tEdCameraState &Camera,
+      const tEdOverlayState &Overlay);
   uint64_t EnqueueUnload(uint64_t ullDocumentId,
                          uint64_t ullDocumentRevision);
   uint64_t EnqueueRender(uint64_t ullDocumentId,
@@ -48,7 +50,8 @@ public:
                          uint32_t uiExpectedGeometryEpoch,
                          const QSize &DevicePixelSize,
                          double dDevicePixelRatio,
-                         const tEdCameraState &Camera);
+                         const tEdCameraState &Camera,
+                         const tEdOverlayState &Overlay);
 
 signals:
   void FrameCompleted(const tEdRenderResult &Result);

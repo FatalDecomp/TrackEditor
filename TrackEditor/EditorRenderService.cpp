@@ -302,6 +302,19 @@ private:
       }
     }
 
+    // Overlay state is applied on the worker like the camera, and like the
+    // camera it moves neither the geometry epoch nor the track generation, so
+    // the epoch checked above stays the one this frame renders at.
+    if (Request.bHasOverlay) {
+      AssertWorkerThread("RollerEd_SetOverlayState");
+      const eRollerEdResult eOverlayResult =
+          RollerEd_SetOverlayState(&Request.Overlay);
+      if (eOverlayResult != ROLLER_ED_RESULT_OK) {
+        SetFacadeFailure(Result, eOverlayResult);
+        return Result;
+      }
+    }
+
     if (Request.uiWidth == 0 || Request.uiHeight == 0
         || Request.uiWidth > static_cast<uint32_t>(std::numeric_limits<int>::max())
         || Request.uiHeight > static_cast<uint32_t>(std::numeric_limits<int>::max())) {
@@ -412,7 +425,7 @@ uint64_t CEditorRenderService::EnqueueLoadAndRender(
     uint64_t ullDocumentId, uint64_t ullDocumentRevision,
     const QString &sTrackPath, const QString &sDocumentAssetRoot,
     const QSize &DevicePixelSize, double dDevicePixelRatio,
-    const tEdCameraState &Camera)
+    const tEdCameraState &Camera, const tEdOverlayState &Overlay)
 {
   Q_ASSERT(QThread::currentThread() == thread());
   if (!IsDocumentRegistered(ullDocumentId) || sTrackPath.isEmpty())
@@ -428,6 +441,8 @@ uint64_t CEditorRenderService::EnqueueLoadAndRender(
   Request.sDocumentAssetRoot = EncodePath(sDocumentAssetRoot);
   Request.Camera = Camera;
   Request.bHasCamera = true;
+  Request.Overlay = Overlay;
+  Request.bHasOverlay = true;
   Request.uiWidth = static_cast<uint32_t>(NormalizedSize.width());
   Request.uiHeight = static_cast<uint32_t>(NormalizedSize.height());
   Request.dDevicePixelRatio = dDevicePixelRatio;
@@ -440,7 +455,8 @@ uint64_t CEditorRenderService::EnqueueSerializedLoadAndRender(
     uint64_t ullDocumentId, uint64_t ullDocumentRevision,
     const std::vector<uint8_t> &SerializedTrackData,
     const QString &sDocumentAssetRoot, const QSize &DevicePixelSize,
-    double dDevicePixelRatio, const tEdCameraState &Camera)
+    double dDevicePixelRatio, const tEdCameraState &Camera,
+    const tEdOverlayState &Overlay)
 {
   Q_ASSERT(QThread::currentThread() == thread());
   if (!IsDocumentRegistered(ullDocumentId))
@@ -456,6 +472,8 @@ uint64_t CEditorRenderService::EnqueueSerializedLoadAndRender(
   Request.SerializedTrackData = SerializedTrackData;
   Request.Camera = Camera;
   Request.bHasCamera = true;
+  Request.Overlay = Overlay;
+  Request.bHasOverlay = true;
   Request.uiWidth = static_cast<uint32_t>(NormalizedSize.width());
   Request.uiHeight = static_cast<uint32_t>(NormalizedSize.height());
   Request.dDevicePixelRatio = dDevicePixelRatio;
@@ -467,7 +485,8 @@ uint64_t CEditorRenderService::EnqueueSerializedLoadAndRender(
 uint64_t CEditorRenderService::EnqueueRender(
     uint64_t ullDocumentId, uint64_t ullDocumentRevision,
     uint32_t uiExpectedGeometryEpoch, const QSize &DevicePixelSize,
-    double dDevicePixelRatio, const tEdCameraState &Camera)
+    double dDevicePixelRatio, const tEdCameraState &Camera,
+    const tEdOverlayState &Overlay)
 {
   Q_ASSERT(QThread::currentThread() == thread());
   if (!IsDocumentRegistered(ullDocumentId))
@@ -483,6 +502,8 @@ uint64_t CEditorRenderService::EnqueueRender(
   Request.eKind = eEdRenderCommandKind::RENDER_ONLY;
   Request.Camera = Camera;
   Request.bHasCamera = true;
+  Request.Overlay = Overlay;
+  Request.bHasOverlay = true;
   Request.uiWidth = static_cast<uint32_t>(NormalizedSize.width());
   Request.uiHeight = static_cast<uint32_t>(NormalizedSize.height());
   Request.dDevicePixelRatio = dDevicePixelRatio;

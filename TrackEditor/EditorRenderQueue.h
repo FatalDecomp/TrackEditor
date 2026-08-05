@@ -49,6 +49,10 @@ struct tEdRenderRequest
   std::vector<uint8_t> SerializedTrackData;
   tEdCameraState Camera = {};
   bool bHasCamera = false;
+  // AD-16: the overlay state is copied into the command like every other
+  // pointer payload, so the worker never reads UI-owned storage.
+  tEdOverlayState Overlay = {};
+  bool bHasOverlay = false;
   uint32_t uiWidth = 0;
   uint32_t uiHeight = 0;
   double dDevicePixelRatio = 1.0;

@@ -3,6 +3,7 @@
 //-------------------------------------------------------------------------------------------------
 #include <QWidget>
 #include "EditorCameraController.h"
+#include "EditorOverlaySettings.h"
 #include "EditorRenderQueue.h"
 #include "Types.h"
 //-------------------------------------------------------------------------------------------------
@@ -109,6 +110,7 @@ private:
   uint64_t m_ullDocumentId;
   CDocumentFrameState m_FrameState;
   CEditorCameraController m_CameraController;
+  CEditorOverlaySettings m_OverlaySettings;
   QTimer *m_pResizeTimer;
   QTimer *m_pEditTimer;
   QTimer *m_pCameraRenderTimer;

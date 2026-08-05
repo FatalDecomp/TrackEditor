@@ -27,8 +27,16 @@ class CanonicalSurfaceEmitterIntegrationTests(unittest.TestCase):
         tower = (ROLLER_SOURCE / "tower.c").read_text(encoding="utf-8")
 
         self.assertIn("draw_emitted_surface", draw)
-        self.assertGreaterEqual(draw.count("emit_track_surface_to_renderer("), 14)
-        self.assertEqual(draw.count("game_render_quad_world_subdivide_type("), 1)
+        # E4A-S2 renamed this when the producer became the shared traversal.
+        self.assertGreaterEqual(
+            draw.count("emit_track_chunk_surface_to_renderer("), 12
+        )
+        # Two draw call sites since E3A-S2: the surface fill, and the editor's
+        # edge pass over the same emission -- wireframe in E3A-S2, selection
+        # outlines in E3A-S3. ROLLER's own suite pins which is which; here it
+        # is enough that no third one appeared.
+        self.assertEqual(draw.count("game_render_quad_world_subdivide_type("), 2)
+        self.assertIn("draw_emitted_surface_edges", draw)
         self.assertIn("drawtrk3_emit_surface_to_renderer(", building)
         self.assertIn("drawtrk3_emit_surface_to_renderer(", tower)
         self.assertNotIn("game_render_quad_world_subdivide_type(", building)

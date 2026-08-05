@@ -180,7 +180,14 @@ void CTrackPreview::UpdateTrack(bool bUpdatingStunt)
 
 void CTrackPreview::ShowModels(uint32 uiShowModels)
 {
+  if (m_uiShowModels == uiShowModels)
+    return;
   m_uiShowModels = uiShowModels;
+  m_OverlaySettings.SetShowModels(uiShowModels);
+  // An overlay change is a view change, not a document edit: it advances no
+  // revision and needs no reload, so it rides the same coalesced render-only
+  // path the camera uses.
+  ScheduleCameraRender();
   update();
 }
 
@@ -188,6 +195,12 @@ void CTrackPreview::ShowModels(uint32 uiShowModels)
 
 void CTrackPreview::UpdateGeometrySelection()
 {
+  // E3A-S3. The window keeps From <= To and collapses To onto From while the
+  // "to" box is unchecked, so these are already an ordered range and a single
+  // chunk selection has From == To. Like a display toggle this is a view
+  // change, not a document edit: no revision bump, no reload.
+  m_OverlaySettings.SetSelectionRange(m_iSelFrom, m_iSelTo);
+  ScheduleCameraRender();
   update();
 }
 
@@ -364,7 +377,8 @@ void CTrackPreview::QueueLoadAndRender()
       m_pRenderService->EnqueueSerializedLoadAndRender(
           m_ullDocumentId, m_FrameState.GetDocumentRevision(),
           SerializedTrackData, m_sDocumentAssetRoot, DevicePixelSize(),
-          devicePixelRatioF(), m_CameraController.GetCameraState());
+          devicePixelRatioF(), m_CameraController.GetCameraState(),
+          m_OverlaySettings.GetOverlayState());
   if (ullRequestId != 0) {
     m_pCameraRenderTimer->stop();
     m_bCameraRenderPending = false;
@@ -394,7 +408,8 @@ void CTrackPreview::QueueResizeRender()
     const uint64_t ullRequestId = m_pRenderService->EnqueueRender(
         m_ullDocumentId, m_FrameState.GetDocumentRevision(),
         m_FrameState.GetInstalledGeometryEpoch(), DevicePixelSize(),
-        devicePixelRatioF(), m_CameraController.GetCameraState());
+        devicePixelRatioF(), m_CameraController.GetCameraState(),
+        m_OverlaySettings.GetOverlayState());
     if (ullRequestId != 0)
       m_FrameState.BeginRequest(ullRequestId);
   } else if (m_FrameState.GetDisplayState()
@@ -437,7 +452,8 @@ void CTrackPreview::QueueCameraRender()
   const uint64_t ullRequestId = m_pRenderService->EnqueueRender(
       m_ullDocumentId, m_FrameState.GetDocumentRevision(),
       m_FrameState.GetInstalledGeometryEpoch(), DevicePixelSize(),
-      devicePixelRatioF(), m_CameraController.GetCameraState());
+      devicePixelRatioF(), m_CameraController.GetCameraState(),
+      m_OverlaySettings.GetOverlayState());
   if (ullRequestId != 0) {
     m_bCameraRenderPending = false;
     m_ullCameraRequestId = ullRequestId;

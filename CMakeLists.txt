@@ -93,6 +93,16 @@ if(BUILD_TESTING)
             COMMAND "${Python3_EXECUTABLE}"
                     "${CMAKE_CURRENT_SOURCE_DIR}/tests/test_e3_s6_multi_document_copy_paste.py"
                     -v)
+        add_test(
+            NAME trackeditor-e3a-s2-overlay-toggles-contract
+            COMMAND "${Python3_EXECUTABLE}"
+                    "${CMAKE_CURRENT_SOURCE_DIR}/tests/test_e3a_s2_overlay_toggles.py"
+                    -v)
+        add_test(
+            NAME trackeditor-e3a-s3-selection-highlight-contract
+            COMMAND "${Python3_EXECUTABLE}"
+                    "${CMAKE_CURRENT_SOURCE_DIR}/tests/test_e3a_s3_selection_highlight.py"
+                    -v)
     endif()
 
     if(TARGET TrackEditor)
@@ -134,6 +144,17 @@ if(BUILD_TESTING)
             Qt5::Gui)
         add_test(NAME trackeditor-e3-s1-render-service
                  COMMAND trackeditor-e3-s1-render-service-test)
+
+        add_executable(trackeditor-e3a-s2-overlay-settings-test
+            tests/editor_overlay_settings_test.cpp
+            TrackEditor/EditorOverlaySettings.cpp
+            TrackEditor/EditorOverlaySettings.h)
+        target_compile_features(trackeditor-e3a-s2-overlay-settings-test PRIVATE cxx_std_17)
+        target_include_directories(trackeditor-e3a-s2-overlay-settings-test PRIVATE
+            "${CMAKE_CURRENT_SOURCE_DIR}/TrackEditor"
+            "${CMAKE_CURRENT_SOURCE_DIR}/external/ROLLER/PROJECTS/ROLLER")
+        add_test(NAME trackeditor-e3a-s2-overlay-settings
+                 COMMAND trackeditor-e3a-s2-overlay-settings-test)
 
         add_executable(trackeditor-e3-s3-camera-input-test
             tests/editor_camera_controller_test.cpp
