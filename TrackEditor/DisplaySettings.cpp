@@ -76,6 +76,7 @@ CDisplaySettings::CDisplaySettings(QWidget *pParent)
   connect(ckEnvironment, &QCheckBox::toggled, this, &CDisplaySettings::UpdatePreviewSelection);
   connect(ckHighlightSelection, &QCheckBox::toggled, this, &CDisplaySettings::UpdatePreviewSelection);
   connect(ckAILines, &QCheckBox::toggled, this, &CDisplaySettings::UpdatePreviewSelection);
+  connect(ckCenterLine, &QCheckBox::toggled, this, &CDisplaySettings::UpdatePreviewSelection);
   connect(ckSigns, &QCheckBox::toggled, this, &CDisplaySettings::UpdatePreviewSelection);
   connect(ckAudio, &QCheckBox::toggled, this, &CDisplaySettings::UpdatePreviewSelection);
   connect(ckStunts, &QCheckBox::toggled, this, &CDisplaySettings::UpdatePreviewSelection);
@@ -141,6 +142,7 @@ uint32 CDisplaySettings::GetDisplaySettings(eWhipModel &carModel, eShapeSection 
   if (ckSigns->isChecked())               uiShowModels |= SHOW_SIGNS;
   if (ckAudio->isChecked())               uiShowModels |= SHOW_AUDIO;
   if (ckStunts->isChecked())              uiShowModels |= SHOW_STUNTS;
+  if (ckCenterLine->isChecked())          uiShowModels |= SHOW_CENTER_LINE;
   if (ckRefModel->isChecked())            uiShowModels |= SHOW_REF_MODEL;
   if (ckRefModelWireframe->isChecked())   uiShowModels |= SHOW_REF_WIRE_MODEL;
 
@@ -184,6 +186,7 @@ void CDisplaySettings::SetDisplaySettings(uint32 uiShowModels, eWhipModel carMod
   BLOCK_SIG_AND_DO(ckSigns, setChecked(              uiShowModels & SHOW_SIGNS));
   BLOCK_SIG_AND_DO(ckAudio, setChecked(              uiShowModels & SHOW_AUDIO));
   BLOCK_SIG_AND_DO(ckStunts, setChecked(             uiShowModels & SHOW_STUNTS));
+  BLOCK_SIG_AND_DO(ckCenterLine, setChecked(         uiShowModels & SHOW_CENTER_LINE));
   BLOCK_SIG_AND_DO(ckRefModel, setChecked(           uiShowModels & SHOW_REF_MODEL));
   BLOCK_SIG_AND_DO(ckRefModelWireframe, setChecked(  uiShowModels & SHOW_REF_WIRE_MODEL));
 

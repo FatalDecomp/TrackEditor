@@ -1276,6 +1276,13 @@ void CMainWindow::LoadSettings()
   int iCameraSpeed = (int)CEditorCameraController::GetMovementSpeed();
   //load display settings
   uiShowModels = settings.value("show_models", uiShowModels).toUInt();
+  //E3A-S4 added the centre line after show_models was first written, so an
+  //existing profile has its bit clear for no reason the user chose. Switch it
+  //on once and remember having done so, then a later deliberate untick sticks.
+  if (!settings.value("center_line_default_applied", false).toBool()) {
+    uiShowModels |= SHOW_CENTER_LINE;
+    settings.setValue("center_line_default_applied", true);
+  }
   carModel = (eWhipModel)settings.value("car_model", (int)carModel).toInt();
   aiLine = (eShapeSection)settings.value("car_pos", (int)aiLine).toInt();
   bMillionPlus = settings.value("wrong_way", bMillionPlus).toBool();

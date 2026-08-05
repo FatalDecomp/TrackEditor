@@ -31,12 +31,14 @@ class CanonicalSurfaceEmitterIntegrationTests(unittest.TestCase):
         self.assertGreaterEqual(
             draw.count("emit_track_chunk_surface_to_renderer("), 12
         )
-        # Two draw call sites since E3A-S2: the surface fill, and the editor's
-        # edge pass over the same emission -- wireframe in E3A-S2, selection
-        # outlines in E3A-S3. ROLLER's own suite pins which is which; here it
-        # is enough that no third one appeared.
-        self.assertEqual(draw.count("game_render_quad_world_subdivide_type("), 2)
+        # Three draw call sites: the surface fill, the editor's edge pass over
+        # the same emission (wireframe in E3A-S2, selection outlines in
+        # E3A-S3), and E3A-S4's helper pass, which draws editor furniture that
+        # is not track content at all. ROLLER's own suite pins which is which
+        # and that the helpers never reach the emitter.
+        self.assertEqual(draw.count("game_render_quad_world_subdivide_type("), 3)
         self.assertIn("draw_emitted_surface_edges", draw)
+        self.assertIn("draw_helper_quad", draw)
         self.assertIn("drawtrk3_emit_surface_to_renderer(", building)
         self.assertIn("drawtrk3_emit_surface_to_renderer(", tower)
         self.assertNotIn("game_render_quad_world_subdivide_type(", building)

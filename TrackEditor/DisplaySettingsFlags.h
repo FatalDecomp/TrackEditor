@@ -35,6 +35,7 @@
 #define SHOW_SIGNS                 0x04000000
 #define SHOW_AUDIO                 0x08000000
 #define SHOW_STUNTS                0x10000000
+#define SHOW_CENTER_LINE           0x20000000
 #define SHOW_REF_MODEL             0x40000000
 #define SHOW_REF_WIRE_MODEL        0x80000000
 //-------------------------------------------------------------------------------------------------

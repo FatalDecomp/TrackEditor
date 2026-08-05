@@ -103,6 +103,16 @@ if(BUILD_TESTING)
             COMMAND "${Python3_EXECUTABLE}"
                     "${CMAKE_CURRENT_SOURCE_DIR}/tests/test_e3a_s3_selection_highlight.py"
                     -v)
+        add_test(
+            NAME trackeditor-e3a-s4-helper-overlays-contract
+            COMMAND "${Python3_EXECUTABLE}"
+                    "${CMAKE_CURRENT_SOURCE_DIR}/tests/test_e3a_s4_helper_overlays.py"
+                    -v)
+        add_test(
+            NAME trackeditor-e3a-s5-markers-contract
+            COMMAND "${Python3_EXECUTABLE}"
+                    "${CMAKE_CURRENT_SOURCE_DIR}/tests/test_e3a_s5_markers.py"
+                    -v)
     endif()
 
     if(TARGET TrackEditor)
