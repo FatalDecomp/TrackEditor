@@ -213,9 +213,11 @@ class ExporterBoundaryTests(unittest.TestCase):
 class ExportUiTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
-        cls.preview_header = (EDITOR / "TrackPreview.h").read_text(
+        # E4-S5 moved eExportType and the dialog filters into the format
+        # table; TrackPreview only consumes them now.
+        cls.formats = (EDITOR / "EditorExportFormat.h").read_text(
             encoding="utf-8"
-        )
+        ) + (EDITOR / "EditorExportFormat.cpp").read_text(encoding="utf-8")
         cls.preview = (EDITOR / "TrackPreview.cpp").read_text(
             encoding="utf-8"
         )
@@ -224,7 +226,7 @@ class ExportUiTests(unittest.TestCase):
         cls.wizard = (EDITOR / "ExportWizard.cpp").read_text(encoding="utf-8")
 
     def test_gltf_is_offered_alongside_obj(self) -> None:
-        self.assertIn("EXPORT_GLTF", self.preview_header)
+        self.assertIn("EXPORT_GLTF", self.formats)
         self.assertIn("actExportGLTF", self.window_ui)
         self.assertIn('<addaction name="actExportGLTF"/>', self.window_ui)
         self.assertIn("CMainWindow::OnExportGLTF", self.window)
@@ -234,10 +236,11 @@ class ExportUiTests(unittest.TestCase):
         body = function_body(
             self.preview, "bool CTrackPreview::ExportGltf_Internal("
         )
-        self.assertIn('suffix().compare("glb"', body)
+        self.assertIn("CEditorExportFormats::IsBinaryGltf", body)
         self.assertIn("Options.bBinary = bBinary", body)
-        self.assertIn("glTF Binary (*.glb)", self.preview)
-        self.assertIn("glTF JSON (*.gltf)", self.preview)
+        # Both containers are offered by the format table's filter.
+        self.assertIn("glTF Binary (*.glb)", self.formats)
+        self.assertIn("glTF JSON (*.gltf)", self.formats)
 
     def test_a_glb_leaves_no_loose_png_behind(self) -> None:
         # A .glb embeds its images, so the PNGs are a build artifact rather

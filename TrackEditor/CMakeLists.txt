@@ -36,6 +36,8 @@ set(trackeditor_sources
     EditorCameraController.h
     EditorExportCommon.cpp
     EditorExportCommon.h
+    EditorExportFormat.cpp
+    EditorExportFormat.h
     EditorGltfExporter.cpp
     EditorGltfExporter.h
     EditorObjExporter.cpp

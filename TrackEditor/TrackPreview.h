@@ -5,6 +5,7 @@
 #include <vector>
 #include "EditorCameraController.h"
 #include "EditorExportCommon.h"
+#include "EditorExportFormat.h"
 #include "EditorOverlaySettings.h"
 #include "EditorReferenceMesh.h"
 #include "EditorRenderQueue.h"
@@ -12,16 +13,7 @@
 //-------------------------------------------------------------------------------------------------
 #define DEFAULT_HISTORY_MAX_SIZE 256 //approx 200KB per saved track
 //-------------------------------------------------------------------------------------------------
-// E4-S3 removed FBX outright rather than retargeting it, so every export
-// format now reads ROLLER's canonical geometry.
-enum eExportType
-{
-  EXPORT_OBJ = 0,
-  // E4-S2. The container is chosen from the file name the user picks:
-  // .glb writes one self-contained binary, .gltf writes JSON beside its
-  // buffer and the atlas PNGs.
-  EXPORT_GLTF
-};
+// eExportType and the format table live in EditorExportFormat.h (E4-S5).
 //-------------------------------------------------------------------------------------------------
 class CTrackPreviewPrivate;
 class CTrack;

@@ -105,7 +105,8 @@ class RemovalTests(unittest.TestCase):
 class RemainingExportPathTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
-        cls.preview_header = (EDITOR / "TrackPreview.h").read_text(
+        # E4-S5 moved eExportType into the format table.
+        cls.formats_header = (EDITOR / "EditorExportFormat.h").read_text(
             encoding="utf-8"
         )
         cls.preview = (EDITOR / "TrackPreview.cpp").read_text(encoding="utf-8")
@@ -113,8 +114,8 @@ class RemainingExportPathTests(unittest.TestCase):
 
     def test_every_remaining_format_is_canonical(self) -> None:
         # eExportType now holds only formats that read ROLLER's geometry.
-        enum_body = self.preview_header[
-            self.preview_header.index("enum eExportType") :
+        enum_body = self.formats_header[
+            self.formats_header.index("enum eExportType") :
         ]
         enum_body = enum_body[: enum_body.index("};")]
         self.assertIn("EXPORT_OBJ", enum_body)

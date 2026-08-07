@@ -799,9 +799,11 @@ bool CTrackPreview::ExportGltf_Internal(const QString &sFolder,
                                         bool bSeparateBackFaces)
 {
   // The container follows the name the user chose: .glb is one self-contained
-  // file, anything else is JSON beside its buffer and the atlas PNGs.
+  // file, anything else is JSON beside its buffer and the atlas PNGs. Export()
+  // has already applied the selected filter's suffix, so a name the user typed
+  // bare still resolves to the container they picked.
   const bool bBinary =
-      QFileInfo(sFilename).suffix().compare("glb", Qt::CaseInsensitive) == 0;
+      CEditorExportFormats::IsBinaryGltf(sFilename.toStdString());
 
   // A .glb embeds its images, so the PNGs are a build artifact rather than
   // part of the deliverable and must not be left beside it. A .gltf points at
@@ -897,21 +899,22 @@ bool CTrackPreview::Export(eExportType exportType)
     return false;
 
   //save track
-  QString sFilter = "";
-  switch (exportType) {
-    case eExportType::EXPORT_OBJ:
-      sFilter = "OBJ Files (*.obj)";
-      break;
-    case eExportType::EXPORT_GLTF:
-      // The chosen extension picks the container: one self-contained binary,
-      // or JSON beside its buffer and the atlas PNGs.
-      sFilter = "glTF Binary (*.glb);;glTF JSON (*.gltf)";
-      break;
-  }
+  const tEdExportFormat &Format = CEditorExportFormats::For(exportType);
+  QString sSelectedFilter;
   QString sFilename = QDir::toNativeSeparators(QFileDialog::getSaveFileName(
-    this, "Export Track As", p->m_track.m_sTrackFileFolder.c_str(), sFilter));
+    this, "Export Track As", p->m_track.m_sTrackFileFolder.c_str(),
+    Format.szDialogFilter, &sSelectedFilter));
   if (sFilename.isEmpty())
     return false;
+
+  // E4-S5. Only the Windows native dialog appends the selected filter's
+  // extension; Qt's own dialog does not, and the static getSaveFileName sets
+  // no default suffix. A bare name would otherwise reach a glTF export as
+  // "no .glb suffix", which silently writes JSON when the user asked for the
+  // self-contained container.
+  sFilename = QString::fromStdString(CEditorExportFormats::ApplyDefaultSuffix(
+      sFilename.toStdString(), sSelectedFilter.toStdString(), exportType));
+
   QString sFolder = sFilename.left(sFilename.lastIndexOf(QDir::separator()));
   QString sName = sFilename.right(sFilename.size() - sFilename.lastIndexOf(QDir::separator()) - 1);
   sName = sName.left(sName.lastIndexOf('.'));

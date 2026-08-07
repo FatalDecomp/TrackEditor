@@ -143,6 +143,11 @@ if(BUILD_TESTING)
             COMMAND "${Python3_EXECUTABLE}"
                     "${CMAKE_CURRENT_SOURCE_DIR}/tests/test_e4_s4_texture_output.py"
                     -v)
+        add_test(
+            NAME trackeditor-e4-s5-export-ui-contract
+            COMMAND "${Python3_EXECUTABLE}"
+                    "${CMAKE_CURRENT_SOURCE_DIR}/tests/test_e4_s5_export_ui.py"
+                    -v)
     endif()
 
     if(TARGET TrackEditor)
@@ -229,6 +234,18 @@ if(BUILD_TESTING)
             "${CMAKE_CURRENT_SOURCE_DIR}/external/ROLLER/PROJECTS/ROLLER")
         add_test(NAME trackeditor-e4-s1-obj-exporter
                  COMMAND trackeditor-e4-s1-obj-exporter-test)
+
+        # E4-S5. The export format table and file-name rules: no Qt, so the
+        # save-dialog behaviour is exercised without a dialog.
+        add_executable(trackeditor-e4-s5-export-format-test
+            tests/editor_export_format_test.cpp
+            TrackEditor/EditorExportFormat.cpp
+            TrackEditor/EditorExportFormat.h)
+        target_compile_features(trackeditor-e4-s5-export-format-test PRIVATE cxx_std_17)
+        target_include_directories(trackeditor-e4-s5-export-format-test PRIVATE
+            "${CMAKE_CURRENT_SOURCE_DIR}/TrackEditor")
+        add_test(NAME trackeditor-e4-s5-export-format
+                 COMMAND trackeditor-e4-s5-export-format-test)
 
         # E4-S2. Same shape, plus the vendored cgltf writer. It writes the
         # sample documents the optional Blender import check below reads, so it
