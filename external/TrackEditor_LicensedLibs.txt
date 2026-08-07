@@ -1,5 +1,0 @@
-3rd Party License Attributions
-Qt - LGPLv3 (See QT_License.txt)
-GLM - MIT (See GLM_License.txt)
-STB - MIT (See STB_License.txt)
-cgltf - MIT (See CGLTF_License.txt)

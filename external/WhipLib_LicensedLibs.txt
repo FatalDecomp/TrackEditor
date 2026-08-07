@@ -1,3 +1,0 @@
-3rd Party License Attributions
-GLM - MIT (See GLM_License.txt)
-STB - MIT (See STB_License.txt)
