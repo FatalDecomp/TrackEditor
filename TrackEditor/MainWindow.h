@@ -64,6 +64,7 @@ protected slots:
   void OnSaveTrackAs();
   void OnExportFBX();
   void OnExportOBJ();
+  void OnExportGLTF();
   void OnUndo();
   void OnRedo();
   void OnCut();

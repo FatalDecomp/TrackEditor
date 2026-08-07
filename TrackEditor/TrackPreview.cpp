@@ -12,8 +12,10 @@
 #include "ObjExporter.h"
 #include "ObjImporter.h"
 #include "EditorObjExporter.h"
+#include "EditorGltfExporter.h"
 #include "ExportWizard.h"
 #include "Palette.h"
+#include "qtemporarydir.h"
 #include "qevent.h"
 #include "qdir.h"
 #include "qmessagebox.h"
@@ -687,11 +689,7 @@ bool CTrackPreview::SaveTrackAs()
 
 //-------------------------------------------------------------------------------------------------
 
-bool CTrackPreview::ExportObj_Internal(const QString &sFolder,
-                                       const QString &sName,
-                                       const QString &sFilename,
-                                       bool bSeparateSections,
-                                       bool bSeparateBackFaces)
+bool CTrackPreview::ExtractCanonicalGeometry(tEdGeometrySnapshot &SnapshotOut)
 {
   if (!m_pRenderService) {
     QMessageBox::warning(this, "Export Track",
@@ -708,10 +706,9 @@ bool CTrackPreview::ExportObj_Internal(const QString &sFolder,
     QueueEditedTrackReload();
   }
 
-  tEdGeometrySnapshot Snapshot;
   std::string sExtractError;
   const eRollerEdResult eResult = m_pRenderService->ExtractGeometry(
-      m_ullDocumentId, m_FrameState.GetDocumentRevision(), Snapshot,
+      m_ullDocumentId, m_FrameState.GetDocumentRevision(), SnapshotOut,
       sExtractError);
   if (eResult != ROLLER_ED_RESULT_OK) {
     QString sMessage = "Could not read the track geometry from ROLLER.";
@@ -720,8 +717,33 @@ bool CTrackPreview::ExportObj_Internal(const QString &sFolder,
     QMessageBox::warning(this, "Export Track", sMessage);
     return false;
   }
+  return true;
+}
 
-  tEdObjExportGeometry Geometry;
+//-------------------------------------------------------------------------------------------------
+
+std::vector<tEdExportPaletteEntry> CTrackPreview::BuildExportPalette() const
+{
+  // Flat palette colours resolve against the document's own palette, which
+  // track-assets already owns for the texture export.
+  std::vector<tEdExportPaletteEntry> Palette;
+  const CPalette *pPalette = p->m_track.m_assets.GetPalette();
+  if (!pPalette)
+    return Palette;
+  Palette.resize(PALETTE_SIZE);
+  for (int i = 0; i < PALETTE_SIZE; ++i) {
+    Palette[i].byRed = pPalette->m_paletteAy[i].r;
+    Palette[i].byGreen = pPalette->m_paletteAy[i].g;
+    Palette[i].byBlue = pPalette->m_paletteAy[i].b;
+  }
+  return Palette;
+}
+
+//-------------------------------------------------------------------------------------------------
+
+static tEdExportGeometry ViewOfSnapshot(const tEdGeometrySnapshot &Snapshot)
+{
+  tEdExportGeometry Geometry;
   Geometry.pVertices = Snapshot.Vertices.data();
   Geometry.uiVertexCount = static_cast<uint32_t>(Snapshot.Vertices.size());
   Geometry.puiIndices = Snapshot.Indices.data();
@@ -731,19 +753,23 @@ bool CTrackPreview::ExportObj_Internal(const QString &sFolder,
       static_cast<uint32_t>(Snapshot.Primitives.size());
   Geometry.pMaterials = Snapshot.Materials.data();
   Geometry.uiMaterialCount = static_cast<uint32_t>(Snapshot.Materials.size());
+  return Geometry;
+}
 
-  // Flat palette colours resolve against the document's own palette, which
-  // track-assets already owns for the texture export.
-  std::vector<tEdObjExportPaletteEntry> Palette;
-  const CPalette *pPalette = p->m_track.m_assets.GetPalette();
-  if (pPalette) {
-    Palette.resize(PALETTE_SIZE);
-    for (int i = 0; i < PALETTE_SIZE; ++i) {
-      Palette[i].byRed = pPalette->m_paletteAy[i].r;
-      Palette[i].byGreen = pPalette->m_paletteAy[i].g;
-      Palette[i].byBlue = pPalette->m_paletteAy[i].b;
-    }
-  }
+//-------------------------------------------------------------------------------------------------
+
+bool CTrackPreview::ExportObj_Internal(const QString &sFolder,
+                                       const QString &sName,
+                                       const QString &sFilename,
+                                       bool bSeparateSections,
+                                       bool bSeparateBackFaces)
+{
+  tEdGeometrySnapshot Snapshot;
+  if (!ExtractCanonicalGeometry(Snapshot))
+    return false;
+
+  const tEdExportGeometry Geometry = ViewOfSnapshot(Snapshot);
+  const std::vector<tEdExportPaletteEntry> Palette = BuildExportPalette();
 
   const QString sMtlFile = QDir(sFolder).filePath(sName + ".mtl");
   tEdObjExportOptions Options;
@@ -758,6 +784,100 @@ bool CTrackPreview::ExportObj_Internal(const QString &sFolder,
           static_cast<uint32_t>(Palette.size()),
           QFile::encodeName(sFilename).constData(),
           QFile::encodeName(sMtlFile).constData(), sWriteError)) {
+    QString sMessage = "Could not write the exported model.";
+    if (!sWriteError.empty())
+      sMessage += QString("\n\n") + QString::fromStdString(sWriteError);
+    QMessageBox::warning(this, "Export Track", sMessage);
+    return false;
+  }
+  return true;
+}
+
+//-------------------------------------------------------------------------------------------------
+
+bool CTrackPreview::ExportGltf_Internal(const QString &sFolder,
+                                        const QString &sName,
+                                        const QString &sFilename,
+                                        bool bSeparateSections,
+                                        bool bSeparateBackFaces)
+{
+  // The container follows the name the user chose: .glb is one self-contained
+  // file, anything else is JSON beside its buffer and the atlas PNGs.
+  const bool bBinary =
+      QFileInfo(sFilename).suffix().compare("glb", Qt::CaseInsensitive) == 0;
+
+  // A .glb embeds its images, so the PNGs are a build artifact rather than
+  // part of the deliverable and must not be left beside it. A .gltf points at
+  // them, so they go next to the model and stay.
+  QTemporaryDir TemporaryTextures;
+  QString sTextureFolder = sFolder;
+  if (bBinary) {
+    if (!TemporaryTextures.isValid()) {
+      QMessageBox::warning(this, "Export Track",
+                           "Could not stage the track textures.");
+      return false;
+    }
+    sTextureFolder = TemporaryTextures.path();
+  }
+  const QString sTexFile = QDir(sTextureFolder).filePath(sName + ".png");
+  const QString sSignTexFile =
+      QDir(sTextureFolder).filePath(sName + "_BLD.png");
+  if (!p->m_track.m_assets.ExportTextures(
+          QFile::encodeName(sTexFile).constData(),
+          QFile::encodeName(sSignTexFile).constData())) {
+    QMessageBox::warning(this, "Export Track",
+                         "Could not write the track textures.");
+    return false;
+  }
+
+  tEdGeometrySnapshot Snapshot;
+  if (!ExtractCanonicalGeometry(Snapshot))
+    return false;
+
+  const tEdExportGeometry Geometry = ViewOfSnapshot(Snapshot);
+  const std::vector<tEdExportPaletteEntry> Palette = BuildExportPalette();
+
+  tEdGltfExportOptions Options;
+  Options.bSeparateSections = bSeparateSections;
+  Options.bSeparateBackFaces = bSeparateBackFaces;
+  Options.bBinary = bBinary;
+  Options.sBaseName = sName.toStdString();
+  Options.sBufferUri = (sName + ".bin").toStdString();
+
+  const uint32_t auiTextureSets[2] = { ROLLER_ED_TEXTURE_SET_TRACK,
+                                       ROLLER_ED_TEXTURE_SET_BUILDING_SIGN };
+  const QString aTexturePaths[2] = { sTexFile, sSignTexFile };
+  for (int i = 0; i < 2; ++i) {
+    tEdGltfTextureSource Source;
+    Source.uiTextureSet = auiTextureSets[i];
+    if (bBinary) {
+      QFile Png(aTexturePaths[i]);
+      if (!Png.open(QIODevice::ReadOnly)) {
+        QMessageBox::warning(this, "Export Track",
+                             "Could not read the staged track textures.");
+        return false;
+      }
+      const QByteArray Bytes = Png.readAll();
+      Source.PngBytes.assign(
+          reinterpret_cast<const uint8_t *>(Bytes.constData()),
+          reinterpret_cast<const uint8_t *>(Bytes.constData())
+              + Bytes.size());
+    } else {
+      Source.sUri = CEditorExportConventions::TextureFileName(
+          Options.sBaseName, auiTextureSets[i]);
+    }
+    Options.Textures.push_back(std::move(Source));
+  }
+
+  const QString sBinFile = QDir(sFolder).filePath(sName + ".bin");
+  std::string sWriteError;
+  if (!CEditorGltfExporter::ExportToFiles(
+          Geometry, Options, Palette.empty() ? nullptr : Palette.data(),
+          static_cast<uint32_t>(Palette.size()),
+          QFile::encodeName(sFilename).constData(),
+          bBinary ? std::string()
+                  : std::string(QFile::encodeName(sBinFile).constData()),
+          sWriteError)) {
     QString sMessage = "Could not write the exported model.";
     if (!sWriteError.empty())
       sMessage += QString("\n\n") + QString::fromStdString(sWriteError);
@@ -793,6 +913,11 @@ bool CTrackPreview::Export(eExportType exportType)
     case eExportType::EXPORT_OBJ:
       sFilter = "OBJ Files (*.obj)";
       break;
+    case eExportType::EXPORT_GLTF:
+      // The chosen extension picks the container: one self-contained binary,
+      // or JSON beside its buffer and the atlas PNGs.
+      sFilter = "glTF Binary (*.glb);;glTF JSON (*.gltf)";
+      break;
   }
   QString sFilename = QDir::toNativeSeparators(QFileDialog::getSaveFileName(
     this, "Export Track As", p->m_track.m_sTrackFileFolder.c_str(), sFilter));
@@ -801,6 +926,18 @@ bool CTrackPreview::Export(eExportType exportType)
   QString sFolder = sFilename.left(sFilename.lastIndexOf(QDir::separator()));
   QString sName = sFilename.right(sFilename.size() - sFilename.lastIndexOf(QDir::separator()) - 1);
   sName = sName.left(sName.lastIndexOf('.'));
+
+  // E4-S2. glTF owns where its textures land, because a .glb embeds them and
+  // must not leave loose PNGs behind.
+  if (exportType == eExportType::EXPORT_GLTF) {
+    if (!ExportGltf_Internal(sFolder, sName, sFilename,
+                             exportWizard.m_bExportSeparate,
+                             exportWizard.m_bExportBacks)) {
+      return false;
+    }
+    g_pMainWindow->m_sLastTrackFilesFolder = sFolder;
+    return true;
+  }
 
   //make texture file
   QString sTexFile = QDir(sFolder).filePath(sName + ".png");

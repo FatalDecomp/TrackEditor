@@ -2,6 +2,12 @@
 #include "EditorReferenceMesh.h"
 #include "DisplaySettingsFlags.h"
 
+// CTest runs this in the Release configuration, whose NDEBUG would compile
+// every assertion below out and leave the test passing by doing nothing.
+// tests/track_model_test.cpp guards itself the same way.
+#ifdef NDEBUG
+#undef NDEBUG
+#endif
 #include <cassert>
 #include <cstdint>
 #include <cstdio>

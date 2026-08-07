@@ -14,6 +14,7 @@ if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/external/ROLLER/CMakeLists.txt")
 endif()
 
 add_subdirectory(external/ROLLER)
+add_subdirectory(external/cgltf)
 add_subdirectory(TrackModel)
 add_subdirectory(TrackAssets)
 
@@ -128,6 +129,11 @@ if(BUILD_TESTING)
             COMMAND "${Python3_EXECUTABLE}"
                     "${CMAKE_CURRENT_SOURCE_DIR}/tests/test_e4_s1_obj_export.py"
                     -v)
+        add_test(
+            NAME trackeditor-e4-s2-gltf-export-contract
+            COMMAND "${Python3_EXECUTABLE}"
+                    "${CMAKE_CURRENT_SOURCE_DIR}/tests/test_e4_s2_gltf_export.py"
+                    -v)
     endif()
 
     if(TARGET TrackEditor)
@@ -204,6 +210,8 @@ if(BUILD_TESTING)
         # nothing else: no Qt, no WhipLib, no linked ROLLER code.
         add_executable(trackeditor-e4-s1-obj-exporter-test
             tests/editor_obj_exporter_test.cpp
+            TrackEditor/EditorExportCommon.cpp
+            TrackEditor/EditorExportCommon.h
             TrackEditor/EditorObjExporter.cpp
             TrackEditor/EditorObjExporter.h)
         target_compile_features(trackeditor-e4-s1-obj-exporter-test PRIVATE cxx_std_17)
@@ -212,6 +220,47 @@ if(BUILD_TESTING)
             "${CMAKE_CURRENT_SOURCE_DIR}/external/ROLLER/PROJECTS/ROLLER")
         add_test(NAME trackeditor-e4-s1-obj-exporter
                  COMMAND trackeditor-e4-s1-obj-exporter-test)
+
+        # E4-S2. Same shape, plus the vendored cgltf writer. It writes the
+        # sample documents the optional Blender import check below reads, so it
+        # runs from the binary directory.
+        add_executable(trackeditor-e4-s2-gltf-exporter-test
+            tests/editor_gltf_exporter_test.cpp
+            TrackEditor/EditorExportCommon.cpp
+            TrackEditor/EditorExportCommon.h
+            TrackEditor/EditorGltfExporter.cpp
+            TrackEditor/EditorGltfExporter.h)
+        target_compile_features(trackeditor-e4-s2-gltf-exporter-test PRIVATE cxx_std_17)
+        target_include_directories(trackeditor-e4-s2-gltf-exporter-test PRIVATE
+            "${CMAKE_CURRENT_SOURCE_DIR}/TrackEditor"
+            "${CMAKE_CURRENT_SOURCE_DIR}/external/ROLLER/PROJECTS/ROLLER")
+        target_link_libraries(trackeditor-e4-s2-gltf-exporter-test PRIVATE
+            TrackEditor::cgltf)
+        add_test(NAME trackeditor-e4-s2-gltf-exporter
+                 COMMAND trackeditor-e4-s2-gltf-exporter-test
+                 WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}")
+
+        # E4-S2 acceptance: the story's criterion is that the output imports
+        # natively in Blender, so check it when a Blender is available. Hosted
+        # CI has none, and the rest of the suite must not depend on one, so
+        # this entry only exists when TRACKEDITOR_BLENDER_EXECUTABLE resolves.
+        find_program(TRACKEDITOR_BLENDER_EXECUTABLE
+            NAMES blender
+            PATHS "$ENV{ProgramFiles}/Blender Foundation"
+            PATH_SUFFIXES "Blender 4.2" "Blender 4.1" "Blender 4.0"
+            DOC "Blender used by the optional E4-S2 glTF import check")
+        if(TRACKEDITOR_BLENDER_EXECUTABLE AND Python3_Interpreter_FOUND)
+            add_test(
+                NAME trackeditor-e4-s2-gltf-blender-import
+                COMMAND "${Python3_EXECUTABLE}"
+                        "${CMAKE_CURRENT_SOURCE_DIR}/tests/check_gltf_in_blender.py"
+                        "${TRACKEDITOR_BLENDER_EXECUTABLE}"
+                        "${CMAKE_CURRENT_BINARY_DIR}")
+            set_tests_properties(trackeditor-e4-s2-gltf-blender-import
+                PROPERTIES
+                    DEPENDS trackeditor-e4-s2-gltf-exporter
+                    TIMEOUT 300)
+        endif()
 
         add_test(NAME trackeditor-smoke COMMAND TrackEditor --cmake-smoke-test)
         if(WIN32)

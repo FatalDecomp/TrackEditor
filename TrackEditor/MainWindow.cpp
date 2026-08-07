@@ -206,6 +206,7 @@ CMainWindow::CMainWindow(const QString &sAppPath, float fDesktopScale,
   connect(actExportFBX, &QAction::triggered, this, &CMainWindow::OnExportFBX);
 #endif
   connect(actExportOBJ, &QAction::triggered, this, &CMainWindow::OnExportOBJ);
+  connect(actExportGLTF, &QAction::triggered, this, &CMainWindow::OnExportGLTF);
   connect(actUndo, &QAction::triggered, this, &CMainWindow::OnUndo);
   connect(actRedo, &QAction::triggered, this, &CMainWindow::OnRedo);
   connect(actCut, &QAction::triggered, this, &CMainWindow::OnCut);
@@ -389,6 +390,14 @@ void CMainWindow::OnExportOBJ()
 {
   if (GetCurrentPreview())
     GetCurrentPreview()->Export(eExportType::EXPORT_OBJ);
+}
+
+//-------------------------------------------------------------------------------------------------
+
+void CMainWindow::OnExportGLTF()
+{
+  if (GetCurrentPreview())
+    GetCurrentPreview()->Export(eExportType::EXPORT_GLTF);
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -1434,6 +1443,7 @@ void CMainWindow::UpdateExportActions()
   const CTrackPreview *pPreview = GetCurrentPreview();
   const bool bCanExport = pPreview && pPreview->CanExport();
   actExportOBJ->setEnabled(bCanExport);
+  actExportGLTF->setEnabled(bCanExport);
   actExportFBX->setEnabled(bCanExport);
 }
 

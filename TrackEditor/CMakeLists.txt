@@ -34,6 +34,10 @@ set(trackeditor_sources
     EditSurfaceDialog.ui
     EditorCameraController.cpp
     EditorCameraController.h
+    EditorExportCommon.cpp
+    EditorExportCommon.h
+    EditorGltfExporter.cpp
+    EditorGltfExporter.h
     EditorObjExporter.cpp
     EditorObjExporter.h
     EditorOverlaySettings.cpp
@@ -102,6 +106,7 @@ target_include_directories(TrackEditor PRIVATE
 target_link_libraries(TrackEditor
     PRIVATE
         TrackEditor::WhipLib
+        TrackEditor::cgltf
         ROLLER::core
         Qt5::Core
         Qt5::Gui

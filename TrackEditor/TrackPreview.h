@@ -2,7 +2,9 @@
 #define _TRACKEDITOR_TRACKPREVIEW_H
 //-------------------------------------------------------------------------------------------------
 #include <QWidget>
+#include <vector>
 #include "EditorCameraController.h"
+#include "EditorExportCommon.h"
 #include "EditorOverlaySettings.h"
 #include "EditorReferenceMesh.h"
 #include "EditorRenderQueue.h"
@@ -13,7 +15,11 @@
 enum eExportType
 {
   EXPORT_FBX = 0,
-  EXPORT_OBJ
+  EXPORT_OBJ,
+  // E4-S2. The container is chosen from the file name the user picks:
+  // .glb writes one self-contained binary, .gltf writes JSON beside its
+  // buffer and the atlas PNGs.
+  EXPORT_GLTF
 };
 //-------------------------------------------------------------------------------------------------
 class CTrackPreviewPrivate;
@@ -94,6 +100,14 @@ private:
   bool ExportObj_Internal(const QString &sFolder, const QString &sName,
                           const QString &sFilename, bool bSeparateSections,
                           bool bSeparateBackFaces);
+  // E4-S2. Same canonical geometry, glTF 2.0 instead of OBJ.
+  bool ExportGltf_Internal(const QString &sFolder, const QString &sName,
+                           const QString &sFilename, bool bSeparateSections,
+                           bool bSeparateBackFaces);
+  // Both canonical exporters need the extraction; neither may call the facade
+  // from UI code, so both go through the render worker.
+  bool ExtractCanonicalGeometry(tEdGeometrySnapshot &SnapshotOut);
+  std::vector<tEdExportPaletteEntry> BuildExportPalette() const;
   void UpdateReferenceModelPos_Internal();
   // Hands the worker the mesh exactly once per change: null on every other
   // frame, so a camera nudge does not copy the whole model through the queue.

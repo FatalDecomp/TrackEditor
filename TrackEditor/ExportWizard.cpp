@@ -19,16 +19,17 @@ CExportWizard::CExportWizard(QWidget *pParent, eExportType exportType)
   ckBacks->setChecked(m_bExportBacks);
   ckSigns->setChecked(m_bExportSigns);
 
-  // E4-S1. OBJ export now reads ROLLER's canonical geometry, which covers the
-  // eleven track surface classes only: signs and buildings reach the emitter
-  // through the camera-driven render path, so there is no camera-independent
-  // sign traversal to extract them from yet (ROLLER
+  // E4-S1/E4-S2. The canonical exporters read ROLLER's geometry, which covers
+  // the eleven track surface classes only: signs and buildings reach the
+  // emitter through the camera-driven render path, so there is no
+  // camera-independent sign traversal to extract them from yet (ROLLER
   // docs/adr/0003-canonical-geometry-conventions.md). Rather than fall back to
   // the editor's own CPU derivation - which works in a different, chunk-zero
   // relative frame and would place signs off the exported track - the option
-  // is disabled for OBJ until that traversal exists. FBX still uses the legacy
-  // path and keeps the option.
-  if (m_exportType == eExportType::EXPORT_OBJ) {
+  // is disabled for them until that traversal exists. FBX still uses the
+  // legacy path and keeps the option.
+  if (m_exportType == eExportType::EXPORT_OBJ
+      || m_exportType == eExportType::EXPORT_GLTF) {
     m_bExportSigns = false;
     ckSigns->setChecked(false);
     ckSigns->setEnabled(false);

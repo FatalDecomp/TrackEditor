@@ -1,14 +1,31 @@
 // E4-S1. The OBJ exporter is a pure function of one canonical extraction, so
 // it is exercised here without a render worker, a loaded track, or Qt.
 #include "EditorObjExporter.h"
+#include "EditorExportCommon.h"
 
 #include <cassert>
 #include <cmath>
 #include <cstdint>
 #include <cstdio>
+#include <cstdlib>
 #include <sstream>
 #include <string>
 #include <vector>
+
+// CMake's Release configuration defines NDEBUG, which would turn every assert
+// below into a no-op and make this test pass by doing nothing.
+#ifdef assert
+#undef assert
+#endif
+inline void ExportTestAssertFailed(const char *szCondition, const char *szFile,
+                                   int iLine)
+{
+  std::fprintf(stderr, "assertion failed: %s (%s:%d)\n", szCondition, szFile,
+               iLine);
+  std::abort();
+}
+#define assert(condition) \
+  ((condition) ? (void)0 : ExportTestAssertFailed(#condition, __FILE__, __LINE__))
 
 namespace
 {
@@ -90,9 +107,9 @@ public:
     return static_cast<uint32_t>(m_Primitives.size() - 1);
   }
 
-  tEdObjExportGeometry View() const
+  tEdExportGeometry View() const
   {
-    tEdObjExportGeometry Geometry;
+    tEdExportGeometry Geometry;
     Geometry.pVertices = m_Vertices.data();
     Geometry.uiVertexCount = static_cast<uint32_t>(m_Vertices.size());
     Geometry.puiIndices = m_Indices.data();
@@ -174,7 +191,7 @@ void test_the_axis_conversion_matches_adr_0003()
   // +Y up, so the exporter rotates -90 degrees about X and scales by 1/100.
   const float afRoller[3] = { 100.0f, 200.0f, 300.0f };
   float afObj[3] = { 0.0f, 0.0f, 0.0f };
-  CEditorObjExporter::ConvertPosition(afRoller, afObj);
+  CEditorExportConventions::ConvertPosition(afRoller, afObj);
   assert(std::fabs(afObj[0] - 1.0f) < 1e-6f);
   assert(std::fabs(afObj[1] - 3.0f) < 1e-6f);
   assert(std::fabs(afObj[2] + 2.0f) < 1e-6f);
@@ -182,7 +199,7 @@ void test_the_axis_conversion_matches_adr_0003()
   // Direction carries the same rotation without the scale, so a unit normal
   // stays unit length.
   const float afUp[3] = { 0.0f, 0.0f, 1.0f };
-  CEditorObjExporter::ConvertDirection(afUp, afObj);
+  CEditorExportConventions::ConvertDirection(afUp, afObj);
   assert(std::fabs(afObj[0]) < 1e-6f);
   assert(std::fabs(afObj[1] - 1.0f) < 1e-6f);
   assert(std::fabs(afObj[2]) < 1e-6f);
@@ -193,9 +210,9 @@ void test_the_axis_conversion_matches_adr_0003()
   const float afY[3] = { 0.0f, 1.0f, 0.0f };
   const float afZ[3] = { 0.0f, 0.0f, 1.0f };
   float afNewX[3], afNewY[3], afNewZ[3];
-  CEditorObjExporter::ConvertDirection(afX, afNewX);
-  CEditorObjExporter::ConvertDirection(afY, afNewY);
-  CEditorObjExporter::ConvertDirection(afZ, afNewZ);
+  CEditorExportConventions::ConvertDirection(afX, afNewX);
+  CEditorExportConventions::ConvertDirection(afY, afNewY);
+  CEditorExportConventions::ConvertDirection(afZ, afNewZ);
   const float afCross[3] = {
     afNewX[1] * afNewY[2] - afNewX[2] * afNewY[1],
     afNewX[2] * afNewY[0] - afNewX[0] * afNewY[2],
@@ -442,7 +459,7 @@ void test_flat_palette_colours_become_diffuse_materials()
                   ROLLER_ED_CONTENT_AUTHORED_TRACK, uiFlat,
                   ROLLER_ED_INVALID_MATERIAL_ID);
 
-  std::vector<tEdObjExportPaletteEntry> Palette(256);
+  std::vector<tEdExportPaletteEntry> Palette(256);
   Palette[7].byRed = 255;
   Palette[7].byGreen = 0;
   Palette[7].byBlue = 51;
@@ -482,11 +499,11 @@ void test_screen_darken_is_a_documented_transparent_material()
   // Never an ordinary texture.
   assert(!Contains(sMtl, "map_Kd"));
 
-  assert(std::fabs(CEditorObjExporter::ScreenDarkenAlpha(0) - 0.2f) < 1e-6f);
-  assert(std::fabs(CEditorObjExporter::ScreenDarkenAlpha(3) - 0.8f) < 1e-6f);
+  assert(std::fabs(CEditorExportConventions::ScreenDarkenAlpha(0) - 0.2f) < 1e-6f);
+  assert(std::fabs(CEditorExportConventions::ScreenDarkenAlpha(3) - 0.8f) < 1e-6f);
   // Levels past the table clamp rather than read out of bounds.
-  assert(std::fabs(CEditorObjExporter::ScreenDarkenAlpha(4)
-                   - CEditorObjExporter::ScreenDarkenAlpha(99)) < 1e-6f);
+  assert(std::fabs(CEditorExportConventions::ScreenDarkenAlpha(4)
+                   - CEditorExportConventions::ScreenDarkenAlpha(99)) < 1e-6f);
 }
 
 void test_runtime_scenery_never_reaches_the_export()
@@ -513,13 +530,13 @@ void test_runtime_scenery_never_reaches_the_export()
   // Only the authored quad survives.
   assert(CountLinesStartingWith(Obj.str(), "f ") == 2);
 
-  assert(CEditorObjExporter::IsAuthoredContent(
+  assert(CEditorExportConventions::IsAuthoredContent(
       ROLLER_ED_CONTENT_AUTHORED_TRACK));
-  assert(CEditorObjExporter::IsAuthoredContent(
+  assert(CEditorExportConventions::IsAuthoredContent(
       ROLLER_ED_CONTENT_AUTHORED_SIGN));
-  assert(CEditorObjExporter::IsAuthoredContent(
+  assert(CEditorExportConventions::IsAuthoredContent(
       ROLLER_ED_CONTENT_AUTHORED_SCENERY));
-  assert(!CEditorObjExporter::IsAuthoredContent(
+  assert(!CEditorExportConventions::IsAuthoredContent(
       ROLLER_ED_CONTENT_RUNTIME_SCENERY));
 }
 

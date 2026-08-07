@@ -182,6 +182,7 @@
     <addaction name="actSaveAs"/>
     <addaction name="separator"/>
     <addaction name="actExportOBJ"/>
+    <addaction name="actExportGLTF"/>
     <addaction name="actExportFBX"/>
    </widget>
    <widget class="QMenu" name="menuHelp">
@@ -413,6 +414,11 @@
   <action name="actExportOBJ">
    <property name="text">
     <string>Export to OBJ</string>
+   </property>
+  </action>
+  <action name="actExportGLTF">
+   <property name="text">
+    <string>Export to glTF</string>
    </property>
   </action>
  </widget>

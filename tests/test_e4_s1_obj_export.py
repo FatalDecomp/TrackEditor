@@ -54,8 +54,20 @@ class ExporterBoundaryTests(unittest.TestCase):
         cls.source = (EDITOR / "EditorObjExporter.cpp").read_text(
             encoding="utf-8"
         )
-        cls.combined = without_comments(cls.header) + without_comments(
-            cls.source
+        # E4-S2 moved everything the exporters must agree on into the shared
+        # layer, so the conventions are pinned there and the format-specific
+        # assertions stay here.
+        cls.common_header = (EDITOR / "EditorExportCommon.h").read_text(
+            encoding="utf-8"
+        )
+        cls.common_source = (EDITOR / "EditorExportCommon.cpp").read_text(
+            encoding="utf-8"
+        )
+        cls.combined = (
+            without_comments(cls.header)
+            + without_comments(cls.source)
+            + without_comments(cls.common_header)
+            + without_comments(cls.common_source)
         )
 
     def test_the_exporter_owns_no_qt_whiplib_or_facade_call(self) -> None:
@@ -69,22 +81,23 @@ class ExporterBoundaryTests(unittest.TestCase):
             self.assertNotIn(forbidden, self.combined)
 
     def test_the_input_is_the_canonical_representation(self) -> None:
-        self.assertIn("const tEdVertex *pVertices", self.header)
-        self.assertIn("const tEdPrimitive *pPrimitives", self.header)
-        self.assertIn("const tEdMaterial *pMaterials", self.header)
+        self.assertIn("const tEdVertex *pVertices", self.common_header)
+        self.assertIn("const tEdPrimitive *pPrimitives", self.common_header)
+        self.assertIn("const tEdMaterial *pMaterials", self.common_header)
 
     def test_scope_is_filtered_on_the_published_content_class(self) -> None:
         # AD-6d/AD-6e: authored content only, and never inferred from the
         # surface class.
         body = function_body(
-            self.source, "bool CEditorObjExporter::IsAuthoredContent("
+            self.common_source,
+            "bool CEditorExportConventions::IsAuthoredContent(",
         )
         self.assertIn("ROLLER_ED_CONTENT_AUTHORED_TRACK", body)
         self.assertIn("ROLLER_ED_CONTENT_AUTHORED_SIGN", body)
         self.assertIn("ROLLER_ED_CONTENT_AUTHORED_SCENERY", body)
         self.assertNotIn("ROLLER_ED_CONTENT_RUNTIME_SCENERY", body)
         self.assertIn("IsAuthoredContent(Primitive.unContentClass)",
-                      self.source)
+                      self.common_source)
 
     def test_every_pre_migration_surface_group_name_survives(self) -> None:
         for name in (
@@ -100,20 +113,27 @@ class ExporterBoundaryTests(unittest.TestCase):
             "Left Upper Outer Wall",
             "Right Upper Outer Wall",
         ):
-            self.assertIn(f'return "{name}";', self.source)
-        self.assertIn('"Track"', self.source)
-        self.assertIn('" (Back)"', self.source)
-        self.assertIn('"Track (Back)"', self.source)
+            self.assertIn(f'return "{name}";', self.common_source)
+        self.assertIn('"Track"', self.common_source)
+        self.assertIn('" (Back)"', self.common_source)
+        self.assertIn('"Track (Back)"', self.common_source)
 
     def test_back_faces_use_the_back_material(self) -> None:
         # Reusing the front material's atlas rectangle would sample the wrong
         # tile whenever texture_back[] substitutes a different one (AD-7b).
-        body = function_body(self.source, "uint32_t ReverseSideMaterial(")
+        body = function_body(
+            self.common_source,
+            "uint32_t CEditorExportConventions::ReverseSideMaterial(",
+        )
         self.assertIn("uiBackMaterialId", body)
 
         # A missing back material does not imply single-sidedness.
-        has_back = function_body(self.source, "bool HasReverseSide(")
+        has_back = function_body(
+            self.common_source, "bool CEditorExportConventions::HasReverseSide("
+        )
         self.assertIn("ROLLER_ED_PRIMITIVE_FLAG_TWO_SIDED", has_back)
+        # OBJ cannot say "draw both sides", so it always needs real geometry.
+        self.assertIn("Grouping.bReverseSideAsGeometry = true", self.source)
 
     def test_uvs_resolve_through_the_atlas_transform_only(self) -> None:
         stripped = without_comments(self.source)
@@ -122,6 +142,19 @@ class ExporterBoundaryTests(unittest.TestCase):
         # No exporter-side tile arithmetic (AD-7b).
         self.assertNotIn("uiTileIndex", stripped)
         self.assertNotIn("uiTileSize", stripped)
+
+    def test_the_conventions_are_shared_rather_than_re_derived(self) -> None:
+        # The point of the migration: OBJ, glTF, and FBX must not each derive
+        # their own axis, scale, scope, or grouping. The format-specific file
+        # states none of them.
+        for owned_by_the_shared_layer in (
+            "ED_EXPORT_UNIT_SCALE",
+            "ROLLER_ED_CONTENT_AUTHORED_TRACK",
+            "afOutXYZ",
+            'return "Center";',
+        ):
+            self.assertNotIn(owned_by_the_shared_layer, self.source)
+        self.assertIn("CEditorExportConventions::BuildObjects", self.source)
 
     def test_screen_darken_is_never_an_ordinary_texture(self) -> None:
         body = function_body(self.source, "void WriteMaterial(")
@@ -134,14 +167,17 @@ class ExporterBoundaryTests(unittest.TestCase):
     def test_the_axis_and_scale_conventions_are_stated_not_derived(
         self,
     ) -> None:
-        self.assertIn("ED_OBJ_EXPORT_UNIT_SCALE 0.01f", self.header)
-        self.assertIn("0003-canonical-geometry-conventions.md", self.header)
+        self.assertIn("ED_EXPORT_UNIT_SCALE 0.01f", self.common_header)
+        self.assertIn(
+            "0003-canonical-geometry-conventions.md", self.common_header
+        )
         body = function_body(
-            self.source, "void CEditorObjExporter::ConvertPosition("
+            self.common_source,
+            "void CEditorExportConventions::ConvertPosition(",
         )
         # +Z up to +Y up, handedness preserved.
-        self.assertIn("afObjXYZ[1] = afRollerXYZ[2]", body)
-        self.assertIn("afObjXYZ[2] = -afRollerXYZ[1]", body)
+        self.assertIn("afOutXYZ[1] = afRollerXYZ[2]", body)
+        self.assertIn("afOutXYZ[2] = -afRollerXYZ[1]", body)
 
 
 class ExtractionPathTests(unittest.TestCase):
@@ -226,8 +262,13 @@ class ExportUiTests(unittest.TestCase):
         body = function_body(
             self.preview, "bool CTrackPreview::ExportObj_Internal("
         )
-        self.assertIn("ExtractGeometry", body)
+        self.assertIn("ExtractCanonicalGeometry", body)
         self.assertIn("CEditorObjExporter::ExportToFiles", body)
+        # The extraction itself still goes through the render worker.
+        extract = function_body(
+            self.preview, "bool CTrackPreview::ExtractCanonicalGeometry("
+        )
+        self.assertIn("m_pRenderService->ExtractGeometry", extract)
         for forbidden in ("MakeTrackSurface", "MakeAILine", "MakeSigns",
                           "CShapeData", "CObjExporter"):
             self.assertNotIn(forbidden, body)
