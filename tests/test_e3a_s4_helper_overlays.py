@@ -45,15 +45,32 @@ class CenterLineToggleTests(unittest.TestCase):
         self.assertIn("SHOW_CENTER_LINE", source)
         self.assertIn("BLOCK_SIG_AND_DO(ckCenterLine", source)
 
-    def test_all_three_helpers_map_to_their_overlay_flags(self) -> None:
+    def test_both_line_helpers_map_to_their_overlay_flags(self) -> None:
         source = (EDITOR / "EditorOverlaySettings.cpp").read_text(encoding="utf-8")
         for legacy, overlay in (
             ("SHOW_AILINE_MODELS", "ROLLER_ED_OVERLAY_SHOW_AI_LINES"),
             ("SHOW_CENTER_LINE", "ROLLER_ED_OVERLAY_SHOW_CENTER_LINE"),
-            ("SHOW_ENVIRONMENT", "ROLLER_ED_OVERLAY_SHOW_ENVIRONMENT_FLOOR"),
         ):
             self.assertIn(legacy, source)
             self.assertIn(overlay, source)
+
+    def test_the_environment_checkbox_is_gone(self) -> None:
+        # The environment floor was the green plane under the track; the
+        # preview draws the real horizon there now, so both the overlay and
+        # its checkbox were removed. The persisted bit stays reserved.
+        ui = (EDITOR / "DisplaySettings.ui").read_text(encoding="utf-8")
+        settings = (EDITOR / "DisplaySettings.cpp").read_text(encoding="utf-8")
+        overlay = (EDITOR / "EditorOverlaySettings.cpp").read_text(
+            encoding="utf-8"
+        )
+        flags = (EDITOR / "DisplaySettingsFlags.h").read_text(encoding="utf-8")
+
+        self.assertNotIn('name="ckEnvironment"', ui)
+        self.assertNotIn("ckEnvironment", settings)
+        self.assertNotIn("ENVIRONMENT_FLOOR", overlay)
+        # Reserved rather than reused: a saved profile still carries the bit,
+        # and a new checkbox on it would inherit whatever the user left.
+        self.assertIn("SHOW_ENVIRONMENT_RETIRED   0x01000000", flags)
 
     def test_the_helpers_are_independently_toggleable(self) -> None:
         # Each is its own row in the feature table, so no two share a bit.
@@ -62,7 +79,6 @@ class CenterLineToggleTests(unittest.TestCase):
         for name in (
             "ROLLER_ED_OVERLAY_SHOW_AI_LINES",
             "ROLLER_ED_OVERLAY_SHOW_CENTER_LINE",
-            "ROLLER_ED_OVERLAY_SHOW_ENVIRONMENT_FLOOR",
         ):
             self.assertEqual(table.count(name), 1)
 

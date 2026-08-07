@@ -30,7 +30,11 @@
 #define SHOW_RUOWALL_WIRE_MODEL    0x00200000
 #define SHOW_SELECTION_HIGHLIGHT   0x00400000
 #define SHOW_AILINE_MODELS         0x00800000
-#define SHOW_ENVIRONMENT           0x01000000
+/* Retired: the environment floor was the green plane under the track, drawn
+ * before the preview showed the real horizon. The bit stays defined and
+ * unused, because saved profiles still contain it and reusing it would tie a
+ * new checkbox to whatever the user last left this one at. */
+#define SHOW_ENVIRONMENT_RETIRED   0x01000000
 #define SHOW_TEST_CAR              0x02000000
 #define SHOW_SIGNS                 0x04000000
 #define SHOW_AUDIO                 0x08000000

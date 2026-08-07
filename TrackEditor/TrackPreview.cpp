@@ -21,6 +21,7 @@
 #include "qpainter.h"
 #include "qtimer.h"
 #include "qtextstream.h"
+#include <cstring>
 #include <fstream>
 //-------------------------------------------------------------------------------------------------
 #if defined(_DEBUG) && defined(IS_WINDOWS)

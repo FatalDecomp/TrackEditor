@@ -12,6 +12,7 @@
 #include <QWaitCondition>
 
 #include <algorithm>
+#include <cstring>
 #include <deque>
 #include <limits>
 #include <string>

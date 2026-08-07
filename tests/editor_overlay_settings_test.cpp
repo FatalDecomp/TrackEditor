@@ -171,7 +171,6 @@ void test_feature_toggles_map_to_overlay_flags()
   static const tCase aCases[] = {
     { SHOW_SELECTION_HIGHLIGHT, ROLLER_ED_OVERLAY_HIGHLIGHT_SELECTION },
     { SHOW_AILINE_MODELS,       ROLLER_ED_OVERLAY_SHOW_AI_LINES },
-    { SHOW_ENVIRONMENT,         ROLLER_ED_OVERLAY_SHOW_ENVIRONMENT_FLOOR },
     { SHOW_TEST_CAR,            ROLLER_ED_OVERLAY_SHOW_TEST_CAR },
     { SHOW_AUDIO,               ROLLER_ED_OVERLAY_SHOW_AUDIO_MARKERS },
     { SHOW_STUNTS,              ROLLER_ED_OVERLAY_SHOW_STUNT_MARKERS },
@@ -212,11 +211,11 @@ void test_no_undefined_flag_or_class_bit_is_ever_published()
                 | ROLLER_ED_OVERLAY_HIGHLIGHT_SELECTION
                 | ROLLER_ED_OVERLAY_SHOW_AI_LINES
                 | ROLLER_ED_OVERLAY_SHOW_CENTER_LINE
-                | ROLLER_ED_OVERLAY_SHOW_ENVIRONMENT_FLOOR
                 | ROLLER_ED_OVERLAY_SHOW_AUDIO_MARKERS
                 | ROLLER_ED_OVERLAY_SHOW_STUNT_MARKERS
                 | ROLLER_ED_OVERLAY_SHOW_TEST_CAR
-                | ROLLER_ED_OVERLAY_SHOW_REFERENCE_MESH)) == 0);
+                | ROLLER_ED_OVERLAY_SHOW_REFERENCE_MESH
+                | ROLLER_ED_OVERLAY_TEST_CAR_MILLION_PLUS)) == 0);
   }
 }
 

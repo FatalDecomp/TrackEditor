@@ -156,7 +156,13 @@ bool CObjImporter::ImportObj(const std::string &sFile, CShapeData **pShape, CTex
         tVertex vertex;
         vertex.position = vAy[ivIdx];
         //vertex.texCoords = vtAy[ivtIdx];
-        vertex.texCoords = TextureMapping::GetColorCenterCoordinates(*pTexture, 0x8c); //light grey
+        // A reference model has no texture of its own and is drawn flat, so a
+        // null texture is a normal call rather than an error. Reaching into it
+        // for a colour UV is what used to crash the reference-model import.
+        if (pTexture)
+          vertex.texCoords = TextureMapping::GetColorCenterCoordinates(*pTexture, 0x8c); //light grey
+        else
+          vertex.texCoords = glm::vec2(0.0f, 0.0f);
         if(ivnIdx >= 0)
           vertex.normal = vnAy[ivnIdx];
         vertexAy.push_back(vertex);
