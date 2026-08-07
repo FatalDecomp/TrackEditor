@@ -49,25 +49,3 @@ The CMake build uses dynamic Qt 5.15 and system/prebuilt SDL3 and SDL3_image pac
 * stb_image 2.30: https://github.com/nothings/stb
 * stb_image_write 1.16: https://github.com/nothings/stb
 * Optional FBX SDK 2020.3.7 or compatible, installed outside the repository
-
-## Remaining issues:
-- TRACK1: right wall at the end of final tunnel is shaped wrong (483-486)
-- TRACK4: light green outer walls - bit 31? (217-241)
-- TRACK5: light green outer walls right before start/finish, roofs before jump (363-366, 81, 87, 93, 99)
-- TRACK9: buildings clip into track in tunnel (137)
-- TRACK12: wall geometry wrong (106-107)
-- TRACK13: building floating over roof (428-431)
-- TRACK15: pits have grass, texture pair should work backwards somehow instead of forwards (1-46)
-- TRACK16: floating tree (203)
-- TRACK20: has the green walls too
-- TRACK22: end of tunnel walls are gone facing backwards (335)
-- TRACK24: moving pothole animates too quickly (27)
-- create separate model for transparent track sections to be drawn last
-- outer floor at ends of corkscrews
-- z fighting is annoying
-- mission car lacks pink color changing
-- polygons have four bytes of data that do something unknown
-- "places" arrays are unknown
-- find a way to embed additional information in FBX export such as AI data and surface grip (is this possible?)
-- support stunt animation in FBX export
-- support wheel texture animation in FBX export
