@@ -28,10 +28,8 @@ ALLOWED_QT_TARGETS = {"Qt6::Core", "Qt6::Gui", "Qt6::Widgets"}
 
 SOURCE_DIRECTORIES = (
     "TrackEditor",
-    "WhipLib",
     "TrackModel",
     "TrackAssets",
-    "ModelExporter",
 )
 
 

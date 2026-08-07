@@ -3,10 +3,13 @@
 The editor can load a Wavefront OBJ and draw it alongside the track, so a
 modeller can line new geometry up against what the track actually looks like.
 
-- **Reading the file** is WhipLib's `CObjImporter` (`OpenReferenceModel` in
-  `TrackPreview.cpp`), kept from the pre-modernization editor.
+- **Reading the file** is `EditorObjImporter` (`OpenReferenceModel` in
+  `TrackPreview.cpp`), carried over from the pre-modernization editor's
+  `CObjImporter`. It emits flat float positions, normals, and a triangle-list
+  index buffer; the glm-typed `CShapeData` it used to return went away with
+  WhipLib, since the caller discarded it immediately anyway.
 - **Drawing it** is roller-core's reference mesh (`RollerEd_SetReferenceMesh`,
-  AD-13), added by E3A-S7. WhipLib no longer draws anything.
+  AD-13), added by E3A-S7.
 - **The conversion between the two** is E4-S6, and is what this page records.
 
 ## Coordinate system

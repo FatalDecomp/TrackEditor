@@ -30,7 +30,6 @@ endif()
 if(TRACKEDITOR_BUILD_APPLICATION)
     find_package(Qt6 6.8 REQUIRED COMPONENTS Core Gui Widgets)
 
-    add_subdirectory(WhipLib)
     add_subdirectory(TrackEditor)
 
     trackeditor_assert_no_opengl_in_link_closure(TrackEditor)
@@ -184,14 +183,6 @@ if(BUILD_TESTING)
     endif()
 
     if(TARGET TrackEditor)
-        add_executable(trackeditor-e3-s5c-track-geometry-test
-            tests/track_geometry_test.cpp)
-        target_compile_features(trackeditor-e3-s5c-track-geometry-test PRIVATE cxx_std_17)
-        target_link_libraries(trackeditor-e3-s5c-track-geometry-test PRIVATE
-            TrackEditor::WhipLib)
-        add_test(NAME trackeditor-e3-s5c-track-geometry
-                 COMMAND trackeditor-e3-s5c-track-geometry-test)
-
         add_executable(trackeditor-e3-s1-frame-delivery-test
             tests/editor_render_queue_test.cpp
             TrackEditor/EditorRenderQueue.cpp)
@@ -233,13 +224,12 @@ if(BUILD_TESTING)
             TrackEditor/EditorReferenceMesh.cpp
             TrackEditor/EditorOverlaySettings.h)
         target_compile_features(trackeditor-e3a-s2-overlay-settings-test PRIVATE cxx_std_17)
-        # WhipLib is on the include path for Types.h alone (the eWhipModel and
-        # eShapeSection enums E3A-S6 translates); the target still links no
-        # WhipLib, Qt, or ROLLER code, so the translation stays unit-testable
-        # without a render worker or an event loop.
+        # Types.h (the eWhipModel and eShapeSection enums E3A-S6 translates) is
+        # an editor header; the target still links no Qt or ROLLER code, so the
+        # translation stays unit-testable without a render worker or an event
+        # loop.
         target_include_directories(trackeditor-e3a-s2-overlay-settings-test PRIVATE
             "${CMAKE_CURRENT_SOURCE_DIR}/TrackEditor"
-            "${CMAKE_CURRENT_SOURCE_DIR}/WhipLib"
             "${CMAKE_CURRENT_SOURCE_DIR}/external/ROLLER/PROJECTS/ROLLER")
         add_test(NAME trackeditor-e3a-s2-overlay-settings
                  COMMAND trackeditor-e3a-s2-overlay-settings-test)
@@ -251,14 +241,13 @@ if(BUILD_TESTING)
         target_compile_features(trackeditor-e3-s3-camera-input-test PRIVATE cxx_std_17)
         target_include_directories(trackeditor-e3-s3-camera-input-test PRIVATE
             "${CMAKE_CURRENT_SOURCE_DIR}/TrackEditor"
-            "${CMAKE_CURRENT_SOURCE_DIR}/external/glm"
             "${CMAKE_CURRENT_SOURCE_DIR}/external/ROLLER/PROJECTS/ROLLER")
         add_test(NAME trackeditor-e3-s3-camera-input
                  COMMAND trackeditor-e3-s3-camera-input-test)
 
         # E4-S1. The OBJ exporter reads ROLLER's canonical geometry and writes
         # text, so it needs the editor_api.h types on the include path and
-        # nothing else: no Qt, no WhipLib, no linked ROLLER code.
+        # nothing else: no Qt, no linked ROLLER code.
         add_executable(trackeditor-e4-s1-obj-exporter-test
             tests/editor_obj_exporter_test.cpp
             TrackEditor/EditorExportCommon.cpp
@@ -354,7 +343,6 @@ if(BUILD_TESTING)
     foreach(trackeditor_test_target IN ITEMS
             trackeditor-e3-s5a-track-model-test
             trackeditor-e3-s5b-track-assets-test
-            trackeditor-e3-s5c-track-geometry-test
             trackeditor-e3-s1-frame-delivery-test
             trackeditor-e3-s1-render-service-test
             trackeditor-e3a-s2-overlay-settings-test

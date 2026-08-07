@@ -22,7 +22,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 EDITOR = ROOT / "TrackEditor"
-WHIPLIB = ROOT / "WhipLib"
+# The importer moved into TrackEditor/ when WhipLib was deleted.
 DOCS = ROOT / "docs"
 
 
@@ -48,11 +48,11 @@ def without_comments(source: str) -> str:
 class KeptPathTests(unittest.TestCase):
     def test_the_import_entry_points_are_still_the_editors_own(self) -> None:
         # "Keep OpenReferenceModel / ObjImporter."
-        for path in (WHIPLIB / "ObjImporter.cpp", WHIPLIB / "ObjImporter.h"):
+        for path in (EDITOR / "EditorObjImporter.cpp", EDITOR / "EditorObjImporter.h"):
             self.assertTrue(path.is_file(), f"{path} should still exist")
         preview = (EDITOR / "TrackPreview.cpp").read_text(encoding="utf-8")
         self.assertIn("void CTrackPreview::OpenReferenceModel(", preview)
-        self.assertIn("CObjImporter::GetObjImporter().ImportObj", preview)
+        self.assertIn("EditorObjImporter::ImportObj", preview)
 
     def test_display_goes_through_the_e3a_s7_reference_mesh(self) -> None:
         # "Display is now provided by E3A-S7, not by WhipLib": the imported
@@ -77,7 +77,7 @@ class ConversionTests(unittest.TestCase):
             encoding="utf-8"
         )
         cls.preview = (EDITOR / "TrackPreview.cpp").read_text(encoding="utf-8")
-        cls.importer = (WHIPLIB / "ObjImporter.cpp").read_text(
+        cls.importer = (EDITOR / "EditorObjImporter.cpp").read_text(
             encoding="utf-8"
         )
 

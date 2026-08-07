@@ -4,7 +4,7 @@
 add_library(cgltf STATIC cgltf_impl.c)
 add_library(TrackEditor::cgltf ALIAS cgltf)
 
-target_include_directories(cgltf PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
+target_include_directories(cgltf SYSTEM PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
 
 # Third-party code: do not hold it to this project's warning settings.
 if(MSVC)

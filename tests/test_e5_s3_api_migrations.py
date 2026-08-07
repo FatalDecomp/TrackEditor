@@ -26,11 +26,9 @@ EDITOR = ROOT / "TrackEditor"
 WARNED_TARGETS = {
     "track-model",
     "track-assets",
-    "WhipLib",
     "TrackEditor",
     "trackeditor-e3-s5a-track-model-test",
     "trackeditor-e3-s5b-track-assets-test",
-    "trackeditor-e3-s5c-track-geometry-test",
     "trackeditor-e3-s1-frame-delivery-test",
     "trackeditor-e3-s1-render-service-test",
     "trackeditor-e3a-s2-overlay-settings-test",

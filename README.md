@@ -32,19 +32,10 @@ The CMake build uses dynamic Qt 6.8 LTS and system/prebuilt SDL3 and SDL3_image 
 
 ![Track Editor](TrackEditor/images/screenshot.png)
 
-## ModelExporter Features:
-* Included with Track Editor releases
-* Exports all Whiplash tracks and cars to OBJ format
-
-![Model exported to Blender](ModelExporter/images/blender.png)
-
-![Model exported to Unreal](WhipLib/images/unreal.png)
-
 ## External dependencies used:
 * Dynamic Qt 6.8 LTS
 * SDL 3.2.22 or newer
 * SDL_image 3.2.4 or newer
-* GLM 1.0.1: https://github.com/g-truc/glm
 * stb_image 2.30: https://github.com/nothings/stb
 * stb_image_write 1.16: https://github.com/nothings/stb
 * cgltf 1.15 (vendored): https://github.com/jkuhlmann/cgltf

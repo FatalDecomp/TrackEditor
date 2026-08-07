@@ -15,9 +15,9 @@ target_compile_definitions(track-assets
         $<$<CXX_COMPILER_ID:MSVC>:_CRT_SECURE_NO_WARNINGS>)
 target_include_directories(track-assets
     PUBLIC
-        "${CMAKE_CURRENT_SOURCE_DIR}"
+        "${CMAKE_CURRENT_SOURCE_DIR}")
+target_include_directories(track-assets SYSTEM
     PRIVATE
-        "${PROJECT_SOURCE_DIR}/WhipLib"
         "${PROJECT_SOURCE_DIR}/external/stb")
 target_link_libraries(track-assets PRIVATE TrackEditor::track-model)
 

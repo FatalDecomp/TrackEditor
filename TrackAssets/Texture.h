@@ -69,9 +69,10 @@ public:
   void ClearData();
   bool LoadTexture(const std::string &sFilename, CPalette *pPalette);
   // The legacy single-column bitmap: TILE_WIDTH wide, TILE_HEIGHT per tile,
-  // every tile including the synthetic palette and transparency ones. WhipLib's
-  // C API publishes this shape and WhipLib::TextureMapping computes UVs against
-  // it, so it is frozen; the exported PNG uses GenerateExportAtlas instead.
+  // every tile including the synthetic palette and transparency ones. Both of
+  // its consumers went with WhipLib, so nothing in the build calls this now -
+  // only the track-assets unit test does. Kept as the legacy on-disk layout;
+  // the exported PNG uses GenerateExportAtlas instead.
   std::uint8_t *GenerateBitmapData(int &iSize) const;
 
   // E4-S4. The canonical export atlas: EXPORT_ATLAS_WIDTH wide, four tiles per

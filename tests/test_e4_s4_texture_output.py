@@ -113,16 +113,15 @@ class ExportAtlasTests(unittest.TestCase):
         self.assertIn("memset", body)
 
     def test_the_legacy_column_bitmap_is_untouched(self) -> None:
-        # WhipLib's C API publishes it and WhipLib::TextureMapping computes UVs
-        # against it, so changing its shape would be an unrelated break.
+        # Its two consumers -- WhipLib's C API and WhipLib::TextureMapping --
+        # went with WhipLib, so nothing in the build calls this any more; only
+        # tests/track_assets_test.cpp does. The shape is still pinned because
+        # it is the legacy on-disk layout, but whether the function should
+        # survive at all is an open question, not something this asserts.
         body = function_body(self.source, "std::uint8_t *CTexture::GenerateBitmapData(")
         self.assertIn("m_iNumTiles", body)
         self.assertIn("FlipTileLines", body)
         self.assertIn("TILE_WIDTH", body)
-        mapping = (ROOT / "WhipLib" / "TextureMapping.cpp").read_text(
-            encoding="utf-8"
-        )
-        self.assertIn("GetAtlasTileCount", mapping)
 
     def test_track_assets_stays_the_source_of_the_pngs(self) -> None:
         # E3-S5b owns palette and texture decoding; the exporters must not

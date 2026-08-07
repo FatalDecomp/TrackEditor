@@ -68,16 +68,16 @@ shared image.
 one tile per row-block, **every** tile including the synthetic ones, each tile
 transposed and vertically flipped.
 
-It is frozen because two things still depend on it:
+It used to be frozen because WhipLib's C API (`wlLoadTexture` and friends)
+published that buffer to external callers, and `WhipLib::TextureMapping`
+computed the legacy CPU UVs against it. **Both went away when WhipLib and
+`ModelExporter` were deleted**, so nothing in the build calls
+`GenerateBitmapData` any more; only the track-assets unit test does. It is kept
+as a record of the legacy on-disk layout.
 
-- **WhipLib's C API** (`wlLoadTexture` and friends) publishes that buffer to
-  external callers.
-- **`WhipLib::TextureMapping`** computes the legacy CPU UVs against it, for the
-  C API and the retired `ModelExporter`.
-
-Those two are self-consistent with each other, which is exactly why the
-mismatch went unnoticed: before E4-S1 the exporters used WhipLib's mapping too,
-so the wrong-looking atlas was addressed by matching wrong-looking UVs.
+Those two consumers were self-consistent with each other, which is exactly why
+the mismatch went unnoticed: before E4-S1 the exporters used WhipLib's mapping
+too, so the wrong-looking atlas was addressed by matching wrong-looking UVs.
 
 ## Parity
 

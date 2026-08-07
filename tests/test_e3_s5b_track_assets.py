@@ -6,21 +6,24 @@ import unittest
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 TRACK_ASSETS = ROOT / "TrackAssets"
-WHIPLIB = ROOT / "WhipLib"
+# CTrack moved into TrackEditor/ when WhipLib was deleted.
+EDITOR = ROOT / "TrackEditor"
 
 
 class TrackAssetsContractTests(unittest.TestCase):
     def test_track_assets_is_a_real_editor_domain_target(self) -> None:
         root_cmake = (ROOT / "CMakeLists.txt").read_text(encoding="utf-8")
         assets_cmake = (TRACK_ASSETS / "CMakeLists.txt").read_text(encoding="utf-8")
-        whiplib_cmake = (WHIPLIB / "CMakeLists.txt").read_text(encoding="utf-8")
+        # WhipLib was the consumer this used to check; with it deleted the
+        # editor links track-assets directly.
+        editor_cmake = (EDITOR / "CMakeLists.txt").read_text(encoding="utf-8")
 
         self.assertIn("add_subdirectory(TrackAssets)", root_cmake)
         self.assertIn("add_library(track-assets STATIC", assets_cmake)
         self.assertIn("TrackEditor::track-assets", assets_cmake)
-        self.assertIn("TrackEditor::track-assets", whiplib_cmake)
-        self.assertNotIn("Palette.cpp", whiplib_cmake)
-        self.assertNotIn("Texture.cpp", whiplib_cmake)
+        self.assertIn("TrackEditor::track-assets", editor_cmake)
+        self.assertNotIn("Palette.cpp", editor_cmake)
+        self.assertNotIn("Texture.cpp", editor_cmake)
 
     def test_palette_texture_and_ownership_moved_out_of_whiplib(self) -> None:
         for filename in (
@@ -35,10 +38,10 @@ class TrackAssetsContractTests(unittest.TestCase):
             self.assertTrue((TRACK_ASSETS / filename).is_file(), filename)
 
         for filename in ("Palette.cpp", "Palette.h", "Texture.cpp", "Texture.h"):
-            self.assertFalse((WHIPLIB / filename).exists(), filename)
+            self.assertFalse((EDITOR / filename).exists(), filename)
 
-        track_header = (WHIPLIB / "Track.h").read_text(encoding="utf-8")
-        track_source = (WHIPLIB / "Track.cpp").read_text(encoding="utf-8")
+        track_header = (EDITOR / "Track.h").read_text(encoding="utf-8")
+        track_source = (EDITOR / "Track.cpp").read_text(encoding="utf-8")
         self.assertIn("CTrackAssets m_assets", track_header)
         for obsolete in (
             "m_pPal",

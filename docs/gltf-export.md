@@ -13,7 +13,7 @@ glTF document itself lives in `TrackEditor/EditorGltfExporter.{h,cpp}`. See
 also [obj-export.md](obj-export.md); where the two formats differ, this page
 says why.
 
-The exporter owns no Qt type, no WhipLib type, and calls no `RollerEd_*` entry
+The exporter owns no Qt type and calls no `RollerEd_*` entry
 point, so it is exercised without a render worker or a loaded track by
 `tests/editor_gltf_exporter_test.cpp`, which asserts against the document read
 back through cgltf's own parser rather than against the JSON text.

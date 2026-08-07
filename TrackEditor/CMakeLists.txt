@@ -42,6 +42,8 @@ set(trackeditor_sources
     EditorGltfExporter.h
     EditorObjExporter.cpp
     EditorObjExporter.h
+    EditorObjImporter.cpp
+    EditorObjImporter.h
     EditorOverlaySettings.cpp
     EditorOverlaySettings.h
     EditorReferenceMesh.cpp
@@ -62,6 +64,8 @@ set(trackeditor_sources
     MainWindow.cpp
     MainWindow.h
     MainWindow.ui
+    MathHelpers.cpp
+    MathHelpers.h
     NewTrackDialog.cpp
     NewTrackDialog.h
     NewTrackDialog.ui
@@ -72,13 +76,17 @@ set(trackeditor_sources
     QtHelpers.h
     QtUserKeyMapper.cpp
     QtUserKeyMapper.h
+    SignType.h
     TilePicker.cpp
     TilePicker.h
     TilePicker.ui
+    Track.cpp
+    Track.h
     TrackEditor.cpp
     TrackEditor.h
     TrackPreview.cpp
     TrackPreview.h
+    Types.h
     resource.qrc)
 
 if(WIN32)
@@ -103,12 +111,12 @@ target_compile_definitions(TrackEditor
         $<$<CXX_COMPILER_ID:MSVC>:_CRT_SECURE_NO_WARNINGS>)
 
 target_include_directories(TrackEditor PRIVATE
-    "${CMAKE_CURRENT_SOURCE_DIR}"
-    "${PROJECT_SOURCE_DIR}/WhipLib")
+    "${CMAKE_CURRENT_SOURCE_DIR}")
 
 target_link_libraries(TrackEditor
     PRIVATE
-        TrackEditor::WhipLib
+        TrackEditor::track-model
+        TrackEditor::track-assets
         TrackEditor::cgltf
         ROLLER::core
         Qt6::Core
