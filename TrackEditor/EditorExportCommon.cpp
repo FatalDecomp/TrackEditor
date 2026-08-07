@@ -106,6 +106,16 @@ const char *CEditorExportConventions::SurfaceClassName(uint16_t unSurfaceClass)
   }
 }
 
+std::string CEditorExportConventions::SignObjectName(uint32_t uiSignIndex)
+{
+  return "Sign " + std::to_string(uiSignIndex);
+}
+
+const char *CEditorExportConventions::SceneryObjectName()
+{
+  return "Scenery";
+}
+
 uint32_t CEditorExportConventions::ExportedSurfaceClassCount()
 {
   return g_uiExportedSurfaceClassCount;
@@ -245,6 +255,12 @@ bool CEditorExportConventions::BuildObjects(
       g_uiExportedSurfaceClassCount);
   std::vector<std::vector<tEdExportEntry>> BackGroups(
       g_uiExportedSurfaceClassCount);
+  // E4A-S6. One pair of vectors per advert panel, so each becomes its own
+  // "Sign N" object the way the pre-migration exporter wrote it.
+  std::vector<std::vector<tEdExportEntry>> SignFronts;
+  std::vector<std::vector<tEdExportEntry>> SignBacks;
+  std::vector<tEdExportEntry> SceneryFront;
+  std::vector<tEdExportEntry> SceneryBack;
 
   for (uint32_t i = 0; i < Geometry.uiPrimitiveCount; ++i) {
     const tEdPrimitive &Primitive = Geometry.pPrimitives[i];
@@ -254,16 +270,39 @@ bool CEditorExportConventions::BuildObjects(
     // producer published rather than inferred from the surface class.
     if (!IsAuthoredContent(Primitive.unContentClass))
       continue;
-
-    uint32_t uiSlot = g_uiExportedSurfaceClassCount;
-    for (uint32_t c = 0; c < g_uiExportedSurfaceClassCount; ++c) {
-      if (g_aunExportedSurfaceClasses[c] == Primitive.unSurfaceClass) {
-        uiSlot = c;
-        break;
-      }
-    }
-    if (uiSlot == g_uiExportedSurfaceClassCount)
+    const bool bScenery =
+        Primitive.unContentClass == ROLLER_ED_CONTENT_AUTHORED_SIGN
+        || Primitive.unContentClass == ROLLER_ED_CONTENT_AUTHORED_SCENERY;
+    if (bScenery && !Grouping.bExportScenery)
       continue;
+
+    // Where this primitive's faces land. The track is bucketed by surface
+    // class; signs and scenery are not, because a chunk range selection is
+    // what surface class exists for and neither is part of the track body.
+    std::vector<tEdExportEntry> *pFront = nullptr;
+    std::vector<tEdExportEntry> *pBack = nullptr;
+    if (Primitive.unContentClass == ROLLER_ED_CONTENT_AUTHORED_SIGN) {
+      SignFronts.emplace_back();
+      SignBacks.emplace_back();
+      pFront = &SignFronts.back();
+      pBack = &SignBacks.back();
+    } else if (Primitive.unContentClass
+               == ROLLER_ED_CONTENT_AUTHORED_SCENERY) {
+      pFront = &SceneryFront;
+      pBack = &SceneryBack;
+    } else {
+      uint32_t uiSlot = g_uiExportedSurfaceClassCount;
+      for (uint32_t c = 0; c < g_uiExportedSurfaceClassCount; ++c) {
+        if (g_aunExportedSurfaceClasses[c] == Primitive.unSurfaceClass) {
+          uiSlot = c;
+          break;
+        }
+      }
+      if (uiSlot == g_uiExportedSurfaceClassCount)
+        continue;
+      pFront = &FrontGroups[uiSlot];
+      pBack = &BackGroups[uiSlot];
+    }
 
     tEdExportEntry Front;
     Front.uiPrimitive = i;
@@ -282,12 +321,11 @@ bool CEditorExportConventions::BuildObjects(
         || (Grouping.bReverseSideAsGeometry && HasReverseSide(Primitive));
 
     tEdExportEntry Back = Front;
-    FrontGroups[uiSlot].push_back(std::move(Front));
+    pFront->push_back(std::move(Front));
     if (bNeedsBackGeometry) {
       Back.uiMaterial = ReverseSideMaterial(Primitive);
       Back.bBack = true;
-      (Grouping.bSeparateBackFaces ? BackGroups : FrontGroups)[uiSlot]
-          .push_back(std::move(Back));
+      (Grouping.bSeparateBackFaces ? pBack : pFront)->push_back(std::move(Back));
     }
   }
 
@@ -316,6 +354,20 @@ bool CEditorExportConventions::BuildObjects(
     AppendObject(ObjectsOut, std::string("Track"), Combined);
     if (Grouping.bSeparateBackFaces)
       AppendObject(ObjectsOut, std::string("Track (Back)"), CombinedBacks);
+  }
+
+  // Fronts then backs, matching the order the pre-migration exporter added
+  // its signAy and signBackAy nodes.
+  for (uint32_t i = 0; i < static_cast<uint32_t>(SignFronts.size()); ++i)
+    AppendObject(ObjectsOut, SignObjectName(i), SignFronts[i]);
+  if (Grouping.bSeparateBackFaces) {
+    for (uint32_t i = 0; i < static_cast<uint32_t>(SignBacks.size()); ++i)
+      AppendObject(ObjectsOut, SignObjectName(i) + " (Back)", SignBacks[i]);
+  }
+  AppendObject(ObjectsOut, std::string(SceneryObjectName()), SceneryFront);
+  if (Grouping.bSeparateBackFaces) {
+    AppendObject(ObjectsOut, std::string(SceneryObjectName()) + " (Back)",
+                 SceneryBack);
   }
 
   if (ObjectsOut.empty()) {

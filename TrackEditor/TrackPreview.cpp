@@ -764,6 +764,7 @@ static tEdExportGeometry ViewOfSnapshot(const tEdGeometrySnapshot &Snapshot)
 bool CTrackPreview::ExportObj_Internal(const QString &sFolder,
                                        const QString &sName,
                                        const QString &sFilename,
+                                       bool bExportScenery,
                                        bool bSeparateSections,
                                        bool bSeparateBackFaces)
 {
@@ -776,6 +777,7 @@ bool CTrackPreview::ExportObj_Internal(const QString &sFolder,
 
   const QString sMtlFile = QDir(sFolder).filePath(sName + ".mtl");
   tEdObjExportOptions Options;
+  Options.bExportScenery = bExportScenery;
   Options.bSeparateSections = bSeparateSections;
   Options.bSeparateBackFaces = bSeparateBackFaces;
   Options.sBaseName = sName.toStdString();
@@ -801,6 +803,7 @@ bool CTrackPreview::ExportObj_Internal(const QString &sFolder,
 bool CTrackPreview::ExportGltf_Internal(const QString &sFolder,
                                         const QString &sName,
                                         const QString &sFilename,
+                                        bool bExportScenery,
                                         bool bSeparateSections,
                                         bool bSeparateBackFaces)
 {
@@ -843,6 +846,7 @@ bool CTrackPreview::ExportGltf_Internal(const QString &sFolder,
   const std::vector<tEdExportPaletteEntry> Palette = BuildExportPalette();
 
   tEdGltfExportOptions Options;
+  Options.bExportScenery = bExportScenery;
   Options.bSeparateSections = bSeparateSections;
   Options.bSeparateBackFaces = bSeparateBackFaces;
   Options.bBinary = bBinary;
@@ -929,6 +933,7 @@ bool CTrackPreview::Export(eExportType exportType)
   // must not leave loose PNGs behind.
   if (exportType == eExportType::EXPORT_GLTF) {
     if (!ExportGltf_Internal(sFolder, sName, sFilename,
+                             exportWizard.m_bExportSigns,
                              exportWizard.m_bExportSeparate,
                              exportWizard.m_bExportBacks)) {
       return false;
@@ -947,6 +952,7 @@ bool CTrackPreview::Export(eExportType exportType)
   }
 
   if (!ExportObj_Internal(sFolder, sName, sFilename,
+                          exportWizard.m_bExportSigns,
                           exportWizard.m_bExportSeparate,
                           exportWizard.m_bExportBacks)) {
     return false;

@@ -91,12 +91,12 @@ private:
   // E4-S1. Writes the OBJ/MTL pair from ROLLER's canonical geometry rather
   // than from WhipLib's CPU derivation.
   bool ExportObj_Internal(const QString &sFolder, const QString &sName,
-                          const QString &sFilename, bool bSeparateSections,
-                          bool bSeparateBackFaces);
+                          const QString &sFilename, bool bExportScenery,
+                          bool bSeparateSections, bool bSeparateBackFaces);
   // E4-S2. Same canonical geometry, glTF 2.0 instead of OBJ.
   bool ExportGltf_Internal(const QString &sFolder, const QString &sName,
-                           const QString &sFilename, bool bSeparateSections,
-                           bool bSeparateBackFaces);
+                           const QString &sFilename, bool bExportScenery,
+                           bool bSeparateSections, bool bSeparateBackFaces);
   // Both canonical exporters need the extraction; neither may call the facade
   // from UI code, so both go through the render worker.
   bool ExtractCanonicalGeometry(tEdGeometrySnapshot &SnapshotOut);

@@ -285,15 +285,18 @@ class ExportUiTests(unittest.TestCase):
         self.assertIn("bSeparateSections", self.preview)
         self.assertIn("bSeparateBackFaces", self.preview)
 
-    def test_signs_are_disabled_for_obj_rather_than_silently_wrong(
-        self,
-    ) -> None:
-        # Signs reach the emitter only through the camera-driven render path,
-        # so the canonical extraction has none; the editor's own CPU
-        # derivation works in a different frame and would misplace them.
+    def test_the_sign_option_reaches_the_obj_export(self) -> None:
+        # E4A-S6. ROLLER now publishes a camera-independent scenery
+        # traversal, so the checkbox is live and the exporter honours it.
         body = function_body(self.wizard, "CExportWizard::CExportWizard(")
-        self.assertIn("ckSigns->setEnabled(false)", body)
-        self.assertIn("m_bExportSigns = false", body)
+        self.assertNotIn("setEnabled(false)", body)
+        self.assertNotIn("m_bExportSigns = false", body)
+
+        export = function_body(self.preview, "bool CTrackPreview::Export(")
+        self.assertIn("exportWizard.m_bExportSigns", export)
+        obj = function_body(self.preview,
+                            "bool CTrackPreview::ExportObj_Internal(")
+        self.assertIn("Options.bExportScenery = bExportScenery", obj)
 
 
 class DocumentationTests(unittest.TestCase):

@@ -19,6 +19,9 @@
 
 struct tEdObjExportOptions
 {
+  // Legacy "Include signs" checkbox, re-enabled in E4A-S6. False exports the
+  // track body alone.
+  bool bExportScenery = true;
   // Legacy "Sections" checkbox.
   bool bSeparateSections = true;
   // Legacy "Backs" checkbox.

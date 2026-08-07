@@ -208,10 +208,16 @@ Authored content only (AD-6d), filtered on the `unContentClass` the producer
 published (AD-6e). Identical to OBJ, because the filter lives in the shared
 layer.
 
-**Signs, buildings, and towers are not exported yet**, for the reason recorded
-in [obj-export.md](obj-export.md): `drawtrk3_emit_full_track` covers track
-chunks only, and there is no camera-independent traversal to extract the rest
-from. The *Include signs* checkbox is disabled for glTF as it is for OBJ.
+**Signs and buildings are exported since E4A-S6**, under the same *Include
+signs and buildings* checkbox OBJ uses and with the same conventions, recorded
+in [obj-export.md](obj-export.md) and in ROLLER's
+`docs/adr/0005-camera-independent-scenery-traversal.md`. The filter and the
+grouping both live in the shared layer, so neither format has a rule of its
+own. Towers and anything else ROLLER classifies `RUNTIME_SCENERY` are not
+published at all.
+
+One visible consequence for glTF specifically: the building/sign atlas is now
+referenced, so an export that used to carry one image carries two.
 
 ## Objects in the file
 

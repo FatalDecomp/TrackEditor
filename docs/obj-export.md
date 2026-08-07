@@ -150,24 +150,37 @@ published (AD-6e) rather than inferred from the surface class. Editor helpers,
 markers, selection overlays, the test car, and the reference model never reach
 the canonical emitter at all; `RUNTIME_SCENERY` is filtered here.
 
-### What is not exported yet
+### Signs and buildings
 
-- **Signs, buildings, and towers.** `drawtrk3_emit_full_track` (E4A-S2) covers
-  track chunks only, and ADR 0003 records that building and sign surfaces reach
-  the emitter solely through the camera-driven render path — there is no
-  camera-independent traversal to extract them from. The *Include signs*
-  checkbox is therefore disabled. It is deliberately **not** backed by
-  the editor's own CPU derivation: that works in a chunk-zero-relative frame
-  and would place signs off the exported track. Restoring signs needs a
-  camera-independent authored-content traversal in ROLLER first.
+**Exported since E4A-S6**, governed by the *Include signs and buildings*
+checkbox. They were unavailable from E4-S1 through E4-S5 because
+`drawtrk3_emit_full_track` (E4A-S2) covered track chunks only; ROLLER's
+`drawtrk3_emit_full_scenery` now walks every placed object with no camera
+involved, and both canonical exporters gained them at once from that single
+core change. The conventions are ROLLER's
+`docs/adr/0005-camera-independent-scenery-traversal.md`; two of them show up
+here:
+
+- A billboard plan (an advert balloon) is exported at the **yaw the track file
+  recorded**, not the viewer-facing yaw the editor viewport draws it at. A
+  billboard has no orientation of its own, so the exported mesh and the
+  viewport legitimately disagree about its facing.
+- Nothing classified `RUNTIME_SCENERY` is published at all, so towers and the
+  tree plan never arrive. No retail track places a tree.
+
+The checkbox is deliberately **not** backed by the editor's own CPU
+derivation, which works in a chunk-zero-relative frame and would place signs
+off the exported track.
+
+### What is not exported
+
 - **Centerline and the four AI lines.** These are editor furniture derived by
   `editor_helpers.c`, kept out of the canonical stream on purpose (AD-6d), so
   they have no canonical representation to export.
 
 There is no longer any exporter that reads the legacy WhipLib CPU geometry:
-**E4-S3 removed FBX outright** rather than retargeting it, so the *Include
-signs* checkbox is disabled for every format and the AI-line groups are gone
-from all of them.
+**E4-S3 removed FBX outright** rather than retargeting it, so the AI-line
+groups are gone from every format.
 
 ## Objects in the file
 
@@ -183,6 +196,22 @@ Left Upper Outer Wall, Right Upper Outer Wall
 plus a `<name> (Back)` object for each when back faces are separate. With the
 option off, a single `Track` object and, when back faces are separate, a
 `Track (Back)`.
+
+Signs and buildings keep their own grouping either way, because *Export track
+sections separately* governs the track body:
+
+```text
+Sign 0, Sign 1, ... Sign N        one object per advert panel
+Scenery                           every building and tower polygon
+```
+
+with `Sign N (Back)` and `Scenery (Back)` when back faces are separate. `Sign
+N` restores the node names the pre-migration FBX exporter wrote. One object per
+panel is exact rather than approximate: every building plan carries at most one
+real-sign polygon (ROLLER `plans.c`), so a sign primitive and a panel are the
+same thing. Buildings share one group because the canonical stream publishes no
+per-object identity to split them on — only a chunk id, which two placed
+buildings can share.
 
 Faces are grouped by material inside each object, so the file carries one
 `usemtl` per run rather than one per quad. Vertex, texture, and normal indices

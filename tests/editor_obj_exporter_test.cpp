@@ -140,6 +140,14 @@ bool Contains(const std::string &sHaystack, const std::string &sNeedle)
   return sHaystack.find(sNeedle) != std::string::npos;
 }
 
+// Whole-line match, so "o Sign 0" does not also match "o Sign 0 (Back)".
+bool ContainsLine(const std::string &sText, const std::string &sLine)
+{
+  const std::string sTerminated = sLine + "\n";
+  return sText.rfind(sTerminated, 0) == 0
+      || Contains(sText, "\n" + sTerminated);
+}
+
 size_t CountLinesStartingWith(const std::string &sText,
                               const std::string &sPrefix)
 {
@@ -564,6 +572,143 @@ void test_screen_darken_is_a_documented_transparent_material()
                    - CEditorExportConventions::ScreenDarkenAlpha(99)) < 1e-6f);
 }
 
+// E4A-S6. ROLLER now publishes advert panels and buildings, and the wizard's
+// Include-signs checkbox finally has something to switch off.
+void test_signs_and_scenery_get_their_own_named_objects()
+{
+  CExtractionBuilder Builder;
+  const uint32_t uiTrack = Builder.AddTexturedMaterial(
+      ROLLER_ED_TEXTURE_SET_TRACK, 0.125f, 0.125f, 0.0f, 0.0f);
+  const uint32_t uiBld = Builder.AddTexturedMaterial(
+      ROLLER_ED_TEXTURE_SET_BUILDING_SIGN, 0.25f, 0.25f, 0.0f, 0.0f);
+  Builder.AddQuad(ROLLER_ED_SURFACE_CLASS_CENTER,
+                  ROLLER_ED_CONTENT_AUTHORED_TRACK, uiTrack,
+                  ROLLER_ED_INVALID_MATERIAL_ID);
+  // Every building plan carries at most one real-sign polygon, so a sign
+  // primitive and an advert panel are the same thing: one object each.
+  Builder.AddQuad(ROLLER_ED_SURFACE_CLASS_SIGN,
+                  ROLLER_ED_CONTENT_AUTHORED_SIGN, uiBld,
+                  ROLLER_ED_INVALID_MATERIAL_ID);
+  Builder.AddQuad(ROLLER_ED_SURFACE_CLASS_SIGN,
+                  ROLLER_ED_CONTENT_AUTHORED_SIGN, uiBld,
+                  ROLLER_ED_INVALID_MATERIAL_ID);
+  // Buildings share one group: the canonical stream publishes no per-object
+  // identity to split them on.
+  Builder.AddQuad(ROLLER_ED_SURFACE_CLASS_BUILDING,
+                  ROLLER_ED_CONTENT_AUTHORED_SCENERY, uiBld,
+                  ROLLER_ED_INVALID_MATERIAL_ID);
+  Builder.AddQuad(ROLLER_ED_SURFACE_CLASS_BUILDING,
+                  ROLLER_ED_CONTENT_AUTHORED_SCENERY, uiBld,
+                  ROLLER_ED_INVALID_MATERIAL_ID);
+
+  tEdObjExportOptions Options = DefaultOptions();
+  Options.bSeparateBackFaces = false;
+  std::ostringstream Obj;
+  std::ostringstream Mtl;
+  std::string sError;
+  assert(CEditorObjExporter::Export(Builder.View(), Options, nullptr, 0, Obj,
+                                    Mtl, sError));
+  const std::string sObj = Obj.str();
+
+  // The legacy FBX exporter's node names, restored.
+  assert(ContainsLine(sObj, "o Sign 0"));
+  assert(ContainsLine(sObj, "o Sign 1"));
+  assert(!ContainsLine(sObj, "o Sign 2"));
+  assert(ContainsLine(sObj, "o Scenery"));
+  assert(ContainsLine(sObj, "o Center"));
+  // Track, two signs, one scenery group.
+  assert(CountLinesStartingWith(sObj, "o ") == 4);
+  assert(CountLinesStartingWith(sObj, "f ") == 10);
+  // Signs and buildings address the building/sign atlas, so E4-S4's
+  // <name>_BLD.png stops being an unreferenced file.
+  assert(ContainsLine(Mtl.str(), "map_Kd TRACK3_BLD.png"));
+
+  // Grouping is dispatched on the content class, never on the surface class
+  // (AD-8): a sign wearing a track surface class is still a sign.
+  CExtractionBuilder Mislabelled;
+  const uint32_t uiOther = Mislabelled.AddTexturedMaterial(
+      ROLLER_ED_TEXTURE_SET_BUILDING_SIGN, 0.25f, 0.25f, 0.0f, 0.0f);
+  Mislabelled.AddQuad(ROLLER_ED_SURFACE_CLASS_CENTER,
+                      ROLLER_ED_CONTENT_AUTHORED_SIGN, uiOther,
+                      ROLLER_ED_INVALID_MATERIAL_ID);
+  std::ostringstream Obj2;
+  std::ostringstream Mtl2;
+  assert(CEditorObjExporter::Export(Mislabelled.View(), Options, nullptr, 0,
+                                    Obj2, Mtl2, sError));
+  assert(ContainsLine(Obj2.str(), "o Sign 0"));
+  assert(!ContainsLine(Obj2.str(), "o Center"));
+}
+
+void test_the_sign_option_removes_signs_and_scenery_but_keeps_the_track()
+{
+  CExtractionBuilder Builder;
+  const uint32_t uiTrack = Builder.AddTexturedMaterial(
+      ROLLER_ED_TEXTURE_SET_TRACK, 0.125f, 0.125f, 0.0f, 0.0f);
+  const uint32_t uiBld = Builder.AddTexturedMaterial(
+      ROLLER_ED_TEXTURE_SET_BUILDING_SIGN, 0.25f, 0.25f, 0.0f, 0.0f);
+  Builder.AddQuad(ROLLER_ED_SURFACE_CLASS_CENTER,
+                  ROLLER_ED_CONTENT_AUTHORED_TRACK, uiTrack,
+                  ROLLER_ED_INVALID_MATERIAL_ID);
+  Builder.AddQuad(ROLLER_ED_SURFACE_CLASS_SIGN,
+                  ROLLER_ED_CONTENT_AUTHORED_SIGN, uiBld,
+                  ROLLER_ED_INVALID_MATERIAL_ID);
+  Builder.AddQuad(ROLLER_ED_SURFACE_CLASS_BUILDING,
+                  ROLLER_ED_CONTENT_AUTHORED_SCENERY, uiBld,
+                  ROLLER_ED_INVALID_MATERIAL_ID);
+
+  tEdObjExportOptions Options = DefaultOptions();
+  Options.bSeparateBackFaces = false;
+  Options.bExportScenery = false;
+  std::ostringstream Obj;
+  std::ostringstream Mtl;
+  std::string sError;
+  assert(CEditorObjExporter::Export(Builder.View(), Options, nullptr, 0, Obj,
+                                    Mtl, sError));
+  const std::string sObj = Obj.str();
+  // Unticking the box reproduces exactly what E4-S1 through E4-S5 exported.
+  assert(CountLinesStartingWith(sObj, "o ") == 1);
+  assert(ContainsLine(sObj, "o Center"));
+  assert(!ContainsLine(sObj, "o Sign 0"));
+  assert(!ContainsLine(sObj, "o Scenery"));
+  assert(CountLinesStartingWith(sObj, "f ") == 2);
+}
+
+void test_sign_backs_are_numbered_with_their_fronts()
+{
+  CExtractionBuilder Builder;
+  const uint32_t uiFront = Builder.AddTexturedMaterial(
+      ROLLER_ED_TEXTURE_SET_BUILDING_SIGN, 0.25f, 0.25f, 0.0f, 0.0f);
+  const uint32_t uiBack = Builder.AddTexturedMaterial(
+      ROLLER_ED_TEXTURE_SET_BUILDING_SIGN, 0.25f, 0.25f, 0.25f, 0.0f);
+  Builder.AddQuad(ROLLER_ED_SURFACE_CLASS_SIGN,
+                  ROLLER_ED_CONTENT_AUTHORED_SIGN, uiFront, uiBack);
+  Builder.AddQuad(ROLLER_ED_SURFACE_CLASS_SIGN,
+                  ROLLER_ED_CONTENT_AUTHORED_SIGN, uiFront, uiBack);
+
+  tEdObjExportOptions Options = DefaultOptions();
+  std::ostringstream Obj;
+  std::ostringstream Mtl;
+  std::string sError;
+  assert(CEditorObjExporter::Export(Builder.View(), Options, nullptr, 0, Obj,
+                                    Mtl, sError));
+  const std::string sObj = Obj.str();
+  assert(ContainsLine(sObj, "o Sign 0"));
+  assert(ContainsLine(sObj, "o Sign 1"));
+  assert(ContainsLine(sObj, "o Sign 0 (Back)"));
+  assert(ContainsLine(sObj, "o Sign 1 (Back)"));
+  assert(CountLinesStartingWith(sObj, "o ") == 4);
+
+  // Merged backs land in the panel's own object rather than a fifth one.
+  Options.bSeparateBackFaces = false;
+  std::ostringstream Merged;
+  std::ostringstream MergedMtl;
+  assert(CEditorObjExporter::Export(Builder.View(), Options, nullptr, 0,
+                                    Merged, MergedMtl, sError));
+  assert(CountLinesStartingWith(Merged.str(), "o ") == 2);
+  assert(!ContainsLine(Merged.str(), "o Sign 0 (Back)"));
+  assert(CountLinesStartingWith(Merged.str(), "f ") == 8);
+}
+
 void test_runtime_scenery_never_reaches_the_export()
 {
   // AD-6d/AD-6e: the export is authored content, filtered on the content
@@ -672,6 +817,9 @@ int main()
   test_a_texture_set_declares_one_material_however_many_tiles_use_it();
   test_flat_palette_colours_become_diffuse_materials();
   test_screen_darken_is_a_documented_transparent_material();
+  test_signs_and_scenery_get_their_own_named_objects();
+  test_the_sign_option_removes_signs_and_scenery_but_keeps_the_track();
+  test_sign_backs_are_numbered_with_their_fronts();
   test_runtime_scenery_never_reaches_the_export();
   test_an_inconsistent_extraction_is_refused();
   test_vertex_indices_are_continuous_across_objects();

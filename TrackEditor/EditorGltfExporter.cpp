@@ -272,6 +272,7 @@ bool CEditorGltfExporter::Export(const tEdExportGeometry &Geometry,
     return false;
 
   tEdExportGrouping Grouping;
+  Grouping.bExportScenery = Options.bExportScenery;
   Grouping.bSeparateSections = Options.bSeparateSections;
   Grouping.bSeparateBackFaces = Options.bSeparateBackFaces;
   // glTF says "draw both sides" on the material, so a merely two-sided surface

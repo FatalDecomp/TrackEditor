@@ -266,10 +266,15 @@ class ExportUiTests(unittest.TestCase):
         self.assertIn("exportWizard.m_bExportSeparate", self.preview)
         self.assertIn("exportWizard.m_bExportBacks", self.preview)
 
-    def test_signs_are_disabled_for_gltf_as_well(self) -> None:
+    def test_the_sign_option_reaches_the_gltf_export_as_well(self) -> None:
+        # E4A-S6. Both canonical exporters gained signs and scenery from the
+        # same core change; neither has a format-specific gate.
         body = function_body(self.wizard, "CExportWizard::CExportWizard(")
-        self.assertIn("ckSigns->setEnabled(false)", body)
-        self.assertIn("m_bExportSigns = false", body)
+        self.assertNotIn("setEnabled(false)", body)
+
+        gltf = function_body(self.preview,
+                             "bool CTrackPreview::ExportGltf_Internal(")
+        self.assertIn("Options.bExportScenery = bExportScenery", gltf)
 
 
 class DocumentationTests(unittest.TestCase):

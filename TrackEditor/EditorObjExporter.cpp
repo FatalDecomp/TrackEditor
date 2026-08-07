@@ -181,6 +181,7 @@ bool CEditorObjExporter::Export(const tEdExportGeometry &Geometry,
     return false;
 
   tEdExportGrouping Grouping;
+  Grouping.bExportScenery = Options.bExportScenery;
   Grouping.bSeparateSections = Options.bSeparateSections;
   Grouping.bSeparateBackFaces = Options.bSeparateBackFaces;
   // OBJ has no way to say "draw both sides", so a two-sided surface needs real

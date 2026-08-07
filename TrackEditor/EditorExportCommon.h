@@ -81,8 +81,17 @@ struct tEdExportObject
 
 struct tEdExportGrouping
 {
+  // Legacy "Include signs" checkbox, re-enabled in E4A-S6. ROLLER's
+  // drawtrk3_emit_full_scenery now publishes advert panels and buildings with
+  // no camera involved (ROLLER docs/adr/0005-camera-independent-scenery-
+  // traversal.md), so the option finally has something to switch off. False
+  // exports the eleven track surface classes alone, which is exactly what
+  // every build between E4-S1 and E4A-S6 produced.
+  bool bExportScenery = true;
   // Legacy "Sections" checkbox: one named group per surface class, or a
-  // single combined "Track" group.
+  // single combined "Track" group. It governs the track only; signs and
+  // scenery keep their own grouping either way, as they did before the
+  // migration.
   bool bSeparateSections = true;
   // Legacy "Backs" checkbox. It only chooses whether generated reverse-side
   // faces land in their own "(Back)" group or are merged into the front one,
@@ -101,15 +110,27 @@ class CEditorExportConventions
 {
 public:
   // The eleven canonical track surface classes, named exactly as the
-  // pre-migration exporter named them. Returns nullptr for a class the
-  // exporters do not emit (sign, building, tower).
+  // pre-migration exporter named them. Returns nullptr for a class that is not
+  // part of the track body; signs and scenery are grouped by content class
+  // instead, never by surface class (AD-8).
   static const char *SurfaceClassName(uint16_t unSurfaceClass);
   static uint32_t ExportedSurfaceClassCount();
   static uint16_t ExportedSurfaceClass(uint32_t uiIndex);
 
+  // E4A-S6. One object per advert panel, numbered in canonical emission order,
+  // reproducing the "Sign N" / "Sign N (Back)" nodes the pre-migration FBX
+  // exporter wrote. Every building plan carries at most one real-sign polygon
+  // (ROLLER plans.c), so a primitive and a panel are the same thing here.
+  static std::string SignObjectName(uint32_t uiSignIndex);
+  // Buildings and towers had no pre-migration name at all, so they take one
+  // group. The canonical stream publishes no per-object identity to split
+  // them on - only a chunk id, which two placed buildings can share.
+  static const char *SceneryObjectName();
+
   // AD-6d/AD-6e: authored content only. Editor helpers, markers, selection
   // overlays, the test car, and the reference model never reach the canonical
-  // emitter at all, and runtime scenery is filtered here.
+  // emitter at all, and ROLLER's traversal drops runtime scenery before it is
+  // published, so this rejects it a second time rather than for the first.
   static bool IsAuthoredContent(uint16_t unContentClass);
 
   // AD-7e open item 2b, resolved in E4-S1. A static format cannot express a
@@ -159,6 +180,10 @@ public:
   // filter, the grouping options, and the reverse-side rules, then orders each
   // group's faces by material so a format that batches by material emits one
   // run rather than one batch per quad. Empty groups are dropped.
+  //
+  // Grouping is dispatched on unContentClass, never on unSurfaceClass: the
+  // producer publishes what a surface *is*, and re-deriving that from geometry
+  // is the mistake AD-8 exists to prevent.
   static bool BuildObjects(const tEdExportGeometry &Geometry,
                            const tEdExportGrouping &Grouping,
                            std::vector<tEdExportObject> &ObjectsOut,

@@ -32,6 +32,12 @@ Retail `TRACK3` produces a **256 × 2624** main atlas (164 tiles, 41 rows) and a
 **256 × 384** sign atlas (24 tiles, 6 rows), matching
 `drawtrk3_editor_texture_atlas` exactly.
 
+The sign atlas was written unconditionally from E4-S4 onwards but referenced by
+nothing, because no export produced a sign. **E4A-S6 made it live**: advert
+panels and buildings now reach both exporters, 17 of `TRACK3`'s building-bank
+materials among them, and glTF — which only embeds an atlas something uses —
+went from one image to two.
+
 ## Which tiles
 
 **Content tiles only** — `CTexture::GetNumTiles()`, not `GetAtlasTileCount()`.

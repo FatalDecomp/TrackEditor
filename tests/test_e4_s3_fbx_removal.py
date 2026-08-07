@@ -142,11 +142,12 @@ class RemainingExportPathTests(unittest.TestCase):
         self.assertIn("ExportObj_Internal", export)
         self.assertIn("ExportGltf_Internal", export)
 
-    def test_the_sign_option_is_disabled_for_every_format(self) -> None:
-        # With FBX gone there is no format left that could honour it, so the
-        # gate is no longer conditional on the export type.
+    def test_the_sign_option_is_format_independent(self) -> None:
+        # FBX was the only format that used to honour it. E4A-S6 gave both
+        # canonical exporters signs at once, from the core, so the option is
+        # live again and still never branches on the export type.
         stripped = without_comments(self.wizard)
-        self.assertIn("ckSigns->setEnabled(false)", stripped)
+        self.assertNotIn("setEnabled(false)", stripped)
         self.assertNotIn("m_exportType == eExportType", stripped)
 
 

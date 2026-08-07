@@ -39,7 +39,7 @@
      <item>
       <widget class="QCheckBox" name="ckSigns">
        <property name="text">
-        <string>Include signs</string>
+        <string>Include signs and buildings</string>
        </property>
        <property name="checked">
         <bool>true</bool>

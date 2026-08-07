@@ -631,6 +631,59 @@ void test_runtime_scenery_never_reaches_the_export()
   cgltf_free(pData);
 }
 
+// E4A-S6. Both canonical exporters gained signs and scenery from one core
+// change, so glTF gets the same named meshes OBJ does -- and, unlike OBJ, the
+// building/sign atlas it had been offering all along finally gets used.
+void test_signs_and_scenery_reach_the_gltf_scene()
+{
+  CExtractionBuilder Builder;
+  const uint32_t uiTrack =
+      Builder.AddTexturedMaterial(ROLLER_ED_TEXTURE_SET_TRACK, 0, 0.0f, 0.0f);
+  const uint32_t uiBld = Builder.AddTexturedMaterial(
+      ROLLER_ED_TEXTURE_SET_BUILDING_SIGN, 0, 0.0f, 0.0f);
+  Builder.AddQuad(ROLLER_ED_SURFACE_CLASS_CENTER,
+                  ROLLER_ED_CONTENT_AUTHORED_TRACK, uiTrack,
+                  ROLLER_ED_INVALID_MATERIAL_ID);
+  Builder.AddQuad(ROLLER_ED_SURFACE_CLASS_SIGN,
+                  ROLLER_ED_CONTENT_AUTHORED_SIGN, uiBld,
+                  ROLLER_ED_INVALID_MATERIAL_ID);
+  Builder.AddQuad(ROLLER_ED_SURFACE_CLASS_SIGN,
+                  ROLLER_ED_CONTENT_AUTHORED_SIGN, uiBld,
+                  ROLLER_ED_INVALID_MATERIAL_ID);
+  Builder.AddQuad(ROLLER_ED_SURFACE_CLASS_BUILDING,
+                  ROLLER_ED_CONTENT_AUTHORED_SCENERY, uiBld,
+                  ROLLER_ED_INVALID_MATERIAL_ID);
+
+  tEdGltfExportOutput Output;
+  std::string sError;
+  assert(CEditorGltfExporter::Export(Builder.View(), DefaultOptions(), nullptr,
+                                     0, Output, sError));
+  cgltf_data *pData = ParseGltf(Output, false);
+  assert(FindMesh(pData, "Center") != nullptr);
+  assert(FindMesh(pData, "Sign 0") != nullptr);
+  assert(FindMesh(pData, "Sign 1") != nullptr);
+  assert(FindMesh(pData, "Sign 2") == nullptr);
+  assert(FindMesh(pData, "Scenery") != nullptr);
+  assert(pData->meshes_count == 4);
+  // The second atlas is referenced now, so E4-S4's _BLD.png is no longer a
+  // file nothing points at.
+  assert(pData->images_count == 2);
+  cgltf_free(pData);
+
+  // Unticking Include signs reproduces the E4-S2 export exactly: track only,
+  // and one image again.
+  tEdGltfExportOptions TrackOnly = DefaultOptions();
+  TrackOnly.bExportScenery = false;
+  tEdGltfExportOutput Reduced;
+  assert(CEditorGltfExporter::Export(Builder.View(), TrackOnly, nullptr, 0,
+                                     Reduced, sError));
+  cgltf_data *pReduced = ParseGltf(Reduced, false);
+  assert(pReduced->meshes_count == 1);
+  assert(FindMesh(pReduced, "Center") != nullptr);
+  assert(pReduced->images_count == 1);
+  cgltf_free(pReduced);
+}
+
 void test_combined_sections_produce_one_node()
 {
   CExtractionBuilder Builder;
@@ -824,6 +877,7 @@ int main()
   test_only_referenced_atlases_become_textures();
   test_atlas_tiles_collapse_into_one_material();
   test_runtime_scenery_never_reaches_the_export();
+  test_signs_and_scenery_reach_the_gltf_scene();
   test_combined_sections_produce_one_node();
   test_the_glb_container_is_well_formed();
   test_a_binary_export_without_image_bytes_is_refused();

@@ -32,6 +32,9 @@ struct tEdGltfTextureSource
 
 struct tEdGltfExportOptions
 {
+  // Legacy "Include signs" checkbox, re-enabled in E4A-S6. False exports the
+  // track body alone.
+  bool bExportScenery = true;
   // Legacy "Sections" checkbox: one glTF mesh and node per surface class, or
   // a single combined "Track" node.
   bool bSeparateSections = true;

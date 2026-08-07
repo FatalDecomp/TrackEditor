@@ -18,21 +18,16 @@ CExportWizard::CExportWizard(QWidget *pParent)
   ckBacks->setChecked(m_bExportBacks);
   ckSigns->setChecked(m_bExportSigns);
 
-  // E4-S1/E4-S2/E4-S3. Every export format now reads ROLLER's canonical
-  // geometry, which covers the eleven track surface classes only: signs and
-  // buildings reach the emitter through the camera-driven render path, so
-  // there is no camera-independent sign traversal to extract them from yet
-  // (ROLLER docs/adr/0003-canonical-geometry-conventions.md). Falling back to
-  // the editor's own CPU derivation is not an option - it works in a
-  // different, chunk-zero relative frame and would place signs off the
-  // exported track - so the checkbox stays visible but disabled, which is
-  // where it will be re-enabled once that traversal exists. The last format
-  // that honoured it was FBX, and E4-S3 removed FBX.
-  m_bExportSigns = false;
-  ckSigns->setChecked(false);
-  ckSigns->setEnabled(false);
+  // E4A-S6. The option works again. It was disabled from E4-S1 through E4-S5
+  // because the canonical geometry covered the eleven track surface classes
+  // only - signs and buildings reached the emitter through the camera-driven
+  // render path, and the editor's own CPU derivation works in a different,
+  // chunk-zero relative frame that would have placed them off the exported
+  // track. ROLLER's drawtrk3_emit_full_scenery closed that gap
+  // (docs/adr/0005-camera-independent-scenery-traversal.md), so the checkbox
+  // now governs advert panels *and* buildings, which is why it says so.
   ckSigns->setToolTip(
-      "Signs are not yet available from ROLLER's canonical geometry.");
+      "Export advert panels and buildings alongside the track.");
 
   setWindowFlags(windowFlags() & ~Qt::WindowContextHelpButtonHint);
   connect(ckSections, &QCheckBox::toggled,    this, &CExportWizard::OnSeparateChecked);
