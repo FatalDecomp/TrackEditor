@@ -12,10 +12,11 @@
 //-------------------------------------------------------------------------------------------------
 #define DEFAULT_HISTORY_MAX_SIZE 256 //approx 200KB per saved track
 //-------------------------------------------------------------------------------------------------
+// E4-S3 removed FBX outright rather than retargeting it, so every export
+// format now reads ROLLER's canonical geometry.
 enum eExportType
 {
-  EXPORT_FBX = 0,
-  EXPORT_OBJ,
+  EXPORT_OBJ = 0,
   // E4-S2. The container is chosen from the file name the user picks:
   // .glb writes one self-contained binary, .gltf writes JSON beside its
   // buffer and the atlas PNGs.

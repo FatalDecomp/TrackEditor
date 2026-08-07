@@ -102,7 +102,6 @@ class GeometryCleanupContractTests(unittest.TestCase):
         self.assertEqual(
             glm_files,
             {
-                "WhipLib/FBXExporter.h",
                 "WhipLib/ObjImporter.cpp",
                 "WhipLib/ShapeData.cpp",
                 "WhipLib/ShapeData.h",

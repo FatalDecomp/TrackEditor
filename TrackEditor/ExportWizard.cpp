@@ -6,12 +6,11 @@
 #endif
 //-------------------------------------------------------------------------------------------------
 
-CExportWizard::CExportWizard(QWidget *pParent, eExportType exportType)
+CExportWizard::CExportWizard(QWidget *pParent)
   : QDialog(pParent)
   , m_bExportSeparate(true)
   , m_bExportBacks(true)
   , m_bExportSigns(true)
-  , m_exportType(exportType)
 {
   setupUi(this);
 
@@ -19,23 +18,21 @@ CExportWizard::CExportWizard(QWidget *pParent, eExportType exportType)
   ckBacks->setChecked(m_bExportBacks);
   ckSigns->setChecked(m_bExportSigns);
 
-  // E4-S1/E4-S2. The canonical exporters read ROLLER's geometry, which covers
-  // the eleven track surface classes only: signs and buildings reach the
-  // emitter through the camera-driven render path, so there is no
-  // camera-independent sign traversal to extract them from yet (ROLLER
-  // docs/adr/0003-canonical-geometry-conventions.md). Rather than fall back to
-  // the editor's own CPU derivation - which works in a different, chunk-zero
-  // relative frame and would place signs off the exported track - the option
-  // is disabled for them until that traversal exists. FBX still uses the
-  // legacy path and keeps the option.
-  if (m_exportType == eExportType::EXPORT_OBJ
-      || m_exportType == eExportType::EXPORT_GLTF) {
-    m_bExportSigns = false;
-    ckSigns->setChecked(false);
-    ckSigns->setEnabled(false);
-    ckSigns->setToolTip(
-        "Signs are not yet available from ROLLER's canonical geometry.");
-  }
+  // E4-S1/E4-S2/E4-S3. Every export format now reads ROLLER's canonical
+  // geometry, which covers the eleven track surface classes only: signs and
+  // buildings reach the emitter through the camera-driven render path, so
+  // there is no camera-independent sign traversal to extract them from yet
+  // (ROLLER docs/adr/0003-canonical-geometry-conventions.md). Falling back to
+  // the editor's own CPU derivation is not an option - it works in a
+  // different, chunk-zero relative frame and would place signs off the
+  // exported track - so the checkbox stays visible but disabled, which is
+  // where it will be re-enabled once that traversal exists. The last format
+  // that honoured it was FBX, and E4-S3 removed FBX.
+  m_bExportSigns = false;
+  ckSigns->setChecked(false);
+  ckSigns->setEnabled(false);
+  ckSigns->setToolTip(
+      "Signs are not yet available from ROLLER's canonical geometry.");
 
   setWindowFlags(windowFlags() & ~Qt::WindowContextHelpButtonHint);
   connect(ckSections, &QCheckBox::toggled,    this, &CExportWizard::OnSeparateChecked);

@@ -14,8 +14,9 @@
 // darkening level is approximated. Only the file format itself belongs in an
 // individual exporter.
 //
-// This is the point of the migration: OBJ (E4-S1), glTF (E4-S2), and FBX
-// (E4-S3) must not re-derive these against their own importer. Every value is
+// This is the point of the migration: OBJ (E4-S1) and glTF (E4-S2) - and any
+// exporter added later - must not re-derive these against their own importer.
+// (E4-S3 removed FBX outright rather than retargeting it.) Every value is
 // stated relative to ROLLER's
 // docs/adr/0003-canonical-geometry-conventions.md; changing one there is a
 // breaking change for all of them.

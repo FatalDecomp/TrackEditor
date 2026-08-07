@@ -95,7 +95,6 @@ target_compile_features(TrackEditor PRIVATE cxx_std_17)
 target_compile_definitions(TrackEditor
     PRIVATE
         QT_NO_PDF
-        TRACKEDITOR_ENABLE_FBX=$<BOOL:${TRACKEDITOR_ENABLE_FBX}>
         $<$<PLATFORM_ID:Windows>:IS_WINDOWS>
         $<$<CXX_COMPILER_ID:MSVC>:_CRT_SECURE_NO_WARNINGS>)
 

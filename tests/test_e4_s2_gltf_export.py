@@ -265,8 +265,8 @@ class ExportUiTests(unittest.TestCase):
 
     def test_signs_are_disabled_for_gltf_as_well(self) -> None:
         body = function_body(self.wizard, "CExportWizard::CExportWizard(")
-        self.assertIn("eExportType::EXPORT_GLTF", body)
         self.assertIn("ckSigns->setEnabled(false)", body)
+        self.assertIn("m_bExportSigns = false", body)
 
 
 class DocumentationTests(unittest.TestCase):

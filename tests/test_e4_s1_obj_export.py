@@ -144,9 +144,9 @@ class ExporterBoundaryTests(unittest.TestCase):
         self.assertNotIn("uiTileSize", stripped)
 
     def test_the_conventions_are_shared_rather_than_re_derived(self) -> None:
-        # The point of the migration: OBJ, glTF, and FBX must not each derive
-        # their own axis, scale, scope, or grouping. The format-specific file
-        # states none of them.
+        # The point of the migration: no exporter may derive its own axis,
+        # scale, scope, or grouping. The format-specific file states none of
+        # them.
         for owned_by_the_shared_layer in (
             "ED_EXPORT_UNIT_SCALE",
             "ROLLER_ED_CONTENT_AUTHORED_TRACK",
@@ -292,8 +292,8 @@ class ExportUiTests(unittest.TestCase):
         # so the canonical extraction has none; the editor's own CPU
         # derivation works in a different frame and would misplace them.
         body = function_body(self.wizard, "CExportWizard::CExportWizard(")
-        self.assertIn("eExportType::EXPORT_OBJ", body)
         self.assertIn("ckSigns->setEnabled(false)", body)
+        self.assertIn("m_bExportSigns = false", body)
 
 
 class DocumentationTests(unittest.TestCase):

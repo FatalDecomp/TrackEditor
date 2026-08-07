@@ -183,7 +183,6 @@
     <addaction name="separator"/>
     <addaction name="actExportOBJ"/>
     <addaction name="actExportGLTF"/>
-    <addaction name="actExportFBX"/>
    </widget>
    <widget class="QMenu" name="menuHelp">
     <property name="title">
@@ -399,11 +398,6 @@
   <action name="actPreferences">
    <property name="text">
     <string>Preferences...</string>
-   </property>
-  </action>
-  <action name="actExportFBX">
-   <property name="text">
-    <string>Export to FBX</string>
    </property>
   </action>
   <action name="actMirror">

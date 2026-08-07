@@ -18,8 +18,7 @@ Install the dynamic MSVC 64-bit Qt 5.15 component with the official Qt installer
 ```powershell
 $sdlPrefix = .\scripts\install-sdl-windows.ps1
 cmake -S . -B out\build -G "Visual Studio 17 2022" -A x64 `
-  -DCMAKE_PREFIX_PATH="$env:Qt5_DIR;$sdlPrefix" `
-  -DTRACKEDITOR_ENABLE_FBX=OFF
+  -DCMAKE_PREFIX_PATH="$env:Qt5_DIR;$sdlPrefix"
 cmake --build out\build --config Release --parallel
 ctest --test-dir out\build -C Release --output-on-failure
 ```
@@ -34,7 +33,7 @@ Ubuntu 26.04 provides sufficiently recent binary SDL packages:
 sudo apt update
 sudo apt install cmake ninja-build qtbase5-dev libsdl3-dev libsdl3-image-dev
 cmake -S . -B out/build -G Ninja \
-  -DCMAKE_BUILD_TYPE=Release -DTRACKEDITOR_ENABLE_FBX=OFF
+  -DCMAKE_BUILD_TYPE=Release
 cmake --build out/build
 ctest --test-dir out/build --output-on-failure
 ```
@@ -47,8 +46,7 @@ Install a dynamic Qt 5.15 package with the official Qt installer. Homebrew bottl
 brew install --force-bottle sdl3 sdl3_image ninja
 cmake -S . -B out/build -G Ninja \
   -DCMAKE_BUILD_TYPE=Release \
-  -DCMAKE_PREFIX_PATH="$HOME/Qt/5.15.2/clang_64" \
-  -DTRACKEDITOR_ENABLE_FBX=OFF
+  -DCMAKE_PREFIX_PATH="$HOME/Qt/5.15.2/clang_64"
 cmake --build out/build
 ctest --test-dir out/build --output-on-failure
 ```
@@ -59,17 +57,3 @@ Adjust the Qt prefix for the version and location selected in the installer.
 
 The executable is `TrackEditor` (`TrackEditor.exe` on Windows). The viewport is a plain Qt widget that blits worker-rendered `QImage` frames, so it does not create a Qt OpenGL context or require runtime GLSL files. The noninteractive `--cmake-smoke-test` switch initializes Qt and exits successfully; CTest uses it on all three CI platforms.
 
-## Optional FBX export
-
-FBX export is disabled by default and is always disabled in CI. Normal builds neither compile `FBXExporter.cpp` nor search for the Autodesk SDK.
-
-To enable it locally, install the Autodesk FBX SDK and point CMake at the SDK root containing `include/fbxsdk.h`:
-
-```sh
-cmake -S . -B out/fbx \
-  -DTRACKEDITOR_ENABLE_FBX=ON \
-  -DTRACKEDITOR_FBX_SDK_ROOT=/path/to/fbx-sdk
-cmake --build out/fbx --config Release
-```
-
-The FBX menu action is omitted from default builds and becomes available only when this option is enabled.

@@ -10,7 +10,7 @@ class CExportWizard : public QDialog, private Ui::ExportWizard
   Q_OBJECT
 
 public:
-  CExportWizard(QWidget *pParent, eExportType exportType);
+  explicit CExportWizard(QWidget *pParent);
   ~CExportWizard();
 
   bool m_bExportSeparate;
@@ -21,9 +21,6 @@ protected slots:
   void OnSeparateChecked(bool bChecked);
   void OnBacksChecked(bool bChecked);
   void OnSignsChecked(bool bChecked);
-
-private:
-  eExportType m_exportType;
 };
 
 //-------------------------------------------------------------------------------------------------

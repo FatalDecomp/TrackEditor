@@ -111,9 +111,6 @@ CMainWindow::CMainWindow(const QString &sAppPath, float fDesktopScale,
   m_sSettingsFile = m_sAppPath + "/TrackEditor.ini";
   m_sSettingsFile = QDir::toNativeSeparators(m_sSettingsFile);
   setupUi(this);
-#if !TRACKEDITOR_ENABLE_FBX
-  actExportFBX->setVisible(false);
-#endif
   p->m_logDialog.hide();
   twViewer->setTabsClosable(true);
   lblChunkWarning->hide();
@@ -202,9 +199,6 @@ CMainWindow::CMainWindow(const QString &sAppPath, float fDesktopScale,
   connect(actLoad, &QAction::triggered, this, &CMainWindow::OnLoadTrack);
   connect(actSave, &QAction::triggered, this, &CMainWindow::OnSaveTrack);
   connect(actSaveAs, &QAction::triggered, this, &CMainWindow::OnSaveTrackAs);
-#if TRACKEDITOR_ENABLE_FBX
-  connect(actExportFBX, &QAction::triggered, this, &CMainWindow::OnExportFBX);
-#endif
   connect(actExportOBJ, &QAction::triggered, this, &CMainWindow::OnExportOBJ);
   connect(actExportGLTF, &QAction::triggered, this, &CMainWindow::OnExportGLTF);
   connect(actUndo, &QAction::triggered, this, &CMainWindow::OnUndo);
@@ -374,14 +368,6 @@ void CMainWindow::OnSaveTrackAs()
 {
   if (GetCurrentPreview())
     GetCurrentPreview()->SaveTrackAs();
-}
-
-//-------------------------------------------------------------------------------------------------
-
-void CMainWindow::OnExportFBX()
-{
-  if (GetCurrentPreview())
-    GetCurrentPreview()->Export(eExportType::EXPORT_FBX);
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -1444,7 +1430,6 @@ void CMainWindow::UpdateExportActions()
   const bool bCanExport = pPreview && pPreview->CanExport();
   actExportOBJ->setEnabled(bCanExport);
   actExportGLTF->setEnabled(bCanExport);
-  actExportFBX->setEnabled(bCanExport);
 }
 
 //-------------------------------------------------------------------------------------------------

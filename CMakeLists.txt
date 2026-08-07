@@ -3,7 +3,6 @@ cmake_minimum_required(VERSION 3.24...4.0)
 project(RollerTrackEditor VERSION 0.1.0 LANGUAGES C CXX)
 
 option(TRACKEDITOR_BUILD_APPLICATION "Build the Qt TrackEditor application" ON)
-option(TRACKEDITOR_ENABLE_FBX "Enable FBX export with a locally installed Autodesk FBX SDK" OFF)
 
 set(ROLLER_BUILD_GAME OFF CACHE BOOL "Build the ROLLER game" FORCE)
 set(ROLLER_BUILD_EDITOR_CORE ON CACHE BOOL "Build roller-core for TrackEditor" FORCE)
@@ -133,6 +132,11 @@ if(BUILD_TESTING)
             NAME trackeditor-e4-s2-gltf-export-contract
             COMMAND "${Python3_EXECUTABLE}"
                     "${CMAKE_CURRENT_SOURCE_DIR}/tests/test_e4_s2_gltf_export.py"
+                    -v)
+        add_test(
+            NAME trackeditor-e4-s3-fbx-removal-contract
+            COMMAND "${Python3_EXECUTABLE}"
+                    "${CMAKE_CURRENT_SOURCE_DIR}/tests/test_e4_s3_fbx_removal.py"
                     -v)
     endif()
 

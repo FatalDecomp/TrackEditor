@@ -9,9 +9,9 @@ of the OBJ path.
 Every conversion below is stated **relative to**
 `external/ROLLER/docs/adr/0003-canonical-geometry-conventions.md`, which is the
 authoritative record of what the emitter publishes. Changing a convention there
-is a breaking change for this exporter. E4-S2 (glTF) and E4-S3 (FBX) should
-state their conversions relative to that ADR as well, rather than re-deriving
-one against their own importer.
+is a breaking change for this exporter. E4-S2 (glTF) states its conversions
+relative to that ADR as well, rather than re-deriving one against its own
+importer, and any future exporter should too.
 
 The writer is `TrackEditor/EditorObjExporter.{h,cpp}`. It owns no Qt type, no
 WhipLib type, and calls no `RollerEd_*` entry point, so it is exercised without
@@ -40,7 +40,7 @@ scale.
 
 ## Scale
 
-`ED_OBJ_EXPORT_UNIT_SCALE` is `0.01`, preserved verbatim from the
+`ED_EXPORT_UNIT_SCALE` is `0.01`, preserved verbatim from the
 pre-migration exporter, which divided by 100. The emitter itself applies no
 scale at all (ADR 0003: "there is none"); exporters own their conversion.
 
@@ -155,7 +155,7 @@ the canonical emitter at all; `RUNTIME_SCENERY` is filtered here.
   track chunks only, and ADR 0003 records that building and sign surfaces reach
   the emitter solely through the camera-driven render path — there is no
   camera-independent traversal to extract them from. The *Include signs*
-  checkbox is therefore disabled for OBJ. It is deliberately **not** backed by
+  checkbox is therefore disabled. It is deliberately **not** backed by
   the editor's own CPU derivation: that works in a chunk-zero-relative frame
   and would place signs off the exported track. Restoring signs needs a
   camera-independent authored-content traversal in ROLLER first.
@@ -163,9 +163,10 @@ the canonical emitter at all; `RUNTIME_SCENERY` is filtered here.
   `editor_helpers.c`, kept out of the canonical stream on purpose (AD-6d), so
   they have no canonical representation to export.
 
-FBX export (E4-S3) still uses the legacy WhipLib path and keeps both the sign
-option and those line groups; it is off by default and is not part of local or
-CI validation.
+There is no longer any exporter that reads the legacy WhipLib CPU geometry:
+**E4-S3 removed FBX outright** rather than retargeting it, so the *Include
+signs* checkbox is disabled for every format and the AI-line groups are gone
+from all of them.
 
 ## Objects in the file
 
