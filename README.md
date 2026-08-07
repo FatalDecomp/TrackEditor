@@ -32,6 +32,10 @@ The CMake build uses dynamic Qt 6.8 LTS and system/prebuilt SDL3 and SDL3_image 
 
 ![Track Editor](TrackEditor/images/screenshot.png)
 
+![Model exported to Blender](TrackEditor/images/blender.png)
+
+![Model exported to Unreal](TrackEditor/images/unreal.png)
+
 ## External dependencies used:
 * Dynamic Qt 6.8 LTS
 * SDL 3.2.22 or newer
