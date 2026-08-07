@@ -6,6 +6,7 @@
 #include <QImage>
 
 #include <cstdint>
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -37,7 +38,24 @@ enum class eEdRenderCommandKind
   LOAD_AND_RENDER,
   LOAD_SERIALIZED_AND_RENDER,
   UNLOAD,
-  RENDER_ONLY
+  RENDER_ONLY,
+  // E4-S1. Copies the canonical extraction out of the worker for export. It
+  // renders nothing, sets no camera or overlay, and touches neither the
+  // geometry epoch nor the track generation.
+  EXTRACT_GEOMETRY
+};
+
+// E4-S1. An owned copy of one canonical extraction. RollerEd_FillGeometry
+// never lets core-owned pointers escape, so the worker copies into these
+// vectors and the exporter reads them on the calling thread.
+struct tEdGeometrySnapshot
+{
+  std::vector<tEdVertex> Vertices;
+  std::vector<uint32_t> Indices;
+  std::vector<tEdPrimitive> Primitives;
+  std::vector<tEdMaterial> Materials;
+  uint32_t uiGeometryEpoch = 0;
+  uint32_t uiTrackGeneration = 0;
 };
 
 // AD-16 again, and for the same reason: the facade copies the mesh during the
@@ -52,6 +70,10 @@ struct tEdReferenceMeshPayload
   float fScale[3] = { 1.0f, 1.0f, 1.0f };
   uint32_t uiFlags = 0;
 };
+
+// E4-S1. Defined by the render service: the caller blocks on it while the
+// worker fills the snapshot, so it outlives the request by construction.
+struct tEdGeometryExtraction;
 
 struct tEdRenderRequest
 {
@@ -70,6 +92,9 @@ struct tEdRenderRequest
   // camera nudge would copy the whole model through the queue each frame.
   tEdReferenceMeshPayload ReferenceMesh;
   bool bHasReferenceMesh = false;
+  // Only set on EXTRACT_GEOMETRY. Every path that drops a queued request has
+  // to complete it, or the blocked caller never wakes.
+  std::shared_ptr<tEdGeometryExtraction> Extraction;
   uint32_t uiWidth = 0;
   uint32_t uiHeight = 0;
   double dDevicePixelRatio = 1.0;

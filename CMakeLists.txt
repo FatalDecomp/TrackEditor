@@ -3,7 +3,6 @@ cmake_minimum_required(VERSION 3.24...4.0)
 project(RollerTrackEditor VERSION 0.1.0 LANGUAGES C CXX)
 
 option(TRACKEDITOR_BUILD_APPLICATION "Build the Qt TrackEditor application" ON)
-option(TRACKEDITOR_ENABLE_FBX "Enable FBX export with a locally installed Autodesk FBX SDK" OFF)
 
 set(ROLLER_BUILD_GAME OFF CACHE BOOL "Build the ROLLER game" FORCE)
 set(ROLLER_BUILD_EDITOR_CORE ON CACHE BOOL "Build roller-core for TrackEditor" FORCE)
@@ -14,6 +13,7 @@ if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/external/ROLLER/CMakeLists.txt")
 endif()
 
 add_subdirectory(external/ROLLER)
+add_subdirectory(external/cgltf)
 add_subdirectory(TrackModel)
 add_subdirectory(TrackAssets)
 
@@ -123,6 +123,41 @@ if(BUILD_TESTING)
             COMMAND "${Python3_EXECUTABLE}"
                     "${CMAKE_CURRENT_SOURCE_DIR}/tests/test_e3a_s7_reference_mesh.py"
                     -v)
+        add_test(
+            NAME trackeditor-e4-s1-obj-export-contract
+            COMMAND "${Python3_EXECUTABLE}"
+                    "${CMAKE_CURRENT_SOURCE_DIR}/tests/test_e4_s1_obj_export.py"
+                    -v)
+        add_test(
+            NAME trackeditor-e4-s2-gltf-export-contract
+            COMMAND "${Python3_EXECUTABLE}"
+                    "${CMAKE_CURRENT_SOURCE_DIR}/tests/test_e4_s2_gltf_export.py"
+                    -v)
+        add_test(
+            NAME trackeditor-e4-s3-fbx-removal-contract
+            COMMAND "${Python3_EXECUTABLE}"
+                    "${CMAKE_CURRENT_SOURCE_DIR}/tests/test_e4_s3_fbx_removal.py"
+                    -v)
+        add_test(
+            NAME trackeditor-e4-s4-texture-output-contract
+            COMMAND "${Python3_EXECUTABLE}"
+                    "${CMAKE_CURRENT_SOURCE_DIR}/tests/test_e4_s4_texture_output.py"
+                    -v)
+        add_test(
+            NAME trackeditor-e4-s5-export-ui-contract
+            COMMAND "${Python3_EXECUTABLE}"
+                    "${CMAKE_CURRENT_SOURCE_DIR}/tests/test_e4_s5_export_ui.py"
+                    -v)
+        add_test(
+            NAME trackeditor-e4-s6-reference-import-contract
+            COMMAND "${Python3_EXECUTABLE}"
+                    "${CMAKE_CURRENT_SOURCE_DIR}/tests/test_e4_s6_reference_import.py"
+                    -v)
+        add_test(
+            NAME trackeditor-e4a-s6-scenery-export-contract
+            COMMAND "${Python3_EXECUTABLE}"
+                    "${CMAKE_CURRENT_SOURCE_DIR}/tests/test_e4a_s6_scenery_export.py"
+                    -v)
     endif()
 
     if(TARGET TrackEditor)
@@ -193,6 +228,75 @@ if(BUILD_TESTING)
             "${CMAKE_CURRENT_SOURCE_DIR}/external/ROLLER/PROJECTS/ROLLER")
         add_test(NAME trackeditor-e3-s3-camera-input
                  COMMAND trackeditor-e3-s3-camera-input-test)
+
+        # E4-S1. The OBJ exporter reads ROLLER's canonical geometry and writes
+        # text, so it needs the editor_api.h types on the include path and
+        # nothing else: no Qt, no WhipLib, no linked ROLLER code.
+        add_executable(trackeditor-e4-s1-obj-exporter-test
+            tests/editor_obj_exporter_test.cpp
+            TrackEditor/EditorExportCommon.cpp
+            TrackEditor/EditorExportCommon.h
+            TrackEditor/EditorObjExporter.cpp
+            TrackEditor/EditorObjExporter.h)
+        target_compile_features(trackeditor-e4-s1-obj-exporter-test PRIVATE cxx_std_17)
+        target_include_directories(trackeditor-e4-s1-obj-exporter-test PRIVATE
+            "${CMAKE_CURRENT_SOURCE_DIR}/TrackEditor"
+            "${CMAKE_CURRENT_SOURCE_DIR}/external/ROLLER/PROJECTS/ROLLER")
+        add_test(NAME trackeditor-e4-s1-obj-exporter
+                 COMMAND trackeditor-e4-s1-obj-exporter-test)
+
+        # E4-S5. The export format table and file-name rules: no Qt, so the
+        # save-dialog behaviour is exercised without a dialog.
+        add_executable(trackeditor-e4-s5-export-format-test
+            tests/editor_export_format_test.cpp
+            TrackEditor/EditorExportFormat.cpp
+            TrackEditor/EditorExportFormat.h)
+        target_compile_features(trackeditor-e4-s5-export-format-test PRIVATE cxx_std_17)
+        target_include_directories(trackeditor-e4-s5-export-format-test PRIVATE
+            "${CMAKE_CURRENT_SOURCE_DIR}/TrackEditor")
+        add_test(NAME trackeditor-e4-s5-export-format
+                 COMMAND trackeditor-e4-s5-export-format-test)
+
+        # E4-S2. Same shape, plus the vendored cgltf writer. It writes the
+        # sample documents the optional Blender import check below reads, so it
+        # runs from the binary directory.
+        add_executable(trackeditor-e4-s2-gltf-exporter-test
+            tests/editor_gltf_exporter_test.cpp
+            TrackEditor/EditorExportCommon.cpp
+            TrackEditor/EditorExportCommon.h
+            TrackEditor/EditorGltfExporter.cpp
+            TrackEditor/EditorGltfExporter.h)
+        target_compile_features(trackeditor-e4-s2-gltf-exporter-test PRIVATE cxx_std_17)
+        target_include_directories(trackeditor-e4-s2-gltf-exporter-test PRIVATE
+            "${CMAKE_CURRENT_SOURCE_DIR}/TrackEditor"
+            "${CMAKE_CURRENT_SOURCE_DIR}/external/ROLLER/PROJECTS/ROLLER")
+        target_link_libraries(trackeditor-e4-s2-gltf-exporter-test PRIVATE
+            TrackEditor::cgltf)
+        add_test(NAME trackeditor-e4-s2-gltf-exporter
+                 COMMAND trackeditor-e4-s2-gltf-exporter-test
+                 WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}")
+
+        # E4-S2 acceptance: the story's criterion is that the output imports
+        # natively in Blender, so check it when a Blender is available. Hosted
+        # CI has none, and the rest of the suite must not depend on one, so
+        # this entry only exists when TRACKEDITOR_BLENDER_EXECUTABLE resolves.
+        find_program(TRACKEDITOR_BLENDER_EXECUTABLE
+            NAMES blender
+            PATHS "$ENV{ProgramFiles}/Blender Foundation"
+            PATH_SUFFIXES "Blender 4.2" "Blender 4.1" "Blender 4.0"
+            DOC "Blender used by the optional E4-S2 glTF import check")
+        if(TRACKEDITOR_BLENDER_EXECUTABLE AND Python3_Interpreter_FOUND)
+            add_test(
+                NAME trackeditor-e4-s2-gltf-blender-import
+                COMMAND "${Python3_EXECUTABLE}"
+                        "${CMAKE_CURRENT_SOURCE_DIR}/tests/check_gltf_in_blender.py"
+                        "${TRACKEDITOR_BLENDER_EXECUTABLE}"
+                        "${CMAKE_CURRENT_BINARY_DIR}")
+            set_tests_properties(trackeditor-e4-s2-gltf-blender-import
+                PROPERTIES
+                    DEPENDS trackeditor-e4-s2-gltf-exporter
+                    TIMEOUT 300)
+        endif()
 
         add_test(NAME trackeditor-smoke COMMAND TrackEditor --cmake-smoke-test)
         if(WIN32)

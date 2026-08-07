@@ -1,5 +1,4 @@
 #include "ShapeFactory.h"
-#include "FBXExporter.h"
 #include "ObjExporter.h"
 #include "ShapeData.h"
 #include "Texture.h"
@@ -52,10 +51,7 @@ bool ExportCar(eWhipModel carModel, std::string sWhipDir, std::string sOutDir, b
   pCar->FlipTexCoordsForExport();
   pCarBack->FlipTexCoordsForExport();
 
-  std::string sExtension = ".fbx";
-  if (bObj)
-    sExtension = ".obj";
-  std::string sFilename = sOutDir + std::string("\\") + sCarName + sExtension;
+  std::string sFilename = sOutDir + std::string("\\") + sCarName + std::string(".obj");
   printf("Exporting ");
   printf(sFilename.c_str());
   printf("...\n");
@@ -64,17 +60,13 @@ bool ExportCar(eWhipModel carModel, std::string sWhipDir, std::string sOutDir, b
   std::vector<std::pair<std::string, CShapeData *>> shapeAy;
   shapeAy.push_back(std::make_pair(sCarName, pCar));
   shapeAy.push_back(std::make_pair(sBackName, pCarBack));
-  if (bObj) {
-    //export material
-    std::vector<std::string> texAy;
-    texAy.push_back(sCarName);
-    std::string sMtlFile = sOutDir + std::string("\\") + sCarName + std::string(".mtl");
-    CObjExporter::GetObjExporter().ExportMaterial(sMtlFile, texAy);
+  //export material
+  std::vector<std::string> texAy;
+  texAy.push_back(sCarName);
+  std::string sMtlFile = sOutDir + std::string("\\") + sCarName + std::string(".mtl");
+  CObjExporter::GetObjExporter().ExportMaterial(sMtlFile, texAy);
 
-    bSuccess = CObjExporter::GetObjExporter().ExportShapes(shapeAy, sFilename, sMtlFile, sCarName);
-  } else {
-    bSuccess = CFBXExporter::GetFBXExporter().ExportShapes(shapeAy, sFilename.c_str(), sTexFile.c_str());
-  }
+  bSuccess = CObjExporter::GetObjExporter().ExportShapes(shapeAy, sFilename, sMtlFile, sCarName);
 
   delete pCar;
   delete pCarBack;
@@ -215,30 +207,16 @@ bool ExportTrack(CTrack *pTrack, std::string sOutDir, bool bObj)
   }
 
   //export
-  std::string sExtension = ".fbx";
-  if (bObj)
-    sExtension = ".obj";
-  std::string sFilename = sOutDir + std::string("\\") + sTrackName + sExtension;
+  std::string sFilename = sOutDir + std::string("\\") + sTrackName + std::string(".obj");
   printf("Exporting ");
   printf(sFilename.c_str());
   printf("...\n");
-  bool bExported = false;
-  if (bObj) {
-    bExported = CObjExporter::GetObjExporter().ExportTrack(trackSectionAy,
-                                                           signAy,
-                                                           signBackAy,
-                                                           sOutDir,
-                                                           sTrackName,
-                                                           sFilename);
-  } else {
-    bExported = CFBXExporter::GetFBXExporter().ExportTrack(trackSectionAy,
-                                                           signAy,
-                                                           signBackAy,
-                                                           sTrackName.c_str(),
-                                                           sFilename.c_str(),
-                                                           sTexFile.c_str(),
-                                                           sSignTexFile.c_str());
-  }
+  bool bExported = CObjExporter::GetObjExporter().ExportTrack(trackSectionAy,
+                                                              signAy,
+                                                              signBackAy,
+                                                              sOutDir,
+                                                              sTrackName,
+                                                              sFilename);
 
   //cleanup
   for (std::vector<std::pair<std::string, CShapeData *>>::iterator it = trackSectionAy.begin(); it != trackSectionAy.end(); ++it)
@@ -253,10 +231,10 @@ bool ExportTrack(CTrack *pTrack, std::string sOutDir, bool bObj)
 int main(int argc, char *argv[])
 {
   //not enough arguments
-  if (argc < 4) {
-    printf("Converts all whiplash car models and tracks to OBJ or FBX format\n");
-    printf("Usage: ModelExporter whiplash_dir output_dir type\n");
-    printf("       ex: ModelExporter C:\\WHIP\\WHIPLASH\\FATDATA C:\\WHIP\\output FBX\n");
+  if (argc < 3) {
+    printf("Converts all whiplash car models and tracks to OBJ format\n");
+    printf("Usage: ModelExporter whiplash_dir output_dir\n");
+    printf("       ex: ModelExporter C:\\WHIP\\WHIPLASH\\FATDATA C:\\WHIP\\output\n");
     return -1;
   }
 
@@ -264,16 +242,9 @@ int main(int argc, char *argv[])
   Logging::SetWhipLibLoggingCallback(LogMessageCbStatic);
   std::string sWhipDir = argv[1];
   std::string sOutDir = argv[2];
-  std::string sType = argv[3];
-  bool bObj = false;
-  if (sType.compare("fbx") == 0 || sType.compare("FBX") == 0) {
-    bObj = false;
-  } else if (sType.compare("obj") == 0 || sType.compare("OBJ") == 0) {
-    bObj = true;
-  } else {
-    printf("type must be OBJ or FBX\n");
-    return -1;
-  }
+  // E4-S3 removed FBX, so OBJ is the only format this tool writes. The
+  // trailing type argument older invocations passed is accepted and ignored.
+  const bool bObj = true;
   //export cars
   ExportCar(eWhipModel::CAR_F1WACK, sWhipDir, sOutDir, bObj);
   ExportCar(eWhipModel::CAR_XAUTO, sWhipDir, sOutDir, bObj);

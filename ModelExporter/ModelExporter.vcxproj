@@ -22,7 +22,7 @@
     <VCProjectVersion>17.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>
     <ProjectGuid>{24aa1afa-11c3-47d7-b36c-0b5ce25b7804}</ProjectGuid>
-    <RootNamespace>FbxExporter</RootNamespace>
+    <RootNamespace>ModelExporter</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />

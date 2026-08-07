@@ -79,9 +79,12 @@ bool CObjImporter::ImportObj(const std::string &sFile, CShapeData **pShape, CTex
         bSuccess = false;
         break;
       }
-      double dX = std::stod(lineAy[1]) * 100.0;
-      double dY = std::stod(lineAy[2]) * 100.0;
-      double dZ = std::stod(lineAy[3]) * 100.0;
+      // E4-S6: raw file units and raw file axes. The unit scale and the
+      // +Y-up to +Z-up rotation are one mapping, and it lives with its export
+      // inverse in CEditorExportConventions rather than half here.
+      double dX = std::stod(lineAy[1]);
+      double dY = std::stod(lineAy[2]);
+      double dZ = std::stod(lineAy[3]);
       vAy.push_back(glm::vec3(dX, dY, dZ));
     } else if (lineAy[0].compare("vt") == 0) {
       //load tex coord line

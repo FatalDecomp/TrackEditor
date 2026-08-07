@@ -65,8 +65,6 @@ class E3S4WhipLibEngineContractTests(unittest.TestCase):
             ROOT / "TrackEditor" / "CMakeLists.txt",
             ROOT / ".github" / "workflows" / "build.yml",
             ROOT / "docs" / "building.md",
-            ROOT / "external" / "TrackEditor_LicensedLibs.txt",
-            ROOT / "external" / "WhipLib_LicensedLibs.txt",
             ROOT / "ModelExporter" / "Main.cpp",
             ROOT / "ModelExporter" / "Makefile",
             ROOT / "ModelExporter" / "ModelExporter.vcxproj",

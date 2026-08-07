@@ -46,9 +46,19 @@ uint32_t g_uiReferenceFlags = 0;
 float g_fReferenceFirstX = 0.0f;
 float g_fReferenceScaleX = 0.0f;
 uint32_t g_uiGeometryEpoch = 0;
+uint32_t g_uiTrackGeneration = 0;
 uint32_t g_uiSceneState = ROLLER_ED_SCENE_EMPTY;
 std::atomic<uint32_t> g_uiInitCount(0);
 std::atomic<uint32_t> g_uiRenderCount(0);
+std::atomic<uint32_t> g_uiFillCount(0);
+uint32_t g_uiRefusedFillEpoch = 0;
+
+// E4-S1. The stubbed extraction is one quad, which is enough to prove the
+// worker copies the arrays out and hands the caller storage it owns.
+const uint32_t g_uiStubVertexCount = 4;
+const uint32_t g_uiStubIndexCount = 6;
+const uint32_t g_uiStubPrimitiveCount = 1;
+const uint32_t g_uiStubMaterialCount = 1;
 Qt::HANDLE g_pWorkerThreadId = nullptr;
 Qt::HANDLE g_pUiThreadId = nullptr;
 std::atomic<bool> g_bAllFacadeCallsOnWorker(true);
@@ -127,6 +137,7 @@ extern "C" eRollerEdResult ROLLER_ED_CALL RollerEd_LoadTrackFile(
     return ROLLER_ED_RESULT_LOAD_FAILED;
   }
   g_uiSceneState = ROLLER_ED_SCENE_READY;
+  ++g_uiTrackGeneration;
   g_sError.clear();
   return ROLLER_ED_RESULT_OK;
 }
@@ -145,8 +156,63 @@ extern "C" eRollerEdResult ROLLER_ED_CALL RollerEd_QueryGeometrySizes(
   RecordFacadeThread();
   assert(pSizesOut);
   pSizesOut->uiGeometryEpoch = g_uiGeometryEpoch;
+  pSizesOut->uiTrackGeneration = g_uiTrackGeneration;
   pSizesOut->uiSceneState = g_uiSceneState;
+  // EMPTY and FAILED publish zero counts, exactly as the facade does.
+  const bool bReady = g_uiSceneState == ROLLER_ED_SCENE_READY;
+  pSizesOut->uiVertexCount = bReady ? g_uiStubVertexCount : 0;
+  pSizesOut->uiIndexCount = bReady ? g_uiStubIndexCount : 0;
+  pSizesOut->uiPrimitiveCount = bReady ? g_uiStubPrimitiveCount : 0;
+  pSizesOut->uiMaterialCount = bReady ? g_uiStubMaterialCount : 0;
+  pSizesOut->uiVertexStride = sizeof(tEdVertex);
+  pSizesOut->uiPrimitiveStride = sizeof(tEdPrimitive);
+  pSizesOut->uiMaterialStride = sizeof(tEdMaterial);
   g_sError = "a later facade call replaced the error buffer";
+  return ROLLER_ED_RESULT_OK;
+}
+
+extern "C" eRollerEdResult ROLLER_ED_CALL RollerEd_FillGeometry(
+    uint32_t uiExpectedGeometryEpoch,
+    tEdVertex *pVerts, uint32_t uiVertexCapacity,
+    uint32_t *puiIndices, uint32_t uiIndexCapacity,
+    tEdPrimitive *pPrims, uint32_t uiPrimitiveCapacity,
+    tEdMaterial *pMats, uint32_t uiMaterialCapacity)
+{
+  RecordFacadeThread();
+  if (g_uiSceneState != ROLLER_ED_SCENE_READY) {
+    g_sError = "no scene";
+    return ROLLER_ED_RESULT_NO_SCENE;
+  }
+  // Validated against the geometry epoch, never the generation, and nothing
+  // is written on refusal.
+  if (uiExpectedGeometryEpoch != g_uiGeometryEpoch) {
+    g_uiRefusedFillEpoch = uiExpectedGeometryEpoch;
+    g_sError = "stale geometry epoch";
+    return ROLLER_ED_RESULT_STALE;
+  }
+  if (uiVertexCapacity < g_uiStubVertexCount
+      || uiIndexCapacity < g_uiStubIndexCount
+      || uiPrimitiveCapacity < g_uiStubPrimitiveCount
+      || uiMaterialCapacity < g_uiStubMaterialCount) {
+    g_sError = "buffer too small";
+    return ROLLER_ED_RESULT_BUFFER_TOO_SMALL;
+  }
+
+  std::memset(pVerts, 0, g_uiStubVertexCount * sizeof(*pVerts));
+  for (uint32_t i = 0; i < g_uiStubVertexCount; ++i)
+    pVerts[i].fPosition[0] = static_cast<float>(100 + i);
+  const uint32_t auiOrder[6] = { 0, 1, 2, 0, 2, 3 };
+  for (uint32_t i = 0; i < g_uiStubIndexCount; ++i)
+    puiIndices[i] = auiOrder[i];
+  std::memset(pPrims, 0, g_uiStubPrimitiveCount * sizeof(*pPrims));
+  pPrims[0].uiIndexCount = g_uiStubIndexCount;
+  pPrims[0].uiBackMaterialId = ROLLER_ED_INVALID_MATERIAL_ID;
+  pPrims[0].unSurfaceClass = ROLLER_ED_SURFACE_CLASS_CENTER;
+  pPrims[0].unContentClass = ROLLER_ED_CONTENT_AUTHORED_TRACK;
+  pPrims[0].byTopology = ROLLER_ED_TOPOLOGY_TRIANGLE_LIST;
+  std::memset(pMats, 0, g_uiStubMaterialCount * sizeof(*pMats));
+  pMats[0].uiKind = ROLLER_ED_MATERIAL_TEXTURED_TILE;
+  ++g_uiFillCount;
   return ROLLER_ED_RESULT_OK;
 }
 
@@ -421,6 +487,58 @@ int main(int argc, char **argv)
   assert(TabB.GetDisplayState() == eEdFrameDisplayState::CURRENT);
   assert(TabB.CanExport());
 
+  // E4-S1. Export reads the canonical geometry through the same worker, on a
+  // blocking call rather than through the frame-delivery signal.
+  {
+    const uint32_t uiRenderCountBeforeExtraction = g_uiRenderCount.load();
+    tEdGeometrySnapshot Snapshot;
+    std::string sExtractError;
+    const eRollerEdResult eExtractResult = Service.ExtractGeometry(
+        TabB.GetDocumentId(), TabB.GetDocumentRevision(), Snapshot,
+        sExtractError);
+    assert(eExtractResult == ROLLER_ED_RESULT_OK);
+    assert(g_uiFillCount.load() == 1);
+    // Extraction renders nothing and moves no epoch.
+    assert(g_uiRenderCount.load() == uiRenderCountBeforeExtraction);
+    assert(Snapshot.uiGeometryEpoch == g_uiGeometryEpoch);
+    assert(Snapshot.uiTrackGeneration == g_uiTrackGeneration);
+    // The caller owns the arrays outright; no core-owned pointer escaped.
+    assert(Snapshot.Vertices.size() == g_uiStubVertexCount);
+    assert(Snapshot.Indices.size() == g_uiStubIndexCount);
+    assert(Snapshot.Primitives.size() == g_uiStubPrimitiveCount);
+    assert(Snapshot.Materials.size() == g_uiStubMaterialCount);
+    assert(Snapshot.Vertices[0].fPosition[0] == 100.0f);
+    assert(Snapshot.Primitives[0].unSurfaceClass
+           == ROLLER_ED_SURFACE_CLASS_CENTER);
+
+    // A document that no longer owns the worker scene cannot export the one
+    // that does.
+    tEdGeometrySnapshot StaleSnapshot;
+    std::string sStaleError;
+    const eRollerEdResult eStaleResult = Service.ExtractGeometry(
+        Document.GetDocumentId(), Document.GetDocumentRevision(),
+        StaleSnapshot, sStaleError);
+    assert(eStaleResult == ROLLER_ED_RESULT_STALE);
+    assert(!sStaleError.empty());
+    assert(StaleSnapshot.Primitives.empty());
+    assert(g_uiFillCount.load() == 1);
+
+    // An unloaded scene publishes zero counts, so there is nothing to export
+    // and the fill is never reached.
+    const uint64_t ullUnloadRequest = Service.EnqueueUnload(
+        TabB.GetDocumentId(), TabB.GetDocumentRevision());
+    TabB.BeginRequest(ullUnloadRequest);
+    WaitForResult(Service, ullUnloadRequest);
+    tEdGeometrySnapshot EmptySnapshot;
+    std::string sEmptyError;
+    const eRollerEdResult eEmptyResult = Service.ExtractGeometry(
+        TabB.GetDocumentId(), TabB.GetDocumentRevision(), EmptySnapshot,
+        sEmptyError);
+    assert(eEmptyResult == ROLLER_ED_RESULT_NO_SCENE);
+    assert(EmptySnapshot.Primitives.empty());
+    assert(g_uiFillCount.load() == 1);
+  }
+
   Service.InvalidateDocument(TabB.GetDocumentId());
   TabB.Invalidate();
   Service.InvalidateDocument(Document.GetDocumentId());
@@ -428,6 +546,21 @@ int main(int argc, char **argv)
   Service.Stop();
   assert(g_bAllFacadeCallsOnWorker.load());
   assert(g_uiInitCount.load() == 1);
+
+  // E4-S1. A blocking extraction against a stopped worker must fail rather
+  // than wait forever for a request nothing will ever run.
+  {
+    CDocumentFrameState LateDocument(CEditorRenderIds::NextDocumentId());
+    Service.RegisterDocument(LateDocument.GetDocumentId());
+    tEdGeometrySnapshot LateSnapshot;
+    std::string sLateError;
+    const eRollerEdResult eLateResult = Service.ExtractGeometry(
+        LateDocument.GetDocumentId(), LateDocument.GetDocumentRevision(),
+        LateSnapshot, sLateError);
+    assert(eLateResult != ROLLER_ED_RESULT_OK);
+    assert(!sLateError.empty());
+    assert(LateSnapshot.Primitives.empty());
+  }
 
   std::cout << "E3-S1/S2 editor render service tests passed\n";
   return 0;

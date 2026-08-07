@@ -34,6 +34,14 @@ set(trackeditor_sources
     EditSurfaceDialog.ui
     EditorCameraController.cpp
     EditorCameraController.h
+    EditorExportCommon.cpp
+    EditorExportCommon.h
+    EditorExportFormat.cpp
+    EditorExportFormat.h
+    EditorGltfExporter.cpp
+    EditorGltfExporter.h
+    EditorObjExporter.cpp
+    EditorObjExporter.h
     EditorOverlaySettings.cpp
     EditorOverlaySettings.h
     EditorReferenceMesh.cpp
@@ -89,7 +97,6 @@ target_compile_features(TrackEditor PRIVATE cxx_std_17)
 target_compile_definitions(TrackEditor
     PRIVATE
         QT_NO_PDF
-        TRACKEDITOR_ENABLE_FBX=$<BOOL:${TRACKEDITOR_ENABLE_FBX}>
         $<$<PLATFORM_ID:Windows>:IS_WINDOWS>
         $<$<CXX_COMPILER_ID:MSVC>:_CRT_SECURE_NO_WARNINGS>)
 
@@ -100,6 +107,7 @@ target_include_directories(TrackEditor PRIVATE
 target_link_libraries(TrackEditor
     PRIVATE
         TrackEditor::WhipLib
+        TrackEditor::cgltf
         ROLLER::core
         Qt5::Core
         Qt5::Gui

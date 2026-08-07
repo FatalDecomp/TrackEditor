@@ -31,6 +31,25 @@ QSize NormalizeDevicePixelSize(const QSize &Size)
 {
   return QSize(std::max(1, Size.width()), std::max(1, Size.height()));
 }
+
+// E4-S1. Wakes the blocked caller exactly once, whatever became of its
+// request. Every path that drops a queued command routes through here.
+void CompleteExtraction(const std::shared_ptr<tEdGeometryExtraction> &Slot,
+                        eRollerEdResult eResult, std::string sErrorText,
+                        tEdGeometrySnapshot *pSnapshot)
+{
+  if (!Slot)
+    return;
+  QMutexLocker Locker(&Slot->Mutex);
+  if (Slot->bComplete)
+    return;
+  Slot->eResult = eResult;
+  Slot->sErrorText = std::move(sErrorText);
+  if (pSnapshot)
+    Slot->Snapshot = std::move(*pSnapshot);
+  Slot->bComplete = true;
+  Slot->Completed.wakeAll();
+}
 }
 
 class CEditorRenderThread : public QThread
@@ -46,37 +65,45 @@ public:
   {
   }
 
-  void Enqueue(tEdRenderRequest Request)
+  bool Enqueue(tEdRenderRequest Request)
   {
     QMutexLocker Locker(&m_Mutex);
     if (m_bStopping || m_InvalidDocuments.count(Request.Tag.ullDocumentId) != 0)
-      return;
+      return false;
     m_Requests.push_back(std::move(Request));
     m_WorkAvailable.wakeOne();
+    return true;
   }
 
   void InvalidateDocument(uint64_t ullDocumentId)
   {
-    QMutexLocker Locker(&m_Mutex);
-    m_InvalidDocuments.insert(ullDocumentId);
-    m_Requests.erase(
-        std::remove_if(m_Requests.begin(), m_Requests.end(),
-                       [ullDocumentId](const tEdRenderRequest &Request) {
-                         return Request.Tag.ullDocumentId == ullDocumentId;
-                       }),
-        m_Requests.end());
+    std::vector<tEdRenderRequest> Dropped;
+    {
+      QMutexLocker Locker(&m_Mutex);
+      m_InvalidDocuments.insert(ullDocumentId);
+      TakeMatchingRequests(
+          Dropped, [ullDocumentId](const tEdRenderRequest &Request) {
+            return Request.Tag.ullDocumentId == ullDocumentId;
+          });
+    }
+    FailDroppedRequests(Dropped, "the document was closed before its "
+                                 "geometry could be extracted");
   }
 
   void StopAndWait()
   {
+    std::vector<tEdRenderRequest> Dropped;
     {
       QMutexLocker Locker(&m_Mutex);
       if (m_bStopping)
         return;
       m_bStopping = true;
-      m_Requests.clear();
+      TakeMatchingRequests(Dropped,
+                           [](const tEdRenderRequest &) { return true; });
       m_WorkAvailable.wakeOne();
     }
+    FailDroppedRequests(Dropped, "the render worker stopped before its "
+                                 "geometry could be extracted");
     wait();
   }
 
@@ -105,8 +132,21 @@ protected:
           break;
         Request = std::move(m_Requests.front());
         m_Requests.pop_front();
-        if (m_InvalidDocuments.count(Request.Tag.ullDocumentId) != 0)
+        if (m_InvalidDocuments.count(Request.Tag.ullDocumentId) != 0) {
+          Locker.unlock();
+          CompleteExtraction(Request.Extraction, ROLLER_ED_RESULT_STALE,
+                             "the document was closed before its geometry "
+                             "could be extracted",
+                             nullptr);
           continue;
+        }
+      }
+
+      // Extraction produces no frame, so it never reaches the frame-delivery
+      // path: it publishes into its own slot and wakes the blocked caller.
+      if (Request.eKind == eEdRenderCommandKind::EXTRACT_GEOMETRY) {
+        ProcessExtractGeometry(Request);
+        continue;
       }
 
       tEdRenderResult Result = ProcessRequest(Request);
@@ -125,6 +165,32 @@ protected:
   }
 
 private:
+  // Callers hold m_Mutex. Moves out every request the predicate selects so the
+  // caller can complete their extraction slots without holding the lock.
+  template <typename TPredicate>
+  void TakeMatchingRequests(std::vector<tEdRenderRequest> &Taken,
+                            TPredicate Matches)
+  {
+    std::deque<tEdRenderRequest> Kept;
+    for (std::deque<tEdRenderRequest>::iterator it = m_Requests.begin();
+         it != m_Requests.end(); ++it) {
+      if (Matches(*it))
+        Taken.push_back(std::move(*it));
+      else
+        Kept.push_back(std::move(*it));
+    }
+    m_Requests = std::move(Kept);
+  }
+
+  static void FailDroppedRequests(std::vector<tEdRenderRequest> &Dropped,
+                                  const char *szReason)
+  {
+    for (size_t i = 0; i < Dropped.size(); ++i) {
+      CompleteExtraction(Dropped[i].Extraction, ROLLER_ED_RESULT_STALE,
+                         szReason, nullptr);
+    }
+  }
+
   void AssertWorkerThread(const char *szCall) const
   {
     Q_ASSERT_X(QThread::currentThread() == this,
@@ -183,6 +249,84 @@ private:
     }
     Result.Tag.uiActualGeometryEpoch = Sizes.uiGeometryEpoch;
     return true;
+  }
+
+  // E4-S1. Query then fill, both on the worker, both against the epoch the
+  // query reported. RollerEd_FillGeometry refuses in a fixed order and writes
+  // nothing on refusal, so a failed extraction leaves the snapshot untouched.
+  void ProcessExtractGeometry(const tEdRenderRequest &Request)
+  {
+    AssertWorkerThread("geometry extraction");
+
+    if (m_eInitResult != ROLLER_ED_RESULT_OK) {
+      CompleteExtraction(Request.Extraction, m_eInitResult, m_sInitError,
+                         nullptr);
+      return;
+    }
+    if (m_ullActiveDocumentId != Request.Tag.ullDocumentId) {
+      CompleteExtraction(Request.Extraction, ROLLER_ED_RESULT_STALE,
+                         "the exporting document no longer owns the worker "
+                         "scene",
+                         nullptr);
+      return;
+    }
+
+    tEdGeometrySizes Sizes = {};
+    Sizes.uiStructSize = sizeof(Sizes);
+    Sizes.uiVersion = ROLLER_ED_GEOMETRY_SIZES_VERSION;
+    AssertWorkerThread("RollerEd_QueryGeometrySizes for export");
+    eRollerEdResult eResult = RollerEd_QueryGeometrySizes(&Sizes);
+    if (eResult != ROLLER_ED_RESULT_OK) {
+      CompleteExtraction(Request.Extraction, eResult, CopyFacadeError(),
+                         nullptr);
+      return;
+    }
+    if (Sizes.uiSceneState != ROLLER_ED_SCENE_READY) {
+      CompleteExtraction(Request.Extraction, ROLLER_ED_RESULT_NO_SCENE,
+                         "the exporting document has no ready scene", nullptr);
+      return;
+    }
+    if (Sizes.uiPrimitiveCount == 0 || Sizes.uiVertexCount == 0
+        || Sizes.uiIndexCount == 0 || Sizes.uiMaterialCount == 0) {
+      CompleteExtraction(Request.Extraction, ROLLER_ED_RESULT_NO_SCENE,
+                         "the loaded track produced no exportable geometry",
+                         nullptr);
+      return;
+    }
+    // The ABI is frozen per struct (AD-12); a core built against a different
+    // layout would silently misread every array.
+    if (Sizes.uiVertexStride != sizeof(tEdVertex)
+        || Sizes.uiPrimitiveStride != sizeof(tEdPrimitive)
+        || Sizes.uiMaterialStride != sizeof(tEdMaterial)) {
+      CompleteExtraction(Request.Extraction, ROLLER_ED_RESULT_INVALID_VERSION,
+                         "the core publishes a geometry layout this build "
+                         "does not share",
+                         nullptr);
+      return;
+    }
+
+    tEdGeometrySnapshot Snapshot;
+    Snapshot.uiGeometryEpoch = Sizes.uiGeometryEpoch;
+    Snapshot.uiTrackGeneration = Sizes.uiTrackGeneration;
+    Snapshot.Vertices.resize(Sizes.uiVertexCount);
+    Snapshot.Indices.resize(Sizes.uiIndexCount);
+    Snapshot.Primitives.resize(Sizes.uiPrimitiveCount);
+    Snapshot.Materials.resize(Sizes.uiMaterialCount);
+
+    AssertWorkerThread("RollerEd_FillGeometry");
+    eResult = RollerEd_FillGeometry(
+        Sizes.uiGeometryEpoch, Snapshot.Vertices.data(), Sizes.uiVertexCount,
+        Snapshot.Indices.data(), Sizes.uiIndexCount,
+        Snapshot.Primitives.data(), Sizes.uiPrimitiveCount,
+        Snapshot.Materials.data(), Sizes.uiMaterialCount);
+    if (eResult != ROLLER_ED_RESULT_OK) {
+      CompleteExtraction(Request.Extraction, eResult, CopyFacadeError(),
+                         nullptr);
+      return;
+    }
+
+    CompleteExtraction(Request.Extraction, ROLLER_ED_RESULT_OK, std::string(),
+                       &Snapshot);
   }
 
   tEdRenderResult ProcessRequest(const tEdRenderRequest &Request)
@@ -571,6 +715,46 @@ uint64_t CEditorRenderService::EnqueueUnload(
   const uint64_t ullRequestId = Request.Tag.ullRequestId;
   m_pThread->Enqueue(std::move(Request));
   return ullRequestId;
+}
+
+eRollerEdResult CEditorRenderService::ExtractGeometry(
+    uint64_t ullDocumentId, uint64_t ullDocumentRevision,
+    tEdGeometrySnapshot &SnapshotOut, std::string &sErrorOut)
+{
+  Q_ASSERT(QThread::currentThread() == thread());
+  sErrorOut.clear();
+  if (!IsDocumentRegistered(ullDocumentId)) {
+    sErrorOut = "the exporting document is not registered with the worker";
+    return ROLLER_ED_RESULT_INVALID_ARGUMENT;
+  }
+
+  const std::shared_ptr<tEdGeometryExtraction> Slot =
+      std::make_shared<tEdGeometryExtraction>();
+
+  tEdRenderRequest Request;
+  Request.Tag.ullRequestId = CEditorRenderIds::NextRequestId();
+  Request.Tag.ullDocumentId = ullDocumentId;
+  Request.Tag.ullDocumentRevision = ullDocumentRevision;
+  Request.eKind = eEdRenderCommandKind::EXTRACT_GEOMETRY;
+  Request.Extraction = Slot;
+  if (!m_pThread->Enqueue(std::move(Request))) {
+    sErrorOut = "the render worker is not accepting work";
+    return ROLLER_ED_RESULT_INVALID_STATE;
+  }
+
+  // Deliberately not a nested event loop: the worker publishes into the slot
+  // rather than through a queued invocation, so blocking here cannot deadlock
+  // against this thread's own result delivery. Every drop path completes the
+  // slot, so this wait always terminates.
+  {
+    QMutexLocker Locker(&Slot->Mutex);
+    while (!Slot->bComplete)
+      Slot->Completed.wait(&Slot->Mutex);
+    sErrorOut = Slot->sErrorText;
+    if (Slot->eResult == ROLLER_ED_RESULT_OK)
+      SnapshotOut = std::move(Slot->Snapshot);
+    return Slot->eResult;
+  }
 }
 
 void CEditorRenderService::PublishResult(tEdRenderResult Result)

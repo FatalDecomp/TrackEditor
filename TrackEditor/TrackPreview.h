@@ -2,7 +2,10 @@
 #define _TRACKEDITOR_TRACKPREVIEW_H
 //-------------------------------------------------------------------------------------------------
 #include <QWidget>
+#include <vector>
 #include "EditorCameraController.h"
+#include "EditorExportCommon.h"
+#include "EditorExportFormat.h"
 #include "EditorOverlaySettings.h"
 #include "EditorReferenceMesh.h"
 #include "EditorRenderQueue.h"
@@ -10,11 +13,7 @@
 //-------------------------------------------------------------------------------------------------
 #define DEFAULT_HISTORY_MAX_SIZE 256 //approx 200KB per saved track
 //-------------------------------------------------------------------------------------------------
-enum eExportType
-{
-  EXPORT_FBX = 0,
-  EXPORT_OBJ
-};
+// eExportType and the format table live in EditorExportFormat.h (E4-S5).
 //-------------------------------------------------------------------------------------------------
 class CTrackPreviewPrivate;
 class CTrack;
@@ -89,6 +88,19 @@ signals:
 
 private:
   bool SaveTrack_Internal(const QString &sFilename);
+  // E4-S1. Writes the OBJ/MTL pair from ROLLER's canonical geometry rather
+  // than from WhipLib's CPU derivation.
+  bool ExportObj_Internal(const QString &sFolder, const QString &sName,
+                          const QString &sFilename, bool bExportScenery,
+                          bool bSeparateSections, bool bSeparateBackFaces);
+  // E4-S2. Same canonical geometry, glTF 2.0 instead of OBJ.
+  bool ExportGltf_Internal(const QString &sFolder, const QString &sName,
+                           const QString &sFilename, bool bExportScenery,
+                           bool bSeparateSections, bool bSeparateBackFaces);
+  // Both canonical exporters need the extraction; neither may call the facade
+  // from UI code, so both go through the render worker.
+  bool ExtractCanonicalGeometry(tEdGeometrySnapshot &SnapshotOut);
+  std::vector<tEdExportPaletteEntry> BuildExportPalette() const;
   void UpdateReferenceModelPos_Internal();
   // Hands the worker the mesh exactly once per change: null on every other
   // frame, so a camera nudge does not copy the whole model through the queue.

@@ -2,6 +2,12 @@
 #include "EditorReferenceMesh.h"
 #include "DisplaySettingsFlags.h"
 
+// CTest runs this in the Release configuration, whose NDEBUG would compile
+// every assertion below out and leave the test passing by doing nothing.
+// tests/track_model_test.cpp guards itself the same way.
+#ifdef NDEBUG
+#undef NDEBUG
+#endif
 #include <cassert>
 #include <cstdint>
 #include <cstdio>
@@ -414,6 +420,41 @@ void test_an_empty_reference_mesh_draws_nothing()
   assert(State.uiVertexCount == 0);
 }
 
+void test_normals_are_claimed_only_when_the_file_supplied_them()
+{
+  // E4-S6. An OBJ with no vn lines leaves every normal at zero. Claiming
+  // HAS_NORMALS over zeros is worse than not claiming it: AD-13 says the core
+  // generates them when the flag is clear, so a model without normals shades
+  // correctly only if the flag is honest.
+  tEdReferenceVertex aVertices[3] = {};
+  const uint32_t auiIndices[3] = { 0u, 1u, 2u };
+  CEditorReferenceMesh Mesh;
+
+  Mesh.SetGeometry(aVertices, 3, auiIndices, 3);
+  assert(Mesh.HasMesh());
+  assert(!Mesh.HasNormals());
+  assert((Mesh.GetMesh().uiFlags & ROLLER_ED_REFERENCE_HAS_NORMALS) == 0);
+
+  // One real normal anywhere in the file is enough: the file carried them.
+  aVertices[2].fNormal[1] = -1.0f;
+  Mesh.SetGeometry(aVertices, 3, auiIndices, 3);
+  assert(Mesh.HasNormals());
+  assert((Mesh.GetMesh().uiFlags & ROLLER_ED_REFERENCE_HAS_NORMALS) != 0);
+
+  // Replacing it with a file that has none goes back to generated normals
+  // rather than keeping the previous answer.
+  aVertices[2].fNormal[1] = 0.0f;
+  Mesh.SetGeometry(aVertices, 3, auiIndices, 3);
+  assert(!Mesh.HasNormals());
+
+  aVertices[0].fNormal[2] = 1.0f;
+  Mesh.SetGeometry(aVertices, 3, auiIndices, 3);
+  assert(Mesh.HasNormals());
+  Mesh.Clear();
+  assert(!Mesh.HasNormals());
+  assert((Mesh.GetMesh().uiFlags & ROLLER_ED_REFERENCE_HAS_NORMALS) == 0);
+}
+
 void test_geometry_is_copied_and_clearable()
 {
   tEdReferenceVertex aVertices[3] = {};
@@ -483,9 +524,12 @@ void test_wireframe_is_a_mesh_flag_not_an_overlay_flag()
   tEdReferenceVertex aVertices[3] = {};
   CEditorReferenceMesh Mesh;
 
+  // HAS_NORMALS is the control here: toggling wireframe must not disturb it.
+  // E4-S6 made that flag depend on the file actually carrying normals, so
+  // these vertices need one - all-zero normals now correctly mean "none".
+  aVertices[0].fNormal[2] = 1.0f;
   Mesh.SetGeometry(aVertices, 3, nullptr, 0);
   assert((Mesh.GetMesh().uiFlags & ROLLER_ED_REFERENCE_WIREFRAME) == 0);
-  // Normals come from the importer, so the core does not regenerate them.
   assert((Mesh.GetMesh().uiFlags & ROLLER_ED_REFERENCE_HAS_NORMALS) != 0);
 
   Mesh.SetWireframe(true);
@@ -520,6 +564,7 @@ int main()
   test_the_car_selection_survives_the_show_car_checkbox();
   test_an_untouched_translator_publishes_a_valid_car();
   test_an_empty_reference_mesh_draws_nothing();
+  test_normals_are_claimed_only_when_the_file_supplied_them();
   test_geometry_is_copied_and_clearable();
   test_a_missing_index_array_means_a_plain_triangle_list();
   test_the_transform_reaches_the_mesh();

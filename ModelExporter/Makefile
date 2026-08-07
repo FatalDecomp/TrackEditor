@@ -1,8 +1,4 @@
-LIBS = 	../lib/WhipLib.a \
-		../external/FBX/lib/release/libalembic.a \
-		../external/FBX/lib/release/libfbxsdk.a \
-		-lxml2 \
-		-lz
+LIBS = 	../lib/WhipLib.a
 
 INCLUDES = 	-I. \
 			-I../WhipLib \
