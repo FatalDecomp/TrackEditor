@@ -113,6 +113,16 @@ if(BUILD_TESTING)
             COMMAND "${Python3_EXECUTABLE}"
                     "${CMAKE_CURRENT_SOURCE_DIR}/tests/test_e3a_s5_markers.py"
                     -v)
+        add_test(
+            NAME trackeditor-e3a-s6-test-car-contract
+            COMMAND "${Python3_EXECUTABLE}"
+                    "${CMAKE_CURRENT_SOURCE_DIR}/tests/test_e3a_s6_test_car.py"
+                    -v)
+        add_test(
+            NAME trackeditor-e3a-s7-reference-mesh-contract
+            COMMAND "${Python3_EXECUTABLE}"
+                    "${CMAKE_CURRENT_SOURCE_DIR}/tests/test_e3a_s7_reference_mesh.py"
+                    -v)
     endif()
 
     if(TARGET TrackEditor)
@@ -158,10 +168,16 @@ if(BUILD_TESTING)
         add_executable(trackeditor-e3a-s2-overlay-settings-test
             tests/editor_overlay_settings_test.cpp
             TrackEditor/EditorOverlaySettings.cpp
+            TrackEditor/EditorReferenceMesh.cpp
             TrackEditor/EditorOverlaySettings.h)
         target_compile_features(trackeditor-e3a-s2-overlay-settings-test PRIVATE cxx_std_17)
+        # WhipLib is on the include path for Types.h alone (the eWhipModel and
+        # eShapeSection enums E3A-S6 translates); the target still links no
+        # WhipLib, Qt, or ROLLER code, so the translation stays unit-testable
+        # without a render worker or an event loop.
         target_include_directories(trackeditor-e3a-s2-overlay-settings-test PRIVATE
             "${CMAKE_CURRENT_SOURCE_DIR}/TrackEditor"
+            "${CMAKE_CURRENT_SOURCE_DIR}/WhipLib"
             "${CMAKE_CURRENT_SOURCE_DIR}/external/ROLLER/PROJECTS/ROLLER")
         add_test(NAME trackeditor-e3a-s2-overlay-settings
                  COMMAND trackeditor-e3a-s2-overlay-settings-test)

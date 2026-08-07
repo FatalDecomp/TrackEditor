@@ -1,6 +1,7 @@
 #ifndef TRACKEDITOR_EDITOROVERLAYSETTINGS_H
 #define TRACKEDITOR_EDITOROVERLAYSETTINGS_H
 
+#include "Types.h"
 #include "editor_api.h"
 
 #include <cstdint>
@@ -28,11 +29,20 @@ public:
   // uiShowModels is the editor's DisplaySettings.h SHOW_* bitmask.
   void SetShowModels(uint32_t uiShowModels);
   // iSelFrom/iSelTo are CTrackPreview's selection bounds; a negative bound
-  // means nothing is selected.
+  // means nothing is selected. The car also stands on iSelFrom, which is
+  // where the legacy editor drew it, so no separate call sets its chunk.
   void SetSelectionRange(int iSelFrom, int iSelTo);
+  // The UpdateCar(eWhipModel, eShapeSection, bool) triple, unchanged (E3A-S6).
+  void SetTestCar(eWhipModel carModel, eShapeSection aiLine, bool bMillionPlus);
 
   uint32_t GetShowModels() const { return m_uiShowModels; }
   const tEdOverlayState &GetOverlayState() const { return m_Overlay; }
+
+  // ROLLER's own CAR_DESIGN_* index for an editor model, and the 0-based AI
+  // line index for an eShapeSection. Public so the parity table can be tested
+  // without reaching into Rebuild().
+  static uint32_t CarDesignForModel(eWhipModel carModel);
+  static uint32_t AiLineForSection(eShapeSection aiLine);
 
 private:
   void Rebuild();
@@ -44,6 +54,9 @@ private:
   bool m_bHasShowModels;
   int m_iSelFrom;
   int m_iSelTo;
+  eWhipModel m_carModel;
+  eShapeSection m_carAILine;
+  bool m_bMillionPlus;
   tEdOverlayState m_Overlay;
 };
 

@@ -4,6 +4,7 @@
 #include <QWidget>
 #include "EditorCameraController.h"
 #include "EditorOverlaySettings.h"
+#include "EditorReferenceMesh.h"
 #include "EditorRenderQueue.h"
 #include "Types.h"
 //-------------------------------------------------------------------------------------------------
@@ -52,6 +53,9 @@ public:
                                int iX, int iY, int iZ,
                                double dScale);
   void UpdateReferenceModelTexture();
+  // E3A-S7. Whether the reference mesh should be drawn as edges. Follows the
+  // dialog rather than the file.
+  void UpdateReferenceModelWireframe(bool bWireframe);
   void Activate();
   void MarkDocumentEdited();
   bool CanExport() const { return m_FrameState.CanExport(); }
@@ -86,6 +90,10 @@ signals:
 private:
   bool SaveTrack_Internal(const QString &sFilename);
   void UpdateReferenceModelPos_Internal();
+  // Hands the worker the mesh exactly once per change: null on every other
+  // frame, so a camera nudge does not copy the whole model through the queue.
+  const tEdReferenceMeshPayload *TakePendingReferenceMesh();
+  void ScheduleReferenceMeshUpload();
   void QueueLoadAndRender();
   void QueueEditedTrackReload();
   void QueueResizeRender();
@@ -111,6 +119,9 @@ private:
   CDocumentFrameState m_FrameState;
   CEditorCameraController m_CameraController;
   CEditorOverlaySettings m_OverlaySettings;
+  CEditorReferenceMesh m_ReferenceMesh;
+  tEdReferenceMeshPayload m_PendingReferenceMesh;
+  bool m_bReferenceMeshDirty = false;
   QTimer *m_pResizeTimer;
   QTimer *m_pEditTimer;
   QTimer *m_pCameraRenderTimer;

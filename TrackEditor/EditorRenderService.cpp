@@ -315,6 +315,42 @@ private:
       }
     }
 
+    // E3A-S7. Same reasoning as the overlay: the mesh is a view setting, so
+    // it moves neither the geometry epoch nor the track generation and the
+    // epoch checked above is still the one this frame renders at. The facade
+    // copies the arrays during the call, so the payload's storage only has to
+    // outlive this statement.
+    if (Request.bHasReferenceMesh) {
+      AssertWorkerThread("RollerEd_SetReferenceMesh");
+      tEdReferenceMesh Mesh;
+      std::memset(&Mesh, 0, sizeof(Mesh));
+      Mesh.uiStructSize = sizeof(Mesh);
+      Mesh.uiVersion = ROLLER_ED_REFERENCE_MESH_VERSION;
+      if (!Request.ReferenceMesh.Vertices.empty()) {
+        Mesh.pVertices = Request.ReferenceMesh.Vertices.data();
+        Mesh.uiVertexCount =
+            static_cast<uint32_t>(Request.ReferenceMesh.Vertices.size());
+      }
+      if (!Request.ReferenceMesh.Indices.empty()) {
+        Mesh.puiIndices = Request.ReferenceMesh.Indices.data();
+        Mesh.uiIndexCount =
+            static_cast<uint32_t>(Request.ReferenceMesh.Indices.size());
+      }
+      std::memcpy(Mesh.fPosition, Request.ReferenceMesh.fPosition,
+                  sizeof(Mesh.fPosition));
+      std::memcpy(Mesh.fRotation, Request.ReferenceMesh.fRotation,
+                  sizeof(Mesh.fRotation));
+      std::memcpy(Mesh.fScale, Request.ReferenceMesh.fScale,
+                  sizeof(Mesh.fScale));
+      Mesh.uiFlags = Request.ReferenceMesh.uiFlags;
+
+      const eRollerEdResult eMeshResult = RollerEd_SetReferenceMesh(&Mesh);
+      if (eMeshResult != ROLLER_ED_RESULT_OK) {
+        SetFacadeFailure(Result, eMeshResult);
+        return Result;
+      }
+    }
+
     if (Request.uiWidth == 0 || Request.uiHeight == 0
         || Request.uiWidth > static_cast<uint32_t>(std::numeric_limits<int>::max())
         || Request.uiHeight > static_cast<uint32_t>(std::numeric_limits<int>::max())) {
@@ -486,7 +522,8 @@ uint64_t CEditorRenderService::EnqueueRender(
     uint64_t ullDocumentId, uint64_t ullDocumentRevision,
     uint32_t uiExpectedGeometryEpoch, const QSize &DevicePixelSize,
     double dDevicePixelRatio, const tEdCameraState &Camera,
-    const tEdOverlayState &Overlay)
+    const tEdOverlayState &Overlay,
+    const tEdReferenceMeshPayload *pReferenceMesh)
 {
   Q_ASSERT(QThread::currentThread() == thread());
   if (!IsDocumentRegistered(ullDocumentId))
@@ -504,6 +541,12 @@ uint64_t CEditorRenderService::EnqueueRender(
   Request.bHasCamera = true;
   Request.Overlay = Overlay;
   Request.bHasOverlay = true;
+  // AD-16: copied here, so mutating the caller's arrays after enqueueing
+  // cannot reach the worker.
+  if (pReferenceMesh) {
+    Request.ReferenceMesh = *pReferenceMesh;
+    Request.bHasReferenceMesh = true;
+  }
   Request.uiWidth = static_cast<uint32_t>(NormalizedSize.width());
   Request.uiHeight = static_cast<uint32_t>(NormalizedSize.height());
   Request.dDevicePixelRatio = dDevicePixelRatio;

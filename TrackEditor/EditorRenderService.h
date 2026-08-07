@@ -45,13 +45,17 @@ public:
       const tEdOverlayState &Overlay);
   uint64_t EnqueueUnload(uint64_t ullDocumentId,
                          uint64_t ullDocumentRevision);
+  // pReferenceMesh is null on every frame the mesh did not change (E3A-S7).
+  // Uploading it on each camera nudge would copy the whole model through the
+  // queue every frame, and the core keeps the last one it was given.
   uint64_t EnqueueRender(uint64_t ullDocumentId,
                          uint64_t ullDocumentRevision,
                          uint32_t uiExpectedGeometryEpoch,
                          const QSize &DevicePixelSize,
                          double dDevicePixelRatio,
                          const tEdCameraState &Camera,
-                         const tEdOverlayState &Overlay);
+                         const tEdOverlayState &Overlay,
+                         const tEdReferenceMeshPayload *pReferenceMesh = nullptr);
 
 signals:
   void FrameCompleted(const tEdRenderResult &Result);

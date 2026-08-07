@@ -36,6 +36,8 @@ set(trackeditor_sources
     EditorCameraController.h
     EditorOverlaySettings.cpp
     EditorOverlaySettings.h
+    EditorReferenceMesh.cpp
+    EditorReferenceMesh.h
     EditorRenderQueue.cpp
     EditorRenderQueue.h
     EditorRenderService.cpp

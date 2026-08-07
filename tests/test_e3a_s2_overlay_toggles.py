@@ -37,7 +37,9 @@ class SubmodulePinTests(unittest.TestCase):
         ).read_text(encoding="utf-8")
         self.assertIn("uiSurfaceClassMask", header)
         self.assertIn("uiWireframeClassMask", header)
-        self.assertIn("#define ROLLER_ED_OVERLAY_STATE_VERSION 2u", header)
+        # 3 since E3A-S6 appended the test-car selection. What this story
+        # needs from the pin is that the class masks are there at all.
+        self.assertIn("#define ROLLER_ED_OVERLAY_STATE_VERSION 3u", header)
         self.assertIn("ROLLER_ED_OVERLAY_ALL_SURFACE_CLASSES", header)
         self.assertIn("ROLLER_ED_SURFACE_CLASS_COUNT", header)
 

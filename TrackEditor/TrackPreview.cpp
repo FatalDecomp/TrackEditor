@@ -10,6 +10,7 @@
 #include "FBXExporter.h"
 #endif
 #include "ObjExporter.h"
+#include "ObjImporter.h"
 #include "ExportWizard.h"
 #include "qevent.h"
 #include "qdir.h"
@@ -253,6 +254,7 @@ void CTrackPreview::UpdateReferenceModelPos(double dYaw, double dPitch, double d
   m_iRefY = iY;
   m_iRefZ = iZ;
   m_dRefScale = dScale;
+  m_ReferenceMesh.SetTransform(dYaw, dPitch, dRoll, iX, iY, iZ, dScale);
   UpdateReferenceModelPos_Internal();
 }
 
@@ -265,11 +267,63 @@ void CTrackPreview::UpdateReferenceModelTexture()
 
 //-------------------------------------------------------------------------------------------------
 
+void CTrackPreview::UpdateReferenceModelWireframe(bool bWireframe)
+{
+  m_ReferenceMesh.SetWireframe(bWireframe);
+  ScheduleReferenceMeshUpload();
+}
+
+//-------------------------------------------------------------------------------------------------
+
+void CTrackPreview::ScheduleReferenceMeshUpload()
+{
+  // E3A-S7. Rebuild the queue payload from the mesh's current state and mark
+  // it for the next render. Like every other display change this is a view
+  // change, not a document edit: no revision bump, no serialize, no reload.
+  const tEdReferenceMesh Mesh = m_ReferenceMesh.GetMesh();
+
+  m_PendingReferenceMesh.Vertices = m_ReferenceMesh.Vertices();
+  m_PendingReferenceMesh.Indices = m_ReferenceMesh.Indices();
+  std::memcpy(m_PendingReferenceMesh.fPosition, Mesh.fPosition,
+              sizeof(m_PendingReferenceMesh.fPosition));
+  std::memcpy(m_PendingReferenceMesh.fRotation, Mesh.fRotation,
+              sizeof(m_PendingReferenceMesh.fRotation));
+  std::memcpy(m_PendingReferenceMesh.fScale, Mesh.fScale,
+              sizeof(m_PendingReferenceMesh.fScale));
+  m_PendingReferenceMesh.uiFlags = Mesh.uiFlags;
+  m_bReferenceMeshDirty = true;
+  ScheduleCameraRender();
+  update();
+}
+
+//-------------------------------------------------------------------------------------------------
+
+const tEdReferenceMeshPayload *CTrackPreview::TakePendingReferenceMesh()
+{
+  if (!m_bReferenceMeshDirty)
+    return nullptr;
+  m_bReferenceMeshDirty = false;
+  return &m_PendingReferenceMesh;
+}
+
+//-------------------------------------------------------------------------------------------------
+
 void CTrackPreview::UpdateCar(eWhipModel carModel, eShapeSection aiLine, bool bMillionPlus)
 {
+  if (m_carModel == carModel && m_carAILine == aiLine
+      && m_bMillionPlus == bMillionPlus)
+    return;
   m_carModel = carModel;
   m_carAILine = aiLine;
   m_bMillionPlus = bMillionPlus;
+  // E3A-S6. The signature is unchanged; what it drives is now the facade's
+  // overlay rather than a WhipLib shape. The car stands on m_iSelFrom, which
+  // the overlay already carries, so nothing here needs the selection.
+  //
+  // Like every other display toggle this is a view change, not a document
+  // edit: no revision bump, no serialize, no reload.
+  m_OverlaySettings.SetTestCar(carModel, aiLine, bMillionPlus);
+  ScheduleCameraRender();
   update();
 }
 
@@ -285,9 +339,58 @@ void CTrackPreview::AttachLast(bool bAttachLast)
 
 void CTrackPreview::OpenReferenceModel()
 {
-  QMessageBox::information(
-      this, "Reference Model",
-      "Reference-mesh display will return with the roller-core overlay stories.");
+  const QString sFile = QFileDialog::getOpenFileName(
+      this, "Open Reference Model", g_pMainWindow->m_sLastTrackFilesFolder,
+      "Wavefront OBJ (*.obj);;All Files (*.*)");
+  if (sFile.isEmpty())
+    return;
+
+  // WhipLib's importer is the editor's own: it applies the same x100 unit
+  // scale these OBJ files have always been read at, so a model that lined up
+  // before still lines up.
+  CShapeData *pShape = NULL;
+  if (!CObjImporter::GetObjImporter().ImportObj(
+          sFile.toStdString(), &pShape, NULL)
+      || !pShape) {
+    QMessageBox::warning(this, "Reference Model",
+                         "Could not read " + sFile + " as a Wavefront OBJ.");
+    if (pShape)
+      delete pShape;
+    return;
+  }
+
+  // Convert to the facade's AD-13 vertex. Only position and normal survive:
+  // the legacy editor overwrote every reference-model UV with a flat colour,
+  // and roller-core draws it that way too, so UVs would be discarded anyway.
+  std::vector<tEdReferenceVertex> Vertices(pShape->m_uiNumVerts);
+  for (uint32 i = 0; i < pShape->m_uiNumVerts; ++i) {
+    const tVertex &Source = pShape->m_vertices[i];
+    tEdReferenceVertex &Target = Vertices[i];
+    Target.fPosition[0] = Source.position.x;
+    Target.fPosition[1] = Source.position.y;
+    Target.fPosition[2] = Source.position.z;
+    Target.fNormal[0] = Source.normal.x;
+    Target.fNormal[1] = Source.normal.y;
+    Target.fNormal[2] = Source.normal.z;
+    Target.fUV[0] = 0.0f;
+    Target.fUV[1] = 0.0f;
+  }
+  std::vector<uint32_t> Indices(pShape->m_uiNumIndices);
+  for (uint32 i = 0; i < pShape->m_uiNumIndices; ++i)
+    Indices[i] = pShape->m_indices[i];
+  delete pShape;
+
+  if (Vertices.empty() || Indices.size() % 3 != 0) {
+    QMessageBox::warning(this, "Reference Model",
+                         sFile + " is not a triangle list.");
+    return;
+  }
+
+  m_sReferenceModelFile = sFile;
+  m_ReferenceMesh.SetGeometry(Vertices.data(), Vertices.size(),
+                              Indices.data(), Indices.size());
+  ScheduleReferenceMeshUpload();
+  emit ReferenceModelChanged();
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -409,7 +512,7 @@ void CTrackPreview::QueueResizeRender()
         m_ullDocumentId, m_FrameState.GetDocumentRevision(),
         m_FrameState.GetInstalledGeometryEpoch(), DevicePixelSize(),
         devicePixelRatioF(), m_CameraController.GetCameraState(),
-        m_OverlaySettings.GetOverlayState());
+        m_OverlaySettings.GetOverlayState(), TakePendingReferenceMesh());
     if (ullRequestId != 0)
       m_FrameState.BeginRequest(ullRequestId);
   } else if (m_FrameState.GetDisplayState()
@@ -453,7 +556,7 @@ void CTrackPreview::QueueCameraRender()
       m_ullDocumentId, m_FrameState.GetDocumentRevision(),
       m_FrameState.GetInstalledGeometryEpoch(), DevicePixelSize(),
       devicePixelRatioF(), m_CameraController.GetCameraState(),
-      m_OverlaySettings.GetOverlayState());
+      m_OverlaySettings.GetOverlayState(), TakePendingReferenceMesh());
   if (ullRequestId != 0) {
     m_bCameraRenderPending = false;
     m_ullCameraRequestId = ullRequestId;
@@ -877,7 +980,10 @@ bool CTrackPreview::SaveTrack_Internal(const QString &sFilename)
 
 void CTrackPreview::UpdateReferenceModelPos_Internal()
 {
-  update();
+  // E3A-S7. The transform lives in the mesh payload rather than in a matrix
+  // the editor builds, so moving the model is the same one-upload path as
+  // loading it.
+  ScheduleReferenceMeshUpload();
 }
 
 //-------------------------------------------------------------------------------------------------

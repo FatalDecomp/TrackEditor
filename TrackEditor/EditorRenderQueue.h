@@ -40,6 +40,19 @@ enum class eEdRenderCommandKind
   RENDER_ONLY
 };
 
+// AD-16 again, and for the same reason: the facade copies the mesh during the
+// call, but the call happens on the worker thread long after the UI built it,
+// so the command carries its own copy of every array. E3A-S7.
+struct tEdReferenceMeshPayload
+{
+  std::vector<tEdReferenceVertex> Vertices;
+  std::vector<uint32_t> Indices;
+  float fPosition[3] = { 0.0f, 0.0f, 0.0f };
+  float fRotation[3] = { 0.0f, 0.0f, 0.0f };
+  float fScale[3] = { 1.0f, 1.0f, 1.0f };
+  uint32_t uiFlags = 0;
+};
+
 struct tEdRenderRequest
 {
   tEdRenderRequestTag Tag = {};
@@ -53,6 +66,10 @@ struct tEdRenderRequest
   // pointer payload, so the worker never reads UI-owned storage.
   tEdOverlayState Overlay = {};
   bool bHasOverlay = false;
+  // Only set when the reference mesh actually changed: uploading it on every
+  // camera nudge would copy the whole model through the queue each frame.
+  tEdReferenceMeshPayload ReferenceMesh;
+  bool bHasReferenceMesh = false;
   uint32_t uiWidth = 0;
   uint32_t uiHeight = 0;
   double dDevicePixelRatio = 1.0;

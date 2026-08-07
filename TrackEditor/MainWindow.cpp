@@ -1141,6 +1141,11 @@ void CMainWindow::OnUpdatePreview()
   uint32 uiShowModels = p->m_pDisplaySettings->GetDisplaySettings(carModel, aiLine, bMillionPlus);
   GetCurrentPreview()->ShowModels(uiShowModels);
   GetCurrentPreview()->UpdateCar(carModel, aiLine, bMillionPlus);
+  // E3A-S7. Reference-mesh wireframe is a property of the mesh in the facade
+  // (ROLLER_ED_REFERENCE_WIREFRAME), not an overlay flag, so it does not go
+  // through CEditorOverlaySettings with the rest of the SHOW_* mask.
+  GetCurrentPreview()->UpdateReferenceModelWireframe(
+      (uiShowModels & SHOW_REF_WIRE_MODEL) != 0);
 }
 
 //-------------------------------------------------------------------------------------------------
