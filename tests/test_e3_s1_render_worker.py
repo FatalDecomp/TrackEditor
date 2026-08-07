@@ -9,6 +9,11 @@ ROOT = pathlib.Path(__file__).resolve().parents[1]
 EDITOR = ROOT / "TrackEditor"
 
 
+def without_comments(source: str) -> str:
+    source = re.sub(r"/\*.*?\*/", "", source, flags=re.DOTALL)
+    return re.sub(r"//.*", "", source)
+
+
 class E3S1RenderWorkerContractTests(unittest.TestCase):
     def test_viewport_is_qwidget_and_paint_only_blits_qimage(self) -> None:
         header = (EDITOR / "TrackPreview.h").read_text(encoding="utf-8")
@@ -45,7 +50,10 @@ class E3S1RenderWorkerContractTests(unittest.TestCase):
         allowed = {"EditorRenderService.cpp", "TrackEditor.cpp"}
         facade_sources = []
         for path in EDITOR.glob("*.cpp"):
-            text = path.read_text(encoding="utf-8")
+            # Comments are stripped so this measures actual calls: naming an
+            # entry point while explaining that you do not call it is not a
+            # violation of the boundary.
+            text = without_comments(path.read_text(encoding="utf-8"))
             if "RollerEd_" in text:
                 facade_sources.append(path.name)
         self.assertEqual(sorted(facade_sources), sorted(allowed))

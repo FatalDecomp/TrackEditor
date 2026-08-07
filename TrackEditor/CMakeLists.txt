@@ -34,6 +34,8 @@ set(trackeditor_sources
     EditSurfaceDialog.ui
     EditorCameraController.cpp
     EditorCameraController.h
+    EditorObjExporter.cpp
+    EditorObjExporter.h
     EditorOverlaySettings.cpp
     EditorOverlaySettings.h
     EditorReferenceMesh.cpp

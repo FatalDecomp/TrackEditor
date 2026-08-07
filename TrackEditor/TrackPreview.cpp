@@ -11,7 +11,9 @@
 #endif
 #include "ObjExporter.h"
 #include "ObjImporter.h"
+#include "EditorObjExporter.h"
 #include "ExportWizard.h"
+#include "Palette.h"
 #include "qevent.h"
 #include "qdir.h"
 #include "qmessagebox.h"
@@ -685,6 +687,88 @@ bool CTrackPreview::SaveTrackAs()
 
 //-------------------------------------------------------------------------------------------------
 
+bool CTrackPreview::ExportObj_Internal(const QString &sFolder,
+                                       const QString &sName,
+                                       const QString &sFilename,
+                                       bool bSeparateSections,
+                                       bool bSeparateBackFaces)
+{
+  if (!m_pRenderService) {
+    QMessageBox::warning(this, "Export Track",
+                         "The render worker is unavailable.");
+    return false;
+  }
+
+  // An edit debounced but not yet queued would leave the worker scene one
+  // revision behind the model the user is looking at. Queueing the reload now
+  // puts it ahead of the extraction in the worker's FIFO, so the export sees
+  // the current document without a second load.
+  if (m_pEditTimer->isActive()) {
+    m_pEditTimer->stop();
+    QueueEditedTrackReload();
+  }
+
+  tEdGeometrySnapshot Snapshot;
+  std::string sExtractError;
+  const eRollerEdResult eResult = m_pRenderService->ExtractGeometry(
+      m_ullDocumentId, m_FrameState.GetDocumentRevision(), Snapshot,
+      sExtractError);
+  if (eResult != ROLLER_ED_RESULT_OK) {
+    QString sMessage = "Could not read the track geometry from ROLLER.";
+    if (!sExtractError.empty())
+      sMessage += QString("\n\n") + QString::fromStdString(sExtractError);
+    QMessageBox::warning(this, "Export Track", sMessage);
+    return false;
+  }
+
+  tEdObjExportGeometry Geometry;
+  Geometry.pVertices = Snapshot.Vertices.data();
+  Geometry.uiVertexCount = static_cast<uint32_t>(Snapshot.Vertices.size());
+  Geometry.puiIndices = Snapshot.Indices.data();
+  Geometry.uiIndexCount = static_cast<uint32_t>(Snapshot.Indices.size());
+  Geometry.pPrimitives = Snapshot.Primitives.data();
+  Geometry.uiPrimitiveCount =
+      static_cast<uint32_t>(Snapshot.Primitives.size());
+  Geometry.pMaterials = Snapshot.Materials.data();
+  Geometry.uiMaterialCount = static_cast<uint32_t>(Snapshot.Materials.size());
+
+  // Flat palette colours resolve against the document's own palette, which
+  // track-assets already owns for the texture export.
+  std::vector<tEdObjExportPaletteEntry> Palette;
+  const CPalette *pPalette = p->m_track.m_assets.GetPalette();
+  if (pPalette) {
+    Palette.resize(PALETTE_SIZE);
+    for (int i = 0; i < PALETTE_SIZE; ++i) {
+      Palette[i].byRed = pPalette->m_paletteAy[i].r;
+      Palette[i].byGreen = pPalette->m_paletteAy[i].g;
+      Palette[i].byBlue = pPalette->m_paletteAy[i].b;
+    }
+  }
+
+  const QString sMtlFile = QDir(sFolder).filePath(sName + ".mtl");
+  tEdObjExportOptions Options;
+  Options.bSeparateSections = bSeparateSections;
+  Options.bSeparateBackFaces = bSeparateBackFaces;
+  Options.sBaseName = sName.toStdString();
+  Options.sMtlFileName = (sName + ".mtl").toStdString();
+
+  std::string sWriteError;
+  if (!CEditorObjExporter::ExportToFiles(
+          Geometry, Options, Palette.empty() ? nullptr : Palette.data(),
+          static_cast<uint32_t>(Palette.size()),
+          QFile::encodeName(sFilename).constData(),
+          QFile::encodeName(sMtlFile).constData(), sWriteError)) {
+    QString sMessage = "Could not write the exported model.";
+    if (!sWriteError.empty())
+      sMessage += QString("\n\n") + QString::fromStdString(sWriteError);
+    QMessageBox::warning(this, "Export Track", sMessage);
+    return false;
+  }
+  return true;
+}
+
+//-------------------------------------------------------------------------------------------------
+
 bool CTrackPreview::Export(eExportType exportType)
 {
   if (!CanExport())
@@ -727,6 +811,18 @@ bool CTrackPreview::Export(eExportType exportType)
           QFile::encodeName(sTexFile).constData(),
           QFile::encodeName(sSignTexFile).constData())) {
     return false;
+  }
+
+  // E4-S1. OBJ is a consumer of ROLLER's canonical geometry now; only the
+  // legacy FBX path still derives its own CPU geometry from WhipLib.
+  if (exportType == eExportType::EXPORT_OBJ) {
+    if (!ExportObj_Internal(sFolder, sName, sFilename,
+                            exportWizard.m_bExportSeparate,
+                            exportWizard.m_bExportBacks)) {
+      return false;
+    }
+    g_pMainWindow->m_sLastTrackFilesFolder = sFolder;
+    return true;
   }
 
   //main models will have fronts only if backs are separate only
@@ -859,27 +955,15 @@ bool CTrackPreview::Export(eExportType exportType)
 
   //export
   bool bExported = false;
-  switch (exportType) {
-    case eExportType::EXPORT_FBX:
 #if TRACKEDITOR_ENABLE_FBX
-      bExported = CFBXExporter::GetFBXExporter().ExportTrack(trackSectionAy,
-                                                             signAy,
-                                                             signBackAy,
-                                                             sName.toLatin1().constData(),
-                                                             sFilename.toLatin1().constData(),
-                                                             sTexFile.toLatin1().constData(),
-                                                             sSignTexFile.toLatin1().constData());
+  bExported = CFBXExporter::GetFBXExporter().ExportTrack(trackSectionAy,
+                                                         signAy,
+                                                         signBackAy,
+                                                         sName.toLatin1().constData(),
+                                                         sFilename.toLatin1().constData(),
+                                                         sTexFile.toLatin1().constData(),
+                                                         sSignTexFile.toLatin1().constData());
 #endif
-      break;
-    case eExportType::EXPORT_OBJ:
-      bExported = CObjExporter::GetObjExporter().ExportTrack(trackSectionAy,
-                                                             signAy,
-                                                             signBackAy,
-                                                             sFolder.toLatin1().constData(),
-                                                             sName.toLatin1().constData(),
-                                                             sFilename.toLatin1().constData());
-      break;
-  }
 
   //cleanup
   for (std::vector<std::pair<std::string, CShapeData *>>::iterator it = trackSectionAy.begin(); it != trackSectionAy.end(); ++it)

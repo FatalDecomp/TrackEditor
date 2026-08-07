@@ -1,0 +1,604 @@
+// E4-S1. The OBJ exporter is a pure function of one canonical extraction, so
+// it is exercised here without a render worker, a loaded track, or Qt.
+#include "EditorObjExporter.h"
+
+#include <cassert>
+#include <cmath>
+#include <cstdint>
+#include <cstdio>
+#include <sstream>
+#include <string>
+#include <vector>
+
+namespace
+{
+// A minimal extraction builder: one quad per call, four vertices and six
+// indices, exactly the shape RollerEd_FillGeometry produces.
+class CExtractionBuilder
+{
+public:
+  uint32_t AddTexturedMaterial(uint32_t uiTextureSet, float fScaleU,
+                               float fScaleV, float fBiasU, float fBiasV)
+  {
+    tEdMaterial Material = {};
+    Material.uiKind = ROLLER_ED_MATERIAL_TEXTURED_TILE;
+    Material.uiTextureSet = uiTextureSet;
+    Material.fAtlasScale[0] = fScaleU;
+    Material.fAtlasScale[1] = fScaleV;
+    Material.fAtlasBias[0] = fBiasU;
+    Material.fAtlasBias[1] = fBiasV;
+    m_Materials.push_back(Material);
+    return static_cast<uint32_t>(m_Materials.size() - 1);
+  }
+
+  uint32_t AddFlatMaterial(uint32_t uiPaletteColour)
+  {
+    tEdMaterial Material = {};
+    Material.uiKind = ROLLER_ED_MATERIAL_FLAT_PALETTE_COLOR;
+    Material.uiPaletteColour = uiPaletteColour;
+    m_Materials.push_back(Material);
+    return static_cast<uint32_t>(m_Materials.size() - 1);
+  }
+
+  uint32_t AddDarkenMaterial(uint32_t uiDarkenLevel)
+  {
+    tEdMaterial Material = {};
+    Material.uiKind = ROLLER_ED_MATERIAL_SCREEN_DARKEN;
+    Material.uiDarkenLevel = uiDarkenLevel;
+    m_Materials.push_back(Material);
+    return static_cast<uint32_t>(m_Materials.size() - 1);
+  }
+
+  uint32_t AddQuad(uint16_t unSurfaceClass, uint16_t unContentClass,
+                   uint32_t uiFrontMaterial, uint32_t uiBackMaterial,
+                   uint16_t unFlags = 0)
+  {
+    const uint32_t uiFirstVertex =
+        static_cast<uint32_t>(m_Vertices.size());
+    for (int i = 0; i < 4; ++i) {
+      tEdVertex Vertex = {};
+      // A unit quad in the world XY plane, so the +Z-up to +Y-up rotation is
+      // visible in the exported positions.
+      Vertex.fPosition[0] = (i == 1 || i == 2) ? 100.0f : 0.0f;
+      Vertex.fPosition[1] = (i >= 2) ? 200.0f : 0.0f;
+      Vertex.fPosition[2] = 300.0f;
+      Vertex.fNormal[0] = 0.0f;
+      Vertex.fNormal[1] = 0.0f;
+      Vertex.fNormal[2] = 1.0f;
+      Vertex.fUV[0] = (i == 1 || i == 2) ? 1.0f : 0.0f;
+      Vertex.fUV[1] = (i >= 2) ? 1.0f : 0.0f;
+      m_Vertices.push_back(Vertex);
+    }
+
+    tEdPrimitive Primitive = {};
+    Primitive.uiFirstIndex = static_cast<uint32_t>(m_Indices.size());
+    Primitive.uiIndexCount = 6;
+    Primitive.uiChunkId = static_cast<uint32_t>(m_Primitives.size());
+    Primitive.uiFrontMaterialId = uiFrontMaterial;
+    Primitive.uiBackMaterialId = uiBackMaterial;
+    Primitive.unSurfaceClass = unSurfaceClass;
+    Primitive.unContentClass = unContentClass;
+    Primitive.unFlags = unFlags;
+    Primitive.byTopology = ROLLER_ED_TOPOLOGY_TRIANGLE_LIST;
+
+    // Both triangles start at v0, as E4A-S5 emits them.
+    const uint32_t auiOrder[6] = { 0, 1, 2, 0, 2, 3 };
+    for (int i = 0; i < 6; ++i)
+      m_Indices.push_back(uiFirstVertex + auiOrder[i]);
+
+    m_Primitives.push_back(Primitive);
+    return static_cast<uint32_t>(m_Primitives.size() - 1);
+  }
+
+  tEdObjExportGeometry View() const
+  {
+    tEdObjExportGeometry Geometry;
+    Geometry.pVertices = m_Vertices.data();
+    Geometry.uiVertexCount = static_cast<uint32_t>(m_Vertices.size());
+    Geometry.puiIndices = m_Indices.data();
+    Geometry.uiIndexCount = static_cast<uint32_t>(m_Indices.size());
+    Geometry.pPrimitives = m_Primitives.data();
+    Geometry.uiPrimitiveCount = static_cast<uint32_t>(m_Primitives.size());
+    Geometry.pMaterials = m_Materials.data();
+    Geometry.uiMaterialCount = static_cast<uint32_t>(m_Materials.size());
+    return Geometry;
+  }
+
+  std::vector<tEdVertex> m_Vertices;
+  std::vector<uint32_t> m_Indices;
+  std::vector<tEdPrimitive> m_Primitives;
+  std::vector<tEdMaterial> m_Materials;
+};
+
+tEdObjExportOptions DefaultOptions()
+{
+  tEdObjExportOptions Options;
+  Options.sBaseName = "TRACK3";
+  Options.sMtlFileName = "TRACK3.mtl";
+  return Options;
+}
+
+bool Contains(const std::string &sHaystack, const std::string &sNeedle)
+{
+  return sHaystack.find(sNeedle) != std::string::npos;
+}
+
+size_t CountLinesStartingWith(const std::string &sText,
+                              const std::string &sPrefix)
+{
+  size_t uiCount = 0;
+  size_t uiPos = 0;
+  while (uiPos <= sText.size()) {
+    const size_t uiEnd = sText.find('\n', uiPos);
+    const std::string sLine = sText.substr(
+        uiPos, uiEnd == std::string::npos ? std::string::npos : uiEnd - uiPos);
+    if (sLine.compare(0, sPrefix.size(), sPrefix) == 0)
+      ++uiCount;
+    if (uiEnd == std::string::npos)
+      break;
+    uiPos = uiEnd + 1;
+  }
+  return uiCount;
+}
+
+// The face line "f a/a/a b/b/b c/c/c" as its three vertex indices.
+std::vector<int> FaceIndices(const std::string &sText, size_t uiWhich)
+{
+  size_t uiPos = 0;
+  size_t uiSeen = 0;
+  while (uiPos <= sText.size()) {
+    const size_t uiEnd = sText.find('\n', uiPos);
+    const std::string sLine = sText.substr(
+        uiPos, uiEnd == std::string::npos ? std::string::npos : uiEnd - uiPos);
+    if (sLine.compare(0, 2, "f ") == 0) {
+      if (uiSeen == uiWhich) {
+        std::vector<int> Indices;
+        std::istringstream Line(sLine.substr(2));
+        std::string sCorner;
+        while (Line >> sCorner)
+          Indices.push_back(std::atoi(sCorner.c_str()));
+        return Indices;
+      }
+      ++uiSeen;
+    }
+    if (uiEnd == std::string::npos)
+      break;
+    uiPos = uiEnd + 1;
+  }
+  return std::vector<int>();
+}
+
+void test_the_axis_conversion_matches_adr_0003()
+{
+  // ROLLER world is right-handed with +Z up; OBJ consumers want right-handed
+  // +Y up, so the exporter rotates -90 degrees about X and scales by 1/100.
+  const float afRoller[3] = { 100.0f, 200.0f, 300.0f };
+  float afObj[3] = { 0.0f, 0.0f, 0.0f };
+  CEditorObjExporter::ConvertPosition(afRoller, afObj);
+  assert(std::fabs(afObj[0] - 1.0f) < 1e-6f);
+  assert(std::fabs(afObj[1] - 3.0f) < 1e-6f);
+  assert(std::fabs(afObj[2] + 2.0f) < 1e-6f);
+
+  // Direction carries the same rotation without the scale, so a unit normal
+  // stays unit length.
+  const float afUp[3] = { 0.0f, 0.0f, 1.0f };
+  CEditorObjExporter::ConvertDirection(afUp, afObj);
+  assert(std::fabs(afObj[0]) < 1e-6f);
+  assert(std::fabs(afObj[1] - 1.0f) < 1e-6f);
+  assert(std::fabs(afObj[2]) < 1e-6f);
+
+  // The mapping preserves handedness, which is why no winding flip is needed:
+  // newX x newY must equal newZ.
+  const float afX[3] = { 1.0f, 0.0f, 0.0f };
+  const float afY[3] = { 0.0f, 1.0f, 0.0f };
+  const float afZ[3] = { 0.0f, 0.0f, 1.0f };
+  float afNewX[3], afNewY[3], afNewZ[3];
+  CEditorObjExporter::ConvertDirection(afX, afNewX);
+  CEditorObjExporter::ConvertDirection(afY, afNewY);
+  CEditorObjExporter::ConvertDirection(afZ, afNewZ);
+  const float afCross[3] = {
+    afNewX[1] * afNewY[2] - afNewX[2] * afNewY[1],
+    afNewX[2] * afNewY[0] - afNewX[0] * afNewY[2],
+    afNewX[0] * afNewY[1] - afNewX[1] * afNewY[0]
+  };
+  for (int i = 0; i < 3; ++i)
+    assert(std::fabs(afCross[i] - afNewZ[i]) < 1e-6f);
+}
+
+void test_every_named_surface_group_is_emitted()
+{
+  CExtractionBuilder Builder;
+  const uint32_t uiMaterial = Builder.AddTexturedMaterial(
+      ROLLER_ED_TEXTURE_SET_TRACK, 0.125f, 0.125f, 0.0f, 0.0f);
+  for (uint16_t unClass = ROLLER_ED_SURFACE_CLASS_CENTER;
+       unClass <= ROLLER_ED_SURFACE_CLASS_RIGHT_UPPER_OUTER_WALL; ++unClass) {
+    Builder.AddQuad(unClass, ROLLER_ED_CONTENT_AUTHORED_TRACK, uiMaterial,
+                    ROLLER_ED_INVALID_MATERIAL_ID);
+  }
+
+  tEdObjExportOptions Options = DefaultOptions();
+  Options.bSeparateBackFaces = false;
+  std::ostringstream Obj;
+  std::ostringstream Mtl;
+  std::string sError;
+  assert(CEditorObjExporter::Export(Builder.View(), Options, nullptr, 0, Obj,
+                                    Mtl, sError));
+  const std::string sObj = Obj.str();
+
+  // The names the pre-migration exporter used, unchanged.
+  static const char *aszExpected[] = {
+    "o Center", "o Left Shoulder", "o Right Shoulder", "o Left Wall",
+    "o Right Wall", "o Roof", "o Outer Wall Floor", "o Left Lower Outer Wall",
+    "o Right Lower Outer Wall", "o Left Upper Outer Wall",
+    "o Right Upper Outer Wall"
+  };
+  for (size_t i = 0; i < sizeof(aszExpected) / sizeof(aszExpected[0]); ++i)
+    assert(Contains(sObj, aszExpected[i]));
+  assert(CountLinesStartingWith(sObj, "o ") == 11);
+  assert(Contains(sObj, "mtllib TRACK3.mtl"));
+}
+
+void test_combined_sections_produce_one_object()
+{
+  CExtractionBuilder Builder;
+  const uint32_t uiMaterial = Builder.AddTexturedMaterial(
+      ROLLER_ED_TEXTURE_SET_TRACK, 0.125f, 0.125f, 0.0f, 0.0f);
+  Builder.AddQuad(ROLLER_ED_SURFACE_CLASS_CENTER,
+                  ROLLER_ED_CONTENT_AUTHORED_TRACK, uiMaterial,
+                  ROLLER_ED_INVALID_MATERIAL_ID);
+  Builder.AddQuad(ROLLER_ED_SURFACE_CLASS_ROOF,
+                  ROLLER_ED_CONTENT_AUTHORED_TRACK, uiMaterial,
+                  ROLLER_ED_INVALID_MATERIAL_ID);
+
+  tEdObjExportOptions Options = DefaultOptions();
+  Options.bSeparateSections = false;
+  Options.bSeparateBackFaces = false;
+  std::ostringstream Obj;
+  std::ostringstream Mtl;
+  std::string sError;
+  assert(CEditorObjExporter::Export(Builder.View(), Options, nullptr, 0, Obj,
+                                    Mtl, sError));
+  const std::string sObj = Obj.str();
+  assert(CountLinesStartingWith(sObj, "o ") == 1);
+  assert(Contains(sObj, "o Track\n"));
+  assert(CountLinesStartingWith(sObj, "f ") == 4);
+}
+
+void test_back_faces_use_the_back_material_and_reverse_the_winding()
+{
+  CExtractionBuilder Builder;
+  // Deliberately different atlas rectangles: reusing the front material's
+  // transform would sample the wrong tile whenever texture_back[] substitutes.
+  const uint32_t uiFront = Builder.AddTexturedMaterial(
+      ROLLER_ED_TEXTURE_SET_TRACK, 0.125f, 0.125f, 0.0f, 0.0f);
+  const uint32_t uiBack = Builder.AddTexturedMaterial(
+      ROLLER_ED_TEXTURE_SET_TRACK, 0.125f, 0.125f, 0.5f, 0.25f);
+  Builder.AddQuad(ROLLER_ED_SURFACE_CLASS_CENTER,
+                  ROLLER_ED_CONTENT_AUTHORED_TRACK, uiFront, uiBack);
+
+  tEdObjExportOptions Options = DefaultOptions();
+  std::ostringstream Obj;
+  std::ostringstream Mtl;
+  std::string sError;
+  assert(CEditorObjExporter::Export(Builder.View(), Options, nullptr, 0, Obj,
+                                    Mtl, sError));
+  const std::string sObj = Obj.str();
+
+  assert(Contains(sObj, "o Center\n"));
+  assert(Contains(sObj, "o Center (Back)\n"));
+
+  // Two triangles per side, and the back side is the same triangle wound the
+  // other way.
+  assert(CountLinesStartingWith(sObj, "f ") == 4);
+  const std::vector<int> Front = FaceIndices(sObj, 0);
+  const std::vector<int> Back = FaceIndices(sObj, 2);
+  assert(Front.size() == 3 && Back.size() == 3);
+  // Different objects, so the absolute indices differ; the ordering does not.
+  const int iFrontBase = Front[0];
+  const int iBackBase = Back[2];
+  assert(Front[0] - iFrontBase == 0);
+  assert(Front[1] - iFrontBase == 1);
+  assert(Front[2] - iFrontBase == 2);
+  assert(Back[0] - iBackBase == 2);
+  assert(Back[1] - iBackBase == 1);
+  assert(Back[2] - iBackBase == 0);
+
+  // The back side's UVs come from the back material's bias, not the front's.
+  assert(Contains(sObj, "vt 0.500000"));
+  // ROLLER's UV origin is top-left and OBJ's is bottom-left, so V is flipped.
+  assert(Contains(sObj, "vt 0.000000 1.000000"));
+}
+
+void test_a_two_sided_surface_without_a_back_material_still_gets_a_back()
+{
+  // ADR 0003: SURFACE_FLAG_CONCAVE makes the renderer bypass its facing test,
+  // so the surface is visible from both sides even though texture_back[]
+  // substitutes nothing. Exporting it single-sided would leave a hole.
+  CExtractionBuilder Builder;
+  const uint32_t uiMaterial = Builder.AddTexturedMaterial(
+      ROLLER_ED_TEXTURE_SET_TRACK, 0.125f, 0.125f, 0.0f, 0.0f);
+  Builder.AddQuad(ROLLER_ED_SURFACE_CLASS_ROOF,
+                  ROLLER_ED_CONTENT_AUTHORED_TRACK, uiMaterial,
+                  ROLLER_ED_INVALID_MATERIAL_ID,
+                  ROLLER_ED_PRIMITIVE_FLAG_TWO_SIDED);
+
+  std::ostringstream Obj;
+  std::ostringstream Mtl;
+  std::string sError;
+  assert(CEditorObjExporter::Export(Builder.View(), DefaultOptions(), nullptr,
+                                    0, Obj, Mtl, sError));
+  const std::string sObj = Obj.str();
+  assert(Contains(sObj, "o Roof (Back)\n"));
+  assert(CountLinesStartingWith(sObj, "f ") == 4);
+  // The reverse side points the other way.
+  assert(Contains(sObj, "vn 0.000000 1.000000 0.000000"));
+  assert(Contains(sObj, "vn 0.000000 -1.000000 0.000000"));
+}
+
+void test_merged_backs_land_in_the_front_object()
+{
+  CExtractionBuilder Builder;
+  const uint32_t uiFront = Builder.AddTexturedMaterial(
+      ROLLER_ED_TEXTURE_SET_TRACK, 0.125f, 0.125f, 0.0f, 0.0f);
+  const uint32_t uiBack = Builder.AddTexturedMaterial(
+      ROLLER_ED_TEXTURE_SET_TRACK, 0.125f, 0.125f, 0.5f, 0.0f);
+  Builder.AddQuad(ROLLER_ED_SURFACE_CLASS_CENTER,
+                  ROLLER_ED_CONTENT_AUTHORED_TRACK, uiFront, uiBack);
+
+  tEdObjExportOptions Options = DefaultOptions();
+  Options.bSeparateBackFaces = false;
+  std::ostringstream Obj;
+  std::ostringstream Mtl;
+  std::string sError;
+  assert(CEditorObjExporter::Export(Builder.View(), Options, nullptr, 0, Obj,
+                                    Mtl, sError));
+  const std::string sObj = Obj.str();
+  // Reverse-side faces are always generated; the option only chooses whether
+  // they get their own object, exactly as eBackModeling did.
+  assert(!Contains(sObj, "(Back)"));
+  assert(CountLinesStartingWith(sObj, "f ") == 4);
+}
+
+void test_uvs_resolve_through_the_material_atlas_transform()
+{
+  CExtractionBuilder Builder;
+  // Tile 5 of an 8x8 atlas: the exporter must use this rectangle rather than
+  // do tile arithmetic of its own (AD-7b).
+  const uint32_t uiMaterial = Builder.AddTexturedMaterial(
+      ROLLER_ED_TEXTURE_SET_TRACK, 0.125f, 0.125f, 0.625f, 0.0f);
+  Builder.AddQuad(ROLLER_ED_SURFACE_CLASS_CENTER,
+                  ROLLER_ED_CONTENT_AUTHORED_TRACK, uiMaterial,
+                  ROLLER_ED_INVALID_MATERIAL_ID);
+
+  tEdObjExportOptions Options = DefaultOptions();
+  Options.bSeparateBackFaces = false;
+  std::ostringstream Obj;
+  std::ostringstream Mtl;
+  std::string sError;
+  assert(CEditorObjExporter::Export(Builder.View(), Options, nullptr, 0, Obj,
+                                    Mtl, sError));
+  const std::string sObj = Obj.str();
+  // u = 0 * 0.125 + 0.625, v = 1 - (0 * 0.125 + 0) = 1
+  assert(Contains(sObj, "vt 0.625000 1.000000"));
+  // u = 1 * 0.125 + 0.625 = 0.75, v = 1 - 0.125 = 0.875
+  assert(Contains(sObj, "vt 0.750000 0.875000"));
+}
+
+void test_texture_sets_choose_their_own_atlas_png()
+{
+  CExtractionBuilder Builder;
+  const uint32_t uiTrack = Builder.AddTexturedMaterial(
+      ROLLER_ED_TEXTURE_SET_TRACK, 0.125f, 0.125f, 0.0f, 0.0f);
+  const uint32_t uiSign = Builder.AddTexturedMaterial(
+      ROLLER_ED_TEXTURE_SET_BUILDING_SIGN, 0.125f, 0.125f, 0.0f, 0.0f);
+  Builder.AddQuad(ROLLER_ED_SURFACE_CLASS_CENTER,
+                  ROLLER_ED_CONTENT_AUTHORED_TRACK, uiTrack,
+                  ROLLER_ED_INVALID_MATERIAL_ID);
+  Builder.AddQuad(ROLLER_ED_SURFACE_CLASS_ROOF,
+                  ROLLER_ED_CONTENT_AUTHORED_TRACK, uiSign,
+                  ROLLER_ED_INVALID_MATERIAL_ID);
+
+  std::ostringstream Obj;
+  std::ostringstream Mtl;
+  std::string sError;
+  assert(CEditorObjExporter::Export(Builder.View(), DefaultOptions(), nullptr,
+                                    0, Obj, Mtl, sError));
+  const std::string sMtl = Mtl.str();
+  assert(Contains(sMtl, "newmtl TRACK3\nmap_Kd TRACK3.png\nmap_d TRACK3.png"));
+  assert(Contains(sMtl,
+                  "newmtl TRACK3_BLD\nmap_Kd TRACK3_BLD.png\n"
+                  "map_d TRACK3_BLD.png"));
+  assert(Contains(Obj.str(), "usemtl TRACK3\n"));
+  assert(Contains(Obj.str(), "usemtl TRACK3_BLD\n"));
+}
+
+void test_a_texture_set_declares_one_material_however_many_tiles_use_it()
+{
+  CExtractionBuilder Builder;
+  const uint32_t uiTileA = Builder.AddTexturedMaterial(
+      ROLLER_ED_TEXTURE_SET_TRACK, 0.125f, 0.125f, 0.0f, 0.0f);
+  const uint32_t uiTileB = Builder.AddTexturedMaterial(
+      ROLLER_ED_TEXTURE_SET_TRACK, 0.125f, 0.125f, 0.25f, 0.5f);
+  Builder.AddQuad(ROLLER_ED_SURFACE_CLASS_CENTER,
+                  ROLLER_ED_CONTENT_AUTHORED_TRACK, uiTileA,
+                  ROLLER_ED_INVALID_MATERIAL_ID);
+  Builder.AddQuad(ROLLER_ED_SURFACE_CLASS_CENTER,
+                  ROLLER_ED_CONTENT_AUTHORED_TRACK, uiTileB,
+                  ROLLER_ED_INVALID_MATERIAL_ID);
+
+  std::ostringstream Obj;
+  std::ostringstream Mtl;
+  std::string sError;
+  assert(CEditorObjExporter::Export(Builder.View(), DefaultOptions(), nullptr,
+                                    0, Obj, Mtl, sError));
+  assert(CountLinesStartingWith(Mtl.str(), "newmtl ") == 1);
+}
+
+void test_flat_palette_colours_become_diffuse_materials()
+{
+  CExtractionBuilder Builder;
+  const uint32_t uiFlat = Builder.AddFlatMaterial(7);
+  Builder.AddQuad(ROLLER_ED_SURFACE_CLASS_OUTER_WALL_FLOOR,
+                  ROLLER_ED_CONTENT_AUTHORED_TRACK, uiFlat,
+                  ROLLER_ED_INVALID_MATERIAL_ID);
+
+  std::vector<tEdObjExportPaletteEntry> Palette(256);
+  Palette[7].byRed = 255;
+  Palette[7].byGreen = 0;
+  Palette[7].byBlue = 51;
+
+  std::ostringstream Obj;
+  std::ostringstream Mtl;
+  std::string sError;
+  assert(CEditorObjExporter::Export(Builder.View(), DefaultOptions(),
+                                    Palette.data(), 256, Obj, Mtl, sError));
+  const std::string sMtl = Mtl.str();
+  assert(Contains(sMtl, "newmtl TRACK3_color_7"));
+  assert(Contains(sMtl, "Kd 1.000000 0.000000 0.200000"));
+  // A flat colour is never given a texture map.
+  assert(!Contains(sMtl, "map_Kd"));
+}
+
+void test_screen_darken_is_a_documented_transparent_material()
+{
+  // Spec open item 2b. A static format cannot reproduce a framebuffer
+  // darkening operation, so the level becomes a black material whose dissolve
+  // leaves the same fraction of what is behind it as the renderer does.
+  CExtractionBuilder Builder;
+  const uint32_t uiDarken = Builder.AddDarkenMaterial(2);
+  Builder.AddQuad(ROLLER_ED_SURFACE_CLASS_LEFT_WALL,
+                  ROLLER_ED_CONTENT_AUTHORED_TRACK, uiDarken,
+                  ROLLER_ED_INVALID_MATERIAL_ID);
+
+  std::ostringstream Obj;
+  std::ostringstream Mtl;
+  std::string sError;
+  assert(CEditorObjExporter::Export(Builder.View(), DefaultOptions(), nullptr,
+                                    0, Obj, Mtl, sError));
+  const std::string sMtl = Mtl.str();
+  assert(Contains(sMtl, "newmtl TRACK3_darken_2"));
+  assert(Contains(sMtl, "Kd 0.000000 0.000000 0.000000"));
+  assert(Contains(sMtl, "d 0.600000"));
+  // Never an ordinary texture.
+  assert(!Contains(sMtl, "map_Kd"));
+
+  assert(std::fabs(CEditorObjExporter::ScreenDarkenAlpha(0) - 0.2f) < 1e-6f);
+  assert(std::fabs(CEditorObjExporter::ScreenDarkenAlpha(3) - 0.8f) < 1e-6f);
+  // Levels past the table clamp rather than read out of bounds.
+  assert(std::fabs(CEditorObjExporter::ScreenDarkenAlpha(4)
+                   - CEditorObjExporter::ScreenDarkenAlpha(99)) < 1e-6f);
+}
+
+void test_runtime_scenery_never_reaches_the_export()
+{
+  // AD-6d/AD-6e: the export is authored content, filtered on the content
+  // class the producer published rather than inferred from anything else.
+  CExtractionBuilder Builder;
+  const uint32_t uiMaterial = Builder.AddTexturedMaterial(
+      ROLLER_ED_TEXTURE_SET_TRACK, 0.125f, 0.125f, 0.0f, 0.0f);
+  Builder.AddQuad(ROLLER_ED_SURFACE_CLASS_CENTER,
+                  ROLLER_ED_CONTENT_RUNTIME_SCENERY, uiMaterial,
+                  ROLLER_ED_INVALID_MATERIAL_ID);
+  Builder.AddQuad(ROLLER_ED_SURFACE_CLASS_CENTER,
+                  ROLLER_ED_CONTENT_AUTHORED_TRACK, uiMaterial,
+                  ROLLER_ED_INVALID_MATERIAL_ID);
+
+  tEdObjExportOptions Options = DefaultOptions();
+  Options.bSeparateBackFaces = false;
+  std::ostringstream Obj;
+  std::ostringstream Mtl;
+  std::string sError;
+  assert(CEditorObjExporter::Export(Builder.View(), Options, nullptr, 0, Obj,
+                                    Mtl, sError));
+  // Only the authored quad survives.
+  assert(CountLinesStartingWith(Obj.str(), "f ") == 2);
+
+  assert(CEditorObjExporter::IsAuthoredContent(
+      ROLLER_ED_CONTENT_AUTHORED_TRACK));
+  assert(CEditorObjExporter::IsAuthoredContent(
+      ROLLER_ED_CONTENT_AUTHORED_SIGN));
+  assert(CEditorObjExporter::IsAuthoredContent(
+      ROLLER_ED_CONTENT_AUTHORED_SCENERY));
+  assert(!CEditorObjExporter::IsAuthoredContent(
+      ROLLER_ED_CONTENT_RUNTIME_SCENERY));
+}
+
+void test_an_inconsistent_extraction_is_refused()
+{
+  CExtractionBuilder Builder;
+  const uint32_t uiMaterial = Builder.AddTexturedMaterial(
+      ROLLER_ED_TEXTURE_SET_TRACK, 0.125f, 0.125f, 0.0f, 0.0f);
+  Builder.AddQuad(ROLLER_ED_SURFACE_CLASS_CENTER,
+                  ROLLER_ED_CONTENT_AUTHORED_TRACK, uiMaterial,
+                  ROLLER_ED_INVALID_MATERIAL_ID);
+  // A material id the extraction does not contain.
+  Builder.m_Primitives[0].uiFrontMaterialId = 9;
+
+  std::ostringstream Obj;
+  std::ostringstream Mtl;
+  std::string sError;
+  assert(!CEditorObjExporter::Export(Builder.View(), DefaultOptions(), nullptr,
+                                     0, Obj, Mtl, sError));
+  assert(!sError.empty());
+
+  // An empty extraction is refused rather than written as an empty file.
+  CExtractionBuilder Empty;
+  std::ostringstream EmptyObj;
+  std::ostringstream EmptyMtl;
+  assert(!CEditorObjExporter::Export(Empty.View(), DefaultOptions(), nullptr, 0,
+                                     EmptyObj, EmptyMtl, sError));
+  assert(!sError.empty());
+}
+
+void test_vertex_indices_are_continuous_across_objects()
+{
+  CExtractionBuilder Builder;
+  const uint32_t uiMaterial = Builder.AddTexturedMaterial(
+      ROLLER_ED_TEXTURE_SET_TRACK, 0.125f, 0.125f, 0.0f, 0.0f);
+  Builder.AddQuad(ROLLER_ED_SURFACE_CLASS_CENTER,
+                  ROLLER_ED_CONTENT_AUTHORED_TRACK, uiMaterial,
+                  ROLLER_ED_INVALID_MATERIAL_ID);
+  Builder.AddQuad(ROLLER_ED_SURFACE_CLASS_ROOF,
+                  ROLLER_ED_CONTENT_AUTHORED_TRACK, uiMaterial,
+                  ROLLER_ED_INVALID_MATERIAL_ID);
+
+  tEdObjExportOptions Options = DefaultOptions();
+  Options.bSeparateBackFaces = false;
+  std::ostringstream Obj;
+  std::ostringstream Mtl;
+  std::string sError;
+  assert(CEditorObjExporter::Export(Builder.View(), Options, nullptr, 0, Obj,
+                                    Mtl, sError));
+  const std::string sObj = Obj.str();
+
+  // OBJ indices are file-global and one-based; the second object continues
+  // where the first left off.
+  assert(CountLinesStartingWith(sObj, "v ") == 8);
+  assert(CountLinesStartingWith(sObj, "vt ") == 8);
+  assert(CountLinesStartingWith(sObj, "vn ") == 8);
+  const std::vector<int> First = FaceIndices(sObj, 0);
+  const std::vector<int> Third = FaceIndices(sObj, 2);
+  assert(First[0] == 1);
+  assert(Third[0] == 5);
+}
+}
+
+int main()
+{
+  test_the_axis_conversion_matches_adr_0003();
+  test_every_named_surface_group_is_emitted();
+  test_combined_sections_produce_one_object();
+  test_back_faces_use_the_back_material_and_reverse_the_winding();
+  test_a_two_sided_surface_without_a_back_material_still_gets_a_back();
+  test_merged_backs_land_in_the_front_object();
+  test_uvs_resolve_through_the_material_atlas_transform();
+  test_texture_sets_choose_their_own_atlas_png();
+  test_a_texture_set_declares_one_material_however_many_tiles_use_it();
+  test_flat_palette_colours_become_diffuse_materials();
+  test_screen_darken_is_a_documented_transparent_material();
+  test_runtime_scenery_never_reaches_the_export();
+  test_an_inconsistent_extraction_is_refused();
+  test_vertex_indices_are_continuous_across_objects();
+  std::puts("editor OBJ exporter tests passed");
+  return 0;
+}

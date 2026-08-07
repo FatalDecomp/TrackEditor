@@ -123,6 +123,11 @@ if(BUILD_TESTING)
             COMMAND "${Python3_EXECUTABLE}"
                     "${CMAKE_CURRENT_SOURCE_DIR}/tests/test_e3a_s7_reference_mesh.py"
                     -v)
+        add_test(
+            NAME trackeditor-e4-s1-obj-export-contract
+            COMMAND "${Python3_EXECUTABLE}"
+                    "${CMAKE_CURRENT_SOURCE_DIR}/tests/test_e4_s1_obj_export.py"
+                    -v)
     endif()
 
     if(TARGET TrackEditor)
@@ -193,6 +198,20 @@ if(BUILD_TESTING)
             "${CMAKE_CURRENT_SOURCE_DIR}/external/ROLLER/PROJECTS/ROLLER")
         add_test(NAME trackeditor-e3-s3-camera-input
                  COMMAND trackeditor-e3-s3-camera-input-test)
+
+        # E4-S1. The OBJ exporter reads ROLLER's canonical geometry and writes
+        # text, so it needs the editor_api.h types on the include path and
+        # nothing else: no Qt, no WhipLib, no linked ROLLER code.
+        add_executable(trackeditor-e4-s1-obj-exporter-test
+            tests/editor_obj_exporter_test.cpp
+            TrackEditor/EditorObjExporter.cpp
+            TrackEditor/EditorObjExporter.h)
+        target_compile_features(trackeditor-e4-s1-obj-exporter-test PRIVATE cxx_std_17)
+        target_include_directories(trackeditor-e4-s1-obj-exporter-test PRIVATE
+            "${CMAKE_CURRENT_SOURCE_DIR}/TrackEditor"
+            "${CMAKE_CURRENT_SOURCE_DIR}/external/ROLLER/PROJECTS/ROLLER")
+        add_test(NAME trackeditor-e4-s1-obj-exporter
+                 COMMAND trackeditor-e4-s1-obj-exporter-test)
 
         add_test(NAME trackeditor-smoke COMMAND TrackEditor --cmake-smoke-test)
         if(WIN32)

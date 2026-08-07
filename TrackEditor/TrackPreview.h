@@ -89,6 +89,11 @@ signals:
 
 private:
   bool SaveTrack_Internal(const QString &sFilename);
+  // E4-S1. Writes the OBJ/MTL pair from ROLLER's canonical geometry rather
+  // than from WhipLib's CPU derivation.
+  bool ExportObj_Internal(const QString &sFolder, const QString &sName,
+                          const QString &sFilename, bool bSeparateSections,
+                          bool bSeparateBackFaces);
   void UpdateReferenceModelPos_Internal();
   // Hands the worker the mesh exactly once per change: null on every other
   // frame, so a camera nudge does not copy the whole model through the queue.
