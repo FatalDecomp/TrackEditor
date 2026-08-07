@@ -7,6 +7,12 @@
 //-------------------------------------------------------------------------------------------------
 #define TILE_WIDTH 64
 #define TILE_HEIGHT TILE_WIDTH
+// E4-S4. ROLLER addresses texture tiles in a 256-pixel-wide atlas -- polytex.c
+// resolves a tile as row = index >> 2, col = index & 3 with a 256-byte stride
+// - and the canonical UVs the exporters emit are expressed against exactly
+// that atlas. The exported PNG therefore has to use it too, which is why this
+// is a fixed 256 rather than a multiple of TILE_WIDTH chosen here.
+#define EXPORT_ATLAS_WIDTH 256
 //-------------------------------------------------------------------------------------------------
 #define SURFACE_FLAG_WALL_31       0x80000000
 #define SURFACE_FLAG_BOUNCE        0x40000000
@@ -62,7 +68,21 @@ public:
 
   void ClearData();
   bool LoadTexture(const std::string &sFilename, CPalette *pPalette);
+  // The legacy single-column bitmap: TILE_WIDTH wide, TILE_HEIGHT per tile,
+  // every tile including the synthetic palette and transparency ones. WhipLib's
+  // C API publishes this shape and WhipLib::TextureMapping computes UVs against
+  // it, so it is frozen; the exported PNG uses GenerateExportAtlas instead.
   std::uint8_t *GenerateBitmapData(int &iSize) const;
+
+  // E4-S4. The canonical export atlas: EXPORT_ATLAS_WIDTH wide, four tiles per
+  // row, row-major in tile-index order, content tiles only, top row first and
+  // no transpose - the layout ROLLER's material transforms address. Tiles past
+  // the content count pad the last row transparently.
+  static int GetExportTilesPerRow();
+  int GetExportAtlasHeight() const;
+  std::uint8_t *GenerateExportAtlas(int &iWidth, int &iHeight,
+                                    int &iSize) const;
+
   bool ExportToPngFile(const std::string &sFilename) const;
   int GetNumTiles() const;
   int GetAtlasTileCount() const { return m_iNumTiles; }

@@ -138,6 +138,11 @@ if(BUILD_TESTING)
             COMMAND "${Python3_EXECUTABLE}"
                     "${CMAKE_CURRENT_SOURCE_DIR}/tests/test_e4_s3_fbx_removal.py"
                     -v)
+        add_test(
+            NAME trackeditor-e4-s4-texture-output-contract
+            COMMAND "${Python3_EXECUTABLE}"
+                    "${CMAKE_CURRENT_SOURCE_DIR}/tests/test_e4_s4_texture_output.py"
+                    -v)
     endif()
 
     if(TARGET TrackEditor)

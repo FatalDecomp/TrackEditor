@@ -99,9 +99,10 @@ OBJ's V origin is bottom-left while the exported atlas PNG's rows are
 top-left, so the final coordinate is `(u, 1 - v)`. This is the same flip
 `CShapeData::FlipTexCoordsForExport` used to perform.
 
-The atlas PNGs are the ones `CTrackAssets::ExportTextures` already writes:
+The atlas PNGs are the ones `CTrackAssets::ExportTextures` writes:
 `<name>.png` for `ROLLER_ED_TEXTURE_SET_TRACK` and `<name>_BLD.png` for
-`ROLLER_ED_TEXTURE_SET_BUILDING_SIGN`.
+`ROLLER_ED_TEXTURE_SET_BUILDING_SIGN`. Their layout is what makes these UVs
+resolve at all — see [texture-export.md](texture-export.md).
 
 `ROLLER_ED_MATERIAL_FLAG_PAIR_WRAPS_ATLAS_ROW` marks a pair whose second tile
 is the first tile of the next atlas row. The published transform runs past the

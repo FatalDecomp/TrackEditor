@@ -157,7 +157,8 @@ Referenced or embedded, following the container:
   self-contained is the only reason to choose it.
 
 Only atlases the export actually references become textures; the
-building/sign bank is skipped when nothing uses it.
+building/sign bank is skipped when nothing uses it. Their layout is what makes
+these UVs resolve at all — see [texture-export.md](texture-export.md).
 
 The sampler is **nearest** and **clamp-to-edge**. The atlas packs tiles edge to
 edge, so bilinear filtering would bleed neighbouring tiles into every seam, and

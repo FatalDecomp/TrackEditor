@@ -134,17 +134,82 @@ std::uint8_t *CTexture::GenerateBitmapData(int &iSize) const
 
 //-------------------------------------------------------------------------------------------------
 
+int CTexture::GetExportTilesPerRow()
+{
+  return EXPORT_ATLAS_WIDTH / TILE_WIDTH;
+}
+
+//-------------------------------------------------------------------------------------------------
+
+int CTexture::GetExportAtlasHeight() const
+{
+  const int iTiles = GetNumTiles();
+  const int iTilesPerRow = GetExportTilesPerRow();
+  // ROLLER gives an empty bank one row rather than a zero-height atlas.
+  const int iRows = iTiles > 0
+      ? (iTiles + iTilesPerRow - 1) / iTilesPerRow
+      : 1;
+  return iRows * TILE_HEIGHT;
+}
+
+//-------------------------------------------------------------------------------------------------
+
+std::uint8_t *CTexture::GenerateExportAtlas(int &iWidth, int &iHeight,
+                                            int &iSize) const
+{
+  iWidth = EXPORT_ATLAS_WIDTH;
+  iHeight = GetExportAtlasHeight();
+  iSize = 4 * iWidth * iHeight;
+
+  std::uint8_t *pData = new std::uint8_t[iSize];
+  // A tile count that does not fill its last row leaves padding, and the
+  // canonical UVs never address it; transparent black is the honest value.
+  std::memset(pData, 0, static_cast<size_t>(iSize));
+
+  // Content tiles only. m_iNumTiles also counts the synthetic palette and
+  // transparency tiles the editor appends for its own pickers; ROLLER's
+  // uiTileCount does not, and the atlas has to agree with ROLLER or every UV
+  // lands a row out.
+  const int iTiles = GetNumTiles();
+  const int iTilesPerRow = GetExportTilesPerRow();
+  for (int i = 0; i < iTiles; ++i) {
+    const int iTileX = (i % iTilesPerRow) * TILE_WIDTH;
+    const int iTileY = (i / iTilesPerRow) * TILE_HEIGHT;
+    for (int y = 0; y < TILE_HEIGHT; ++y) {
+      for (int x = 0; x < TILE_WIDTH; ++x) {
+        // data is indexed [column][row]; writing it straight into a row-major
+        // image is what keeps the tile upright. The legacy column bitmap walks
+        // x outermost, which transposes each tile, and flips the rows on top
+        // of that - both were invisible while it computed its own UVs to
+        // match, and both are wrong for a canonical UV.
+        const tTextureColor &Colour = m_pTileAy[i].data[x][y];
+        std::uint8_t *pPixel =
+            pData + (static_cast<size_t>(iTileY + y) * iWidth
+                     + static_cast<size_t>(iTileX + x)) * 4u;
+        pPixel[0] = Colour.r;
+        pPixel[1] = Colour.g;
+        pPixel[2] = Colour.b;
+        pPixel[3] = Colour.a;
+      }
+    }
+  }
+  return pData;
+}
+
+//-------------------------------------------------------------------------------------------------
+
 bool CTexture::ExportToPngFile(const std::string &sFilename) const
 {
   if (!IsLoaded() || sFilename.empty())
     return false;
 
-  int iBmpSize;
-  std::uint8_t *pBmpData = GenerateBitmapData(iBmpSize);
-  const bool bSuccess = stbi_write_png(sFilename.c_str(), TILE_WIDTH,
-                                      TILE_HEIGHT * m_iNumTiles, 4,
-                                      pBmpData, TILE_WIDTH * 4) != 0;
-  delete[] pBmpData;
+  int iWidth = 0;
+  int iHeight = 0;
+  int iSize = 0;
+  std::uint8_t *pAtlas = GenerateExportAtlas(iWidth, iHeight, iSize);
+  const bool bSuccess = stbi_write_png(sFilename.c_str(), iWidth, iHeight, 4,
+                                       pAtlas, iWidth * 4) != 0;
+  delete[] pAtlas;
   return bSuccess;
 }
 
