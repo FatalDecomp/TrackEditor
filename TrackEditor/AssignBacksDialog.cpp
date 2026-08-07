@@ -22,8 +22,6 @@ CAssignBacksDialog::CAssignBacksDialog(QWidget *pParent, CTrack *pTrack)
   
   if (pTrack && pTrack->m_assets.GetMainTexture()) {
     lblNotLoaded->setVisible(pTrack->m_assets.GetMainTexture()->GetNumTiles() == 0);
-    int iButtonSize = 90;
-    int iTilesPerLine = (width() - 256) / (iButtonSize + 6);
     int i = 0;
     for (; i < pTrack->m_assets.GetMainTexture()->GetNumTiles(); ++i) {
       int iBack = -1;

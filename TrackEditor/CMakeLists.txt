@@ -94,6 +94,8 @@ set_target_properties(TrackEditor PROPERTIES
     AUTOUIC_SEARCH_PATHS "${CMAKE_CURRENT_SOURCE_DIR}")
 
 target_compile_features(TrackEditor PRIVATE cxx_std_17)
+trackeditor_set_warnings(TrackEditor)
+trackeditor_gate_qt_deprecations(TrackEditor)
 target_compile_definitions(TrackEditor
     PRIVATE
         QT_NO_PDF

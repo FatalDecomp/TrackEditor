@@ -470,7 +470,6 @@ tVertex *CShapeFactory::MakeVertsStuntMarker(uint32 &uiNumVerts, CTexture *pText
   uiNumVerts = 14;
   tVertex *vertices = new tVertex[uiNumVerts];
 
-  glm::vec4 color = glm::vec4(0, 1, 0, 1);
   vertices[0].position = glm::vec3(+0.0f  , +100.0f, +0.0f);
   vertices[1].position = glm::vec3(+100.0f, +0.0f  , +0.0f);
   vertices[2].position = glm::vec3(+400.0f, -300.0f, +0.0f);
@@ -681,7 +680,7 @@ int CShapeFactory::GetCoordsCount(eWhipModel model)
       return g_bld0CoordsCount;
     default:
       assert(0);
-      return NULL;
+      return 0;
   }
 }
 
@@ -825,7 +824,7 @@ int CShapeFactory::GetPolsCount(eWhipModel model)
       return g_bld0PolsCount;
     default:
       assert(0);
-      return NULL;
+      return 0;
   }
 }
 
@@ -969,7 +968,7 @@ int CShapeFactory::GetAnmsCount(eWhipModel model)
       return 0;
     default:
       assert(0);
-      return NULL;
+      return 0;
   }
 }
 
@@ -1113,7 +1112,7 @@ int CShapeFactory::GetBacksCount(eWhipModel model)
       return g_bld0BacksCount;
     default:
       assert(0);
-      return NULL;
+      return 0;
   }
 }
 
@@ -1353,6 +1352,8 @@ void CShapeFactory::MakeAILine(CShapeData **pShape, CTrack *pTrack, eShapeSectio
       case eShapeSection::CARLINE4:
         vertices[i].texCoords = TextureMapping::GetColorCenterCoordinates(*pTrack->m_assets.GetMainTexture(), 0xCF);
         break;
+      default:
+        break; //only the line sections are recoloured here
     }
   }
 
@@ -1406,15 +1407,13 @@ void CShapeFactory::MakeSigns(CTrack *pTrack, std::vector<CShapeData *> &signAy,
     if (!pNewSign)
       continue;
 
-    uint32 uiSignSurfaceType = CTrack::GetSignedBitValueFromInt(pTrack->m_chunkAy[i].iSignTexture);
-
     //position sign
     bool bReversedOffsets = pTrack->m_chunkAy[i].dPitch >= 90.0f && pTrack->m_chunkAy[i].dPitch < 270.0f;
     float fLen = (float)pTrack->m_chunkAy[i].iSignHorizOffset * 15.0f * (bReversedOffsets ? 1.0f : -1.0f);
     float fHeight = (float)pTrack->m_chunkAy[i].iSignVertOffset * 15.0f * (bReversedOffsets ? 1.0f : -1.0f);
 
     glm::vec3 center; //sign origin is midpoint of centerline
-    if (i + 1 < pTrack->m_chunkAy.size())
+    if ((size_t)(i + 1) < pTrack->m_chunkAy.size())
       center = (chunkGeometryAy[i + 1].center - chunkGeometryAy[i].center) * 0.5f;
     else
       center = (chunkGeometryAy[i].center - chunkGeometryAy[0].center) * 0.5f;
@@ -1483,7 +1482,7 @@ void CShapeFactory::MakeStunts(CTrack *pTrack, std::vector<CShapeData *> &stuntA
   const CDerivedTrackChunkAy &chunkGeometryAy = TrackGeometry.GetChunks();
 
   for (CStuntMap::iterator it = pTrack->m_stuntMap.begin(); it != pTrack->m_stuntMap.end(); ++it) {
-    if (it->first < 0 || it->first >= pTrack->m_chunkAy.size()) {
+    if (it->first < 0 || (size_t)it->first >= pTrack->m_chunkAy.size()) {
       assert(0);
       continue;
     }
@@ -1882,7 +1881,7 @@ tVertex *CShapeFactory::MakeVerts(uint32 &numVertices, eShapeSection section, CT
 
 tVertex *CShapeFactory::MakeVertsEnvirFloor(uint32 &numVertices, CTrack *pTrack, CTexture *pTexture, int iIndex)
 {
-  if (pTrack->m_chunkAy.empty() || iIndex >= pTrack->m_chunkAy.size()) {
+  if (pTrack->m_chunkAy.empty() || (size_t)iIndex >= pTrack->m_chunkAy.size()) {
     numVertices = 0;
     return NULL;
   }
@@ -1906,8 +1905,6 @@ tVertex *CShapeFactory::MakeVertsEnvirFloor(uint32 &numVertices, CTrack *pTrack,
 
 uint32 *CShapeFactory::MakeIndicesEnvirFloor(uint32 &numIndices)
 {
-  uint32 uiNumVertsPerChunk = 4;
-  uint32 uiNumIndicesPerChunk = 6;
   numIndices = 6;
   uint32 *indices = new uint32[numIndices];
   memset(indices, 0, numIndices * sizeof(uint32));
@@ -2083,10 +2080,10 @@ uint32 *CShapeFactory::MakeIndicesSelectedChunks(uint32 &numIndices, int iStart,
   uint32 *indices = new uint32[numIndices];
   memset(indices, 0, numIndices * sizeof(uint32));
 
-  bool bDrawChunk0 = (iEnd == pTrack->m_chunkAy.size() - 1);
+  bool bDrawChunk0 = ((size_t)iEnd == pTrack->m_chunkAy.size() - 1);
   iStart++;
   iEnd++;
-  if (iEnd > pTrack->m_chunkAy.size() - 1)
+  if ((size_t)iEnd > pTrack->m_chunkAy.size() - 1)
     iEnd = (int)pTrack->m_chunkAy.size() - 1;
 
   int i = iStart;
@@ -2119,7 +2116,8 @@ uint32 *CShapeFactory::MakeIndicesSelectedChunks(uint32 &numIndices, int iStart,
     indices[i * uiNumIndicesPerChunk + 23] = (i * uiNumVertsPerChunk) + 1;
   }
   if (bDrawChunk0) {
-    int i = 0;
+    // Reuses the enclosing i rather than shadowing it; nothing below reads it.
+    i = 0;
     indices[i * uiNumIndicesPerChunk + 0] = (i * uiNumVertsPerChunk) + 0;
     indices[i * uiNumIndicesPerChunk + 1] = (i * uiNumVertsPerChunk) + 1;
     indices[i * uiNumIndicesPerChunk + 2] = (i * uiNumVertsPerChunk) + 1;
@@ -2226,7 +2224,7 @@ void CShapeFactory::ApplyVerticesSingleSection(int i, tVertex *vertices,
 //-------------------------------------------------------------------------------------------------
 
 void CShapeFactory::ApplyNormalsAndTexCoords(int i,
-                                             int iChunkIndex,
+                                             [[maybe_unused]] int iChunkIndex,
                                              tVertex *vertices,
                                              uint32 uiNumVertsPerChunk,
                                              CTrack *pTrack,

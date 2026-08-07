@@ -88,10 +88,14 @@ jobs:
         shell: pwsh
         run: .\scripts\install-sdl-windows.ps1 -Destination "$env:RUNNER_TEMP\sdl"
 
+      # E5-S3. Windows is the platform whose /W4 output has been read end to
+      # end, so it is the one that enforces. Linux and macOS build at the same
+      # raised level and print their warnings; flip them to errors once a run
+      # has confirmed those logs are clean.
       - name: Configure
         shell: pwsh
         run: |
-          cmake -S . -B build -G "Visual Studio 17 2022" -A x64
+          cmake -S . -B build -G "Visual Studio 17 2022" -A x64 -DTRACKEDITOR_WARNINGS_AS_ERRORS=ON
 
       - name: Build
         run: cmake --build build --config Release --parallel

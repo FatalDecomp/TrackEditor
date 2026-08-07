@@ -306,7 +306,6 @@ void CEditStuntWidget::StuntClicked()
     return;
 
   int iFrom = g_pMainWindow->GetSelFrom();
-  int iTo = g_pMainWindow->GetSelTo();
 
   CStuntMap::iterator it = g_pMainWindow->GetCurrentTrack()->m_stuntMap.find(iFrom);
   bool bChunkHasStunt = it != g_pMainWindow->GetCurrentTrack()->m_stuntMap.end();

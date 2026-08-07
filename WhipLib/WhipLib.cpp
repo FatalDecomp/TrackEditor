@@ -328,7 +328,7 @@ WLFUNC bool wlGetSignModel(int iTrackId,
   if (it == s_trackMap.end())
     return bSuccess;
 
-  if (iSignIndex < 0 || iSignIndex > it->second->signAy.size() - 1)
+  if (iSignIndex < 0 || (size_t)iSignIndex > it->second->signAy.size() - 1)
     return bSuccess;
 
   //fill buffers

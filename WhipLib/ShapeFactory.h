@@ -103,8 +103,6 @@ private:
                                 eBackModeling backModeling,
                                 int iOffset = 0);
   void MakeNormals(tVertex &topLeft, tVertex &topRight, tVertex &bottomLeft, tVertex &bottomRight);
-
-  static CShapeFactory s_shapeFactory;
 };
 
 //-------------------------------------------------------------------------------------------------

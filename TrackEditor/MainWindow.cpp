@@ -173,7 +173,9 @@ CMainWindow::CMainWindow(const QString &sAppPath, float fDesktopScale,
   menuView->addSeparator();
   menuView->addAction(p->m_pDebugDataDockWidget->toggleViewAction());
   p->m_pDebugAction = new QAction("Debug Log", menuView);
-  p->m_pDebugAction->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_G));
+  // Qt 6 deletes Qt::operator+ for modifier/key pairs; '|' yields the
+  // QKeyCombination QKeySequence now takes.
+  p->m_pDebugAction->setShortcut(QKeySequence(Qt::CTRL | Qt::Key_G));
   menuView->addAction(p->m_pDebugAction);
 
   //deselect action, will be cleaned up by qt parent

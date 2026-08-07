@@ -15,6 +15,7 @@ add_library(WhipLib STATIC ${whiplib_sources})
 add_library(TrackEditor::WhipLib ALIAS WhipLib)
 
 target_compile_features(WhipLib PUBLIC cxx_std_17)
+trackeditor_set_warnings(WhipLib)
 target_compile_definitions(WhipLib
     PUBLIC
         GLM_ENABLE_EXPERIMENTAL

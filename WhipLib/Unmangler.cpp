@@ -142,7 +142,7 @@ void Unmangler::MangleFile(const std::vector<uint8> &source, std::vector<uint8> 
   destination.push_back(0);
   int iSourceLen = (int)source.size();
   for (int i = 0; i < 4; i++)
-    destination[3 - i] = (iSourceLen >> (i * 8));
+    destination[3 - i] = (uint8)(iSourceLen >> (i * 8));
   int iInputPos = 0;
   while (iInputPos < iSourceLen) {
     std::vector<int> nextRepeats = FindMaxRepeats(source, iInputPos);
@@ -152,7 +152,7 @@ void Unmangler::MangleFile(const std::vector<uint8> &source, std::vector<uint8> 
     {
       if (iOffset > 0) // output non-repeating bytes
       {
-        destination.push_back(iOffset);
+        destination.push_back((uint8)iOffset);
         for (int i = iInputPos; i < iInputPos + iOffset; ++i) {
           destination.push_back(source[i]);
         }

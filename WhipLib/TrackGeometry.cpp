@@ -267,7 +267,7 @@ void CTrackGeometry::GetShoulder(int i, glm::vec3 lLane, glm::vec3 pitchAxis, gl
 
 //-------------------------------------------------------------------------------------------------
 
-void CTrackGeometry::GetEnvirFloor(int i, glm::vec3 lShoulder, glm::vec3 rShoulder,
+void CTrackGeometry::GetEnvirFloor([[maybe_unused]] int i, glm::vec3 lShoulder, glm::vec3 rShoulder,
                                glm::vec3 &lEnvirFloor, glm::vec3 &rEnvirFloor)
 {
   float fEnvirFloorDepth = (float)m_header.iFloorDepth * -1.0f;
@@ -279,7 +279,8 @@ void CTrackGeometry::GetEnvirFloor(int i, glm::vec3 lShoulder, glm::vec3 rShould
 
 //-------------------------------------------------------------------------------------------------
 
-void CTrackGeometry::GetOWallFloor(int i, glm::vec3 lLane, glm::vec3 rLane, glm::vec3 pitchAxis, glm::vec3 nextChunkPitched,
+void CTrackGeometry::GetOWallFloor(int i, glm::vec3 lLane, glm::vec3 rLane, glm::vec3 pitchAxis,
+                               [[maybe_unused]] glm::vec3 nextChunkPitched,
                                glm::vec3 &lFloor, glm::vec3 &rFloor)
 {
   glm::mat4 translateMatL = glm::translate(lLane);
@@ -352,7 +353,9 @@ void CTrackGeometry::GetAILine(int i, glm::vec3 center, glm::vec3 pitchAxis, glm
 {
   glm::mat4 translateMat = glm::translate(center);
   float fLen = 0.0f;
-  int iUseAILine;
+  // assert(0) in the default case compiles out of Release, so this was read
+  // uninitialized for any non-AILINE section.
+  int iUseAILine = 0;
   switch (lineSection) {
     case eShapeSection::AILINE1:
       iUseAILine = m_chunkAy[i].iAILine1;

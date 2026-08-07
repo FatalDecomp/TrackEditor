@@ -8,6 +8,7 @@ add_library(track-assets STATIC
 add_library(TrackEditor::track-assets ALIAS track-assets)
 
 target_compile_features(track-assets PUBLIC cxx_std_17)
+trackeditor_set_warnings(track-assets)
 target_compile_definitions(track-assets
     PRIVATE
         $<$<PLATFORM_ID:Windows>:IS_WINDOWS>

@@ -35,7 +35,9 @@ static int g_signAyCount = sizeof(g_signAy) / sizeof(g_signAy[0]);
 
 //-------------------------------------------------------------------------------------------------
 
-static const tSignType &GetSignTypeFromModel(eWhipModel model)
+// Header-local helpers: not every translation unit that needs the table needs
+// both lookups. g_signAy is deliberately left as a per-TU copy.
+[[maybe_unused]] static const tSignType &GetSignTypeFromModel(eWhipModel model)
 {
   for (int i = 0; i < g_signAyCount; ++i) {
     if (g_signAy[i].modelType == model)
@@ -47,7 +49,7 @@ static const tSignType &GetSignTypeFromModel(eWhipModel model)
 
 //-------------------------------------------------------------------------------------------------
 
-static const bool IsSign(eWhipModel model)
+[[maybe_unused]] static bool IsSign(eWhipModel model)
 {
   for (int i = 0; i < g_signAyCount; ++i) {
     if (g_signAy[i].modelType == model)

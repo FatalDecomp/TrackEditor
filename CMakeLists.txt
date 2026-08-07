@@ -4,6 +4,12 @@ project(RollerTrackEditor VERSION 0.1.0 LANGUAGES C CXX)
 
 option(TRACKEDITOR_BUILD_APPLICATION "Build the Qt TrackEditor application" ON)
 
+# Included before the first add_subdirectory so every target this repository
+# owns can reach trackeditor_set_warnings() and the Qt deprecation gate.
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+include(TrackEditorNoOpenGL)
+include(TrackEditorWarnings)
+
 set(ROLLER_BUILD_GAME OFF CACHE BOOL "Build the ROLLER game" FORCE)
 set(ROLLER_BUILD_EDITOR_CORE ON CACHE BOOL "Build roller-core for TrackEditor" FORCE)
 
@@ -20,12 +26,6 @@ add_subdirectory(TrackAssets)
 if(NOT TARGET ROLLER::core)
     message(FATAL_ERROR "The ROLLER submodule did not provide ROLLER::core")
 endif()
-
-# E5-S2. Keeps the Qt module set at Core/Gui/Widgets by walking the real link
-# closure at configure time. Lives in its own module because it is the one place
-# allowed to name the libraries it forbids.
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
-include(TrackEditorNoOpenGL)
 
 if(TRACKEDITOR_BUILD_APPLICATION)
     find_package(Qt6 6.8 REQUIRED COMPONENTS Core Gui Widgets)
@@ -176,6 +176,11 @@ if(BUILD_TESTING)
             COMMAND "${Python3_EXECUTABLE}"
                     "${CMAKE_CURRENT_SOURCE_DIR}/tests/test_e5_s2_module_set.py"
                     -v)
+        add_test(
+            NAME trackeditor-e5-s3-api-migrations-contract
+            COMMAND "${Python3_EXECUTABLE}"
+                    "${CMAKE_CURRENT_SOURCE_DIR}/tests/test_e5_s3_api_migrations.py"
+                    -v)
     endif()
 
     if(TARGET TrackEditor)
@@ -289,6 +294,8 @@ if(BUILD_TESTING)
             TrackEditor/EditorGltfExporter.cpp
             TrackEditor/EditorGltfExporter.h)
         target_compile_features(trackeditor-e4-s2-gltf-exporter-test PRIVATE cxx_std_17)
+        target_compile_definitions(trackeditor-e4-s2-gltf-exporter-test PRIVATE
+            $<$<CXX_COMPILER_ID:MSVC>:_CRT_SECURE_NO_WARNINGS>)
         target_include_directories(trackeditor-e4-s2-gltf-exporter-test PRIVATE
             "${CMAKE_CURRENT_SOURCE_DIR}/TrackEditor"
             "${CMAKE_CURRENT_SOURCE_DIR}/external/ROLLER/PROJECTS/ROLLER")
@@ -340,4 +347,31 @@ if(BUILD_TESTING)
             ENVIRONMENT "QT_QPA_PLATFORM=${trackeditor_qpa_platform}"
             TIMEOUT 30)
     endif()
+
+    # E5-S3. Test code is code: the executables this repository owns build at
+    # the same raised warning level as the libraries they exercise, and the two
+    # that compile Qt headers take the same deprecation gate.
+    foreach(trackeditor_test_target IN ITEMS
+            trackeditor-e3-s5a-track-model-test
+            trackeditor-e3-s5b-track-assets-test
+            trackeditor-e3-s5c-track-geometry-test
+            trackeditor-e3-s1-frame-delivery-test
+            trackeditor-e3-s1-render-service-test
+            trackeditor-e3a-s2-overlay-settings-test
+            trackeditor-e3-s3-camera-input-test
+            trackeditor-e4-s1-obj-exporter-test
+            trackeditor-e4-s5-export-format-test
+            trackeditor-e4-s2-gltf-exporter-test)
+        if(TARGET ${trackeditor_test_target})
+            trackeditor_set_warnings(${trackeditor_test_target})
+        endif()
+    endforeach()
+
+    foreach(trackeditor_qt_test_target IN ITEMS
+            trackeditor-e3-s1-frame-delivery-test
+            trackeditor-e3-s1-render-service-test)
+        if(TARGET ${trackeditor_qt_test_target})
+            trackeditor_gate_qt_deprecations(${trackeditor_qt_test_target})
+        endif()
+    endforeach()
 endif()

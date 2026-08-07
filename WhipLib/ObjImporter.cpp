@@ -115,7 +115,7 @@ bool CObjImporter::ImportObj(const std::string &sFile, CShapeData **pShape, CTex
         break;
       }
 
-      for (int i = 1; i < lineAy.size(); ++i) {
+      for (int i = 1; i < (int)lineAy.size(); ++i) {
         std::vector<std::string> polygonAy;
         std::stringstream ssPol(lineAy[i]);
         while (ssPol.good()) {

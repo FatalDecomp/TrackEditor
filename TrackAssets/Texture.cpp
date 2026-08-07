@@ -21,9 +21,9 @@
 //-------------------------------------------------------------------------------------------------
 
 CTexture::CTexture()
-  : m_iNumTiles(0)
-  , m_pTileAy(NULL)
+  : m_pTileAy(NULL)
   , m_pPalette(NULL)
+  , m_iNumTiles(0)
 {
 }
 
@@ -241,17 +241,16 @@ bool CTexture::ProcessTextureData(const std::uint8_t *pData, size_t length)
     tTile *pTile = &m_pTileAy[i];
     for (int j = 0; j < iPixelsPerTile; ++j) {
       std::uint8_t byPaletteIndex = pData[i * iPixelsPerTile + j];
-      if (PALETTE_SIZE > byPaletteIndex) {
-        pTile->data[j % TILE_WIDTH][j / TILE_WIDTH] =
-            tTextureColor{m_pPalette->m_paletteAy[byPaletteIndex].r,
-                          m_pPalette->m_paletteAy[byPaletteIndex].g,
-                          m_pPalette->m_paletteAy[byPaletteIndex].b,
-                          static_cast<std::uint8_t>(byPaletteIndex ? 255 : 0)};
-      } else {
-        assert(0);
-        Logging::LogMessage("Error loading texture: palette index out of bounds");
-        return false;
-      }
+      // The palette covers the whole byte range, so the out-of-bounds branch
+      // that used to sit here was unreachable and read as always-true to the
+      // compiler. The assertion is now the static one.
+      static_assert(PALETTE_SIZE == 256,
+                    "a palette index is a byte, so PALETTE_SIZE must cover 0..255");
+      pTile->data[j % TILE_WIDTH][j / TILE_WIDTH] =
+          tTextureColor{m_pPalette->m_paletteAy[byPaletteIndex].r,
+                        m_pPalette->m_paletteAy[byPaletteIndex].g,
+                        m_pPalette->m_paletteAy[byPaletteIndex].b,
+                        static_cast<std::uint8_t>(byPaletteIndex ? 255 : 0)};
     }
   }
 

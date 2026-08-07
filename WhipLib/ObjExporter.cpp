@@ -96,7 +96,6 @@ bool CObjExporter::ExportTrack(std::vector<std::pair<std::string, CShapeData *>>
     return false;
   }
 
-  bool bSuccess = true;
   int iOffset = 0;
   for (std::vector<std::pair<std::string, CShapeData *>>::iterator it = trackSectionAy.begin(); it != trackSectionAy.end(); ++it) {
    ExportShape_Internal(out, iOffset, it->second, it->first, sName);

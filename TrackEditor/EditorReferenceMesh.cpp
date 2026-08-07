@@ -108,7 +108,7 @@ tEdReferenceMesh CEditorReferenceMesh::GetMesh() const
   // them. Wireframe is the host's choice, not a property of the file.
   // AD-13: with the flag clear the core generates the normals itself, which
   // is the right answer for a file that carried none.
-  Mesh.uiFlags = m_bHasNormals ? ROLLER_ED_REFERENCE_HAS_NORMALS : 0u;
+  Mesh.uiFlags = m_bHasNormals ? (uint32_t)ROLLER_ED_REFERENCE_HAS_NORMALS : 0u;
   if (m_bWireframe)
     Mesh.uiFlags |= ROLLER_ED_REFERENCE_WIREFRAME;
   return Mesh;

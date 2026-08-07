@@ -1019,16 +1019,16 @@ bool CTrackPreview::SaveTrack_Internal(const QString &sFilename)
   if (sFilename.isEmpty())
     return false;
 
-  std::vector<uint8> data;
+  std::vector<uint8> trackData;
   std::vector<uint8> mangledData;
-  p->m_track.GetTrackData(data);
+  p->m_track.GetTrackData(trackData);
 
   std::vector<uint8> *pOutData;
   //if (bIsMangled) {
-  //  MangleFile(data, mangledData);
+  //  MangleFile(trackData, mangledData);
   //  pOutData = &mangledData;
   //} else {
-  pOutData = &data;
+  pOutData = &trackData;
 //}
 
   QFile file(sFilename);

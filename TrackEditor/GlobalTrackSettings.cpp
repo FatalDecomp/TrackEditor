@@ -128,7 +128,6 @@ void CGlobalTrackSettings::OnCancelInfoClicked()
 void CGlobalTrackSettings::UpdateInfoEditMode()
 {
   bool bEditMode = false;
-  bool bMixedData = false;
   if (leFloorDepth->text().compare(p->sFloorDepth) != 0
       || cbTex->currentText().compare(p->sTex) != 0
       || cbBld->currentText().compare(p->sBld) != 0

@@ -158,6 +158,8 @@ void CarHelpers::RemapColor(eWhipModel model, uint32 &uiTex)
       if (uiColor == 0x0000008f)
         uiColor = 0x000000db;
       break;
+    default:
+      break; //every other model keeps its colour
   }
   //apply to texture
   uiTex &= ~SURFACE_MASK_TEXTURE_INDEX;

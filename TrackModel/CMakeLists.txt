@@ -6,6 +6,7 @@ add_library(track-model STATIC
 add_library(TrackEditor::track-model ALIAS track-model)
 
 target_compile_features(track-model PUBLIC cxx_std_17)
+trackeditor_set_warnings(track-model)
 target_compile_definitions(track-model
     PRIVATE
         $<$<PLATFORM_ID:Windows>:IS_WINDOWS>

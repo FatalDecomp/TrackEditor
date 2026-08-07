@@ -135,8 +135,14 @@ class NormalsFlagTests(unittest.TestCase):
 
     def test_has_normals_follows_the_file(self) -> None:
         body = function_body(self.source, "tEdReferenceMesh CEditorReferenceMesh::GetMesh(")
-        self.assertIn("m_bHasNormals ? ROLLER_ED_REFERENCE_HAS_NORMALS : 0u",
-                      body)
+        # An exact-string match here broke on E5-S3's cast, which changed
+        # nothing about what the line means. The assertion is the conditional:
+        # the flag comes from m_bHasNormals and is otherwise clear.
+        self.assertRegex(
+            body,
+            r"m_bHasNormals\s*\?\s*(?:\(\s*\w+\s*\)\s*|static_cast<\s*\w+\s*>\s*)?"
+            r"ROLLER_ED_REFERENCE_HAS_NORMALS\s*:\s*0u",
+        )
 
     def test_the_flag_is_derived_from_the_geometry_not_the_caller(
         self,
