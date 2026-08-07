@@ -191,7 +191,8 @@ private:
     }
   }
 
-  void AssertWorkerThread(const char *szCall) const
+  // szCall feeds Q_ASSERT_X, which compiles out of release builds.
+  void AssertWorkerThread([[maybe_unused]] const char *szCall) const
   {
     Q_ASSERT_X(QThread::currentThread() == this,
                "CEditorRenderThread", szCall);

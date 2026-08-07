@@ -33,11 +33,13 @@ class TrackModelContractTests(unittest.TestCase):
         ):
             self.assertNotIn(forbidden, model_text)
 
-    def test_whiplib_track_is_a_scalar_model_with_assets(self):
-        whiplib_cmake = (ROOT / "WhipLib" / "CMakeLists.txt").read_text(encoding="utf-8")
-        track_header = (ROOT / "WhipLib" / "Track.h").read_text(encoding="utf-8")
+    def test_the_document_type_is_a_scalar_model_with_assets(self):
+        # CTrack moved from WhipLib into TrackEditor/ when WhipLib was deleted;
+        # it is an editor type and always was. The property is unchanged.
+        editor_cmake = (ROOT / "TrackEditor" / "CMakeLists.txt").read_text(encoding="utf-8")
+        track_header = (ROOT / "TrackEditor" / "Track.h").read_text(encoding="utf-8")
 
-        self.assertIn("TrackEditor::track-model", whiplib_cmake)
+        self.assertIn("TrackEditor::track-model", editor_cmake)
         self.assertIn("class CTrack : public CTrackModel", track_header)
         self.assertIn("CTrackAssets m_assets", track_header)
         self.assertNotIn("m_chunkMathAy", track_header)

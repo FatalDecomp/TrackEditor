@@ -4,6 +4,12 @@ project(RollerTrackEditor VERSION 0.1.0 LANGUAGES C CXX)
 
 option(TRACKEDITOR_BUILD_APPLICATION "Build the Qt TrackEditor application" ON)
 
+# Included before the first add_subdirectory so every target this repository
+# owns can reach trackeditor_set_warnings() and the Qt deprecation gate.
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+include(TrackEditorNoOpenGL)
+include(TrackEditorWarnings)
+
 set(ROLLER_BUILD_GAME OFF CACHE BOOL "Build the ROLLER game" FORCE)
 set(ROLLER_BUILD_EDITOR_CORE ON CACHE BOOL "Build roller-core for TrackEditor" FORCE)
 
@@ -22,10 +28,11 @@ if(NOT TARGET ROLLER::core)
 endif()
 
 if(TRACKEDITOR_BUILD_APPLICATION)
-    find_package(Qt5 5.15 REQUIRED COMPONENTS Core Gui Widgets)
+    find_package(Qt6 6.8 REQUIRED COMPONENTS Core Gui Widgets)
 
-    add_subdirectory(WhipLib)
     add_subdirectory(TrackEditor)
+
+    trackeditor_assert_no_opengl_in_link_closure(TrackEditor)
 endif()
 
 include(CTest)
@@ -158,17 +165,24 @@ if(BUILD_TESTING)
             COMMAND "${Python3_EXECUTABLE}"
                     "${CMAKE_CURRENT_SOURCE_DIR}/tests/test_e4a_s6_scenery_export.py"
                     -v)
+        add_test(
+            NAME trackeditor-e5-s1-qt6-provisioning-contract
+            COMMAND "${Python3_EXECUTABLE}"
+                    "${CMAKE_CURRENT_SOURCE_DIR}/tests/test_e5_s1_qt6_provisioning.py"
+                    -v)
+        add_test(
+            NAME trackeditor-e5-s2-module-set-contract
+            COMMAND "${Python3_EXECUTABLE}"
+                    "${CMAKE_CURRENT_SOURCE_DIR}/tests/test_e5_s2_module_set.py"
+                    -v)
+        add_test(
+            NAME trackeditor-e5-s3-api-migrations-contract
+            COMMAND "${Python3_EXECUTABLE}"
+                    "${CMAKE_CURRENT_SOURCE_DIR}/tests/test_e5_s3_api_migrations.py"
+                    -v)
     endif()
 
     if(TARGET TrackEditor)
-        add_executable(trackeditor-e3-s5c-track-geometry-test
-            tests/track_geometry_test.cpp)
-        target_compile_features(trackeditor-e3-s5c-track-geometry-test PRIVATE cxx_std_17)
-        target_link_libraries(trackeditor-e3-s5c-track-geometry-test PRIVATE
-            TrackEditor::WhipLib)
-        add_test(NAME trackeditor-e3-s5c-track-geometry
-                 COMMAND trackeditor-e3-s5c-track-geometry-test)
-
         add_executable(trackeditor-e3-s1-frame-delivery-test
             tests/editor_render_queue_test.cpp
             TrackEditor/EditorRenderQueue.cpp)
@@ -177,8 +191,10 @@ if(BUILD_TESTING)
             "${CMAKE_CURRENT_SOURCE_DIR}/TrackEditor"
             "${CMAKE_CURRENT_SOURCE_DIR}/external/ROLLER/PROJECTS/ROLLER")
         target_link_libraries(trackeditor-e3-s1-frame-delivery-test PRIVATE
-            Qt5::Core
-            Qt5::Gui)
+            Qt6::Core
+            Qt6::Gui)
+        trackeditor_assert_no_opengl_in_link_closure(
+            trackeditor-e3-s1-frame-delivery-test)
         add_test(NAME trackeditor-e3-s1-frame-delivery
                  COMMAND trackeditor-e3-s1-frame-delivery-test)
 
@@ -195,8 +211,10 @@ if(BUILD_TESTING)
             "${CMAKE_CURRENT_SOURCE_DIR}/TrackEditor"
             "${CMAKE_CURRENT_SOURCE_DIR}/external/ROLLER/PROJECTS/ROLLER")
         target_link_libraries(trackeditor-e3-s1-render-service-test PRIVATE
-            Qt5::Core
-            Qt5::Gui)
+            Qt6::Core
+            Qt6::Gui)
+        trackeditor_assert_no_opengl_in_link_closure(
+            trackeditor-e3-s1-render-service-test)
         add_test(NAME trackeditor-e3-s1-render-service
                  COMMAND trackeditor-e3-s1-render-service-test)
 
@@ -206,13 +224,12 @@ if(BUILD_TESTING)
             TrackEditor/EditorReferenceMesh.cpp
             TrackEditor/EditorOverlaySettings.h)
         target_compile_features(trackeditor-e3a-s2-overlay-settings-test PRIVATE cxx_std_17)
-        # WhipLib is on the include path for Types.h alone (the eWhipModel and
-        # eShapeSection enums E3A-S6 translates); the target still links no
-        # WhipLib, Qt, or ROLLER code, so the translation stays unit-testable
-        # without a render worker or an event loop.
+        # Types.h (the eWhipModel and eShapeSection enums E3A-S6 translates) is
+        # an editor header; the target still links no Qt or ROLLER code, so the
+        # translation stays unit-testable without a render worker or an event
+        # loop.
         target_include_directories(trackeditor-e3a-s2-overlay-settings-test PRIVATE
             "${CMAKE_CURRENT_SOURCE_DIR}/TrackEditor"
-            "${CMAKE_CURRENT_SOURCE_DIR}/WhipLib"
             "${CMAKE_CURRENT_SOURCE_DIR}/external/ROLLER/PROJECTS/ROLLER")
         add_test(NAME trackeditor-e3a-s2-overlay-settings
                  COMMAND trackeditor-e3a-s2-overlay-settings-test)
@@ -224,14 +241,13 @@ if(BUILD_TESTING)
         target_compile_features(trackeditor-e3-s3-camera-input-test PRIVATE cxx_std_17)
         target_include_directories(trackeditor-e3-s3-camera-input-test PRIVATE
             "${CMAKE_CURRENT_SOURCE_DIR}/TrackEditor"
-            "${CMAKE_CURRENT_SOURCE_DIR}/external/glm"
             "${CMAKE_CURRENT_SOURCE_DIR}/external/ROLLER/PROJECTS/ROLLER")
         add_test(NAME trackeditor-e3-s3-camera-input
                  COMMAND trackeditor-e3-s3-camera-input-test)
 
         # E4-S1. The OBJ exporter reads ROLLER's canonical geometry and writes
         # text, so it needs the editor_api.h types on the include path and
-        # nothing else: no Qt, no WhipLib, no linked ROLLER code.
+        # nothing else: no Qt, no linked ROLLER code.
         add_executable(trackeditor-e4-s1-obj-exporter-test
             tests/editor_obj_exporter_test.cpp
             TrackEditor/EditorExportCommon.cpp
@@ -267,6 +283,8 @@ if(BUILD_TESTING)
             TrackEditor/EditorGltfExporter.cpp
             TrackEditor/EditorGltfExporter.h)
         target_compile_features(trackeditor-e4-s2-gltf-exporter-test PRIVATE cxx_std_17)
+        target_compile_definitions(trackeditor-e4-s2-gltf-exporter-test PRIVATE
+            $<$<CXX_COMPILER_ID:MSVC>:_CRT_SECURE_NO_WARNINGS>)
         target_include_directories(trackeditor-e4-s2-gltf-exporter-test PRIVATE
             "${CMAKE_CURRENT_SOURCE_DIR}/TrackEditor"
             "${CMAKE_CURRENT_SOURCE_DIR}/external/ROLLER/PROJECTS/ROLLER")
@@ -298,6 +316,16 @@ if(BUILD_TESTING)
                     TIMEOUT 300)
         endif()
 
+        # E5-S2 acceptance: the criterion is about the linked artifact, not the
+        # build files, so read the module names out of the executable itself.
+        if(Python3_Interpreter_FOUND)
+            add_test(
+                NAME trackeditor-e5-s2-linked-qt-modules
+                COMMAND "${Python3_EXECUTABLE}"
+                        "${CMAKE_CURRENT_SOURCE_DIR}/tests/check_linked_qt_modules.py"
+                        "$<TARGET_FILE:TrackEditor>")
+        endif()
+
         add_test(NAME trackeditor-smoke COMMAND TrackEditor --cmake-smoke-test)
         if(WIN32)
             set(trackeditor_qpa_platform windows)
@@ -308,4 +336,30 @@ if(BUILD_TESTING)
             ENVIRONMENT "QT_QPA_PLATFORM=${trackeditor_qpa_platform}"
             TIMEOUT 30)
     endif()
+
+    # E5-S3. Test code is code: the executables this repository owns build at
+    # the same raised warning level as the libraries they exercise, and the two
+    # that compile Qt headers take the same deprecation gate.
+    foreach(trackeditor_test_target IN ITEMS
+            trackeditor-e3-s5a-track-model-test
+            trackeditor-e3-s5b-track-assets-test
+            trackeditor-e3-s1-frame-delivery-test
+            trackeditor-e3-s1-render-service-test
+            trackeditor-e3a-s2-overlay-settings-test
+            trackeditor-e3-s3-camera-input-test
+            trackeditor-e4-s1-obj-exporter-test
+            trackeditor-e4-s5-export-format-test
+            trackeditor-e4-s2-gltf-exporter-test)
+        if(TARGET ${trackeditor_test_target})
+            trackeditor_set_warnings(${trackeditor_test_target})
+        endif()
+    endforeach()
+
+    foreach(trackeditor_qt_test_target IN ITEMS
+            trackeditor-e3-s1-frame-delivery-test
+            trackeditor-e3-s1-render-service-test)
+        if(TARGET ${trackeditor_qt_test_target})
+            trackeditor_gate_qt_deprecations(${trackeditor_qt_test_target})
+        endif()
+    endforeach()
 endif()

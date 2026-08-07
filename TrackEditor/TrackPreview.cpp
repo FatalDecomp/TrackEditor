@@ -3,11 +3,8 @@
 #include "MainWindow.h"
 #include "Track.h"
 #include "DisplaySettings.h"
-#include "ShapeData.h"
-#include "ShapeFactory.h"
 #include "Texture.h"
-#include "ObjExporter.h"
-#include "ObjImporter.h"
+#include "EditorObjImporter.h"
 #include "EditorObjExporter.h"
 #include "EditorGltfExporter.h"
 #include "ExportWizard.h"
@@ -347,16 +344,12 @@ void CTrackPreview::OpenReferenceModel()
   if (sFile.isEmpty())
     return;
 
-  // WhipLib's importer is the editor's own; since E4-S6 it returns the file's
-  // raw units and axes, and the interchange conversion happens below.
-  CShapeData *pShape = NULL;
-  if (!CObjImporter::GetObjImporter().ImportObj(
-          sFile.toStdString(), &pShape, NULL)
-      || !pShape) {
+  // Since E4-S6 the importer returns the file's raw units and axes, and the
+  // interchange conversion happens below.
+  tEditorImportedMesh Imported;
+  if (!EditorObjImporter::ImportObj(sFile.toStdString(), Imported)) {
     QMessageBox::warning(this, "Reference Model",
                          "Could not read " + sFile + " as a Wavefront OBJ.");
-    if (pShape)
-      delete pShape;
     return;
   }
 
@@ -369,24 +362,17 @@ void CTrackPreview::OpenReferenceModel()
   // authored in. Running the file through the exact inverse of the export
   // conversion is what makes a track this editor exported re-import lined up
   // with itself.
-  std::vector<tEdReferenceVertex> Vertices(pShape->m_uiNumVerts);
-  for (uint32 i = 0; i < pShape->m_uiNumVerts; ++i) {
-    const tVertex &Source = pShape->m_vertices[i];
+  std::vector<tEdReferenceVertex> Vertices(Imported.VertexCount());
+  for (size_t i = 0; i < Imported.VertexCount(); ++i) {
     tEdReferenceVertex &Target = Vertices[i];
-    const float afFilePosition[3] = { Source.position.x, Source.position.y,
-                                      Source.position.z };
-    const float afFileNormal[3] = { Source.normal.x, Source.normal.y,
-                                    Source.normal.z };
-    CEditorExportConventions::ImportPosition(afFilePosition,
+    CEditorExportConventions::ImportPosition(&Imported.Positions[i * 3],
                                              Target.fPosition);
-    CEditorExportConventions::ImportDirection(afFileNormal, Target.fNormal);
+    CEditorExportConventions::ImportDirection(&Imported.Normals[i * 3],
+                                              Target.fNormal);
     Target.fUV[0] = 0.0f;
     Target.fUV[1] = 0.0f;
   }
-  std::vector<uint32_t> Indices(pShape->m_uiNumIndices);
-  for (uint32 i = 0; i < pShape->m_uiNumIndices; ++i)
-    Indices[i] = pShape->m_indices[i];
-  delete pShape;
+  const std::vector<uint32_t> &Indices = Imported.Indices;
 
   if (Vertices.empty() || Indices.size() % 3 != 0) {
     QMessageBox::warning(this, "Reference Model",
@@ -1019,16 +1005,16 @@ bool CTrackPreview::SaveTrack_Internal(const QString &sFilename)
   if (sFilename.isEmpty())
     return false;
 
-  std::vector<uint8> data;
+  std::vector<uint8> trackData;
   std::vector<uint8> mangledData;
-  p->m_track.GetTrackData(data);
+  p->m_track.GetTrackData(trackData);
 
   std::vector<uint8> *pOutData;
   //if (bIsMangled) {
-  //  MangleFile(data, mangledData);
+  //  MangleFile(trackData, mangledData);
   //  pOutData = &mangledData;
   //} else {
-  pOutData = &data;
+  pOutData = &trackData;
 //}
 
   QFile file(sFilename);

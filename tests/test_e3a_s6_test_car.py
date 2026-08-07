@@ -62,7 +62,7 @@ class TranslationTests(unittest.TestCase):
             self.assertNotIn("CAR_DESIGN", source)
 
     def test_the_design_table_covers_every_car_model(self) -> None:
-        types = (ROOT / "WhipLib" / "Types.h").read_text(encoding="utf-8")
+        types = (ROOT / "TrackEditor" / "Types.h").read_text(encoding="utf-8")
         enum_body = types[types.index("enum class eWhipModel") :]
         enum_body = enum_body[: enum_body.index("};")]
         models = {
@@ -172,12 +172,14 @@ class PreviewTests(unittest.TestCase):
 
 class BuildRegistrationTests(unittest.TestCase):
     def test_the_translation_unit_can_see_the_model_enum(self) -> None:
+        # The test reaches Types.h through TrackEditor/ now that WhipLib is
+        # gone; it still links no Qt and no ROLLER code.
         cmake = (ROOT / "CMakeLists.txt").read_text(encoding="utf-8")
         block = cmake[
             cmake.index("trackeditor-e3a-s2-overlay-settings-test PRIVATE") :
         ]
         block = block[: block.index("add_test")]
-        self.assertIn("/WhipLib", block)
+        self.assertIn("/TrackEditor", block)
 
 
 if __name__ == "__main__":

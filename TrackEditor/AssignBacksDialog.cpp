@@ -1,6 +1,6 @@
 #include "TrackEditor.h"
 #include "AssignBacksDialog.h"
-#include "qdesktopwidget.h"
+#include "qscreen.h"
 #include "Track.h"
 #include "Texture.h"
 #include "BackWidget.h"
@@ -15,14 +15,13 @@ CAssignBacksDialog::CAssignBacksDialog(QWidget *pParent, CTrack *pTrack)
   , m_pTrack(pTrack)
 {
   setupUi(this);
-  resize(QDesktopWidget().availableGeometry(this).size().width() * 0.1, QDesktopWidget().availableGeometry(this).size().height() * 0.8);
+  const QSize availableSize = screen()->availableGeometry().size();
+  resize(static_cast<int>(availableSize.width() * 0.1), static_cast<int>(availableSize.height() * 0.8));
   connect(pbCancel, &QPushButton::clicked, this, &CAssignBacksDialog::reject);
   connect(pbApply, &QPushButton::clicked, this, &CAssignBacksDialog::OnApplyClicked);
   
   if (pTrack && pTrack->m_assets.GetMainTexture()) {
     lblNotLoaded->setVisible(pTrack->m_assets.GetMainTexture()->GetNumTiles() == 0);
-    int iButtonSize = 90;
-    int iTilesPerLine = (width() - 256) / (iButtonSize + 6);
     int i = 0;
     for (; i < pTrack->m_assets.GetMainTexture()->GetNumTiles(); ++i) {
       int iBack = -1;

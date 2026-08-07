@@ -12,7 +12,7 @@ cmake -S . -B out/build
 cmake --build out/build --config Release
 ```
 
-The CMake build uses dynamic Qt 5.15 and system/prebuilt SDL3 and SDL3_image packages. It builds ROLLER's `ROLLER::core` target with the game disabled, so WildMidi and libcdio are not required. See [docs/building.md](docs/building.md) for Windows, Linux, macOS, and run instructions.
+The CMake build uses dynamic Qt 6.8 LTS and system/prebuilt SDL3 and SDL3_image packages. It builds ROLLER's `ROLLER::core` target with the game disabled, so WildMidi and libcdio are not required. See [docs/building.md](docs/building.md) for Windows, Linux, macOS, and run instructions.
 
 ## Track Editor Features: 
 * Open, render, edit, and save Whiplash tracks
@@ -32,19 +32,14 @@ The CMake build uses dynamic Qt 5.15 and system/prebuilt SDL3 and SDL3_image pac
 
 ![Track Editor](TrackEditor/images/screenshot.png)
 
-## ModelExporter Features:
-* Included with Track Editor releases
-* Exports all Whiplash tracks and cars to OBJ format
+![Model exported to Blender](TrackEditor/images/blender.png)
 
-![Model exported to Blender](ModelExporter/images/blender.png)
-
-![Model exported to Unreal](WhipLib/images/unreal.png)
+![Model exported to Unreal](TrackEditor/images/unreal.png)
 
 ## External dependencies used:
-* Dynamic Qt 5.15
+* Dynamic Qt 6.8 LTS
 * SDL 3.2.22 or newer
 * SDL_image 3.2.4 or newer
-* GLM 1.0.1: https://github.com/g-truc/glm
 * stb_image 2.30: https://github.com/nothings/stb
 * stb_image_write 1.16: https://github.com/nothings/stb
 * cgltf 1.15 (vendored): https://github.com/jkuhlmann/cgltf

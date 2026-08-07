@@ -13,8 +13,8 @@ is a breaking change for this exporter. E4-S2 (glTF) states its conversions
 relative to that ADR as well, rather than re-deriving one against its own
 importer, and any future exporter should too.
 
-The writer is `TrackEditor/EditorObjExporter.{h,cpp}`. It owns no Qt type, no
-WhipLib type, and calls no `RollerEd_*` entry point, so it is exercised without
+The writer is `TrackEditor/EditorObjExporter.{h,cpp}`. It owns no Qt type and
+calls no `RollerEd_*` entry point, so it is exercised without
 a render worker or a loaded track by `tests/editor_obj_exporter_test.cpp`.
 
 ## Coordinate system
@@ -178,9 +178,9 @@ off the exported track.
   `editor_helpers.c`, kept out of the canonical stream on purpose (AD-6d), so
   they have no canonical representation to export.
 
-There is no longer any exporter that reads the legacy WhipLib CPU geometry:
-**E4-S3 removed FBX outright** rather than retargeting it, so the AI-line
-groups are gone from every format.
+No exporter reads legacy CPU geometry any more: **E4-S3 removed FBX outright**
+rather than retargeting it, so the AI-line groups are gone from every format,
+and WhipLib -- which held that geometry -- has since been deleted entirely.
 
 ## Objects in the file
 

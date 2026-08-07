@@ -14,7 +14,6 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 EDITOR = ROOT / "TrackEditor"
-WHIPLIB = ROOT / "WhipLib"
 DOCS = ROOT / "docs"
 
 
@@ -27,19 +26,10 @@ def source_and_build_files() -> list[Path]:
     paths = [
         ROOT / "CMakeLists.txt",
         ROOT / "README.md",
-        ROOT / "WhipLib" / "CMakeLists.txt",
         ROOT / "TrackEditor" / "CMakeLists.txt",
         ROOT / ".github" / "workflows" / "build.yml",
         ROOT / "docs" / "building.md",
     ]
-    # ModelExporter is retired from the CMake build but its sources are still
-    # tracked, and it used to #include the header this story deleted.
-    paths.extend(
-        (ROOT / "ModelExporter" / name)
-        for name in ("Main.cpp", "Makefile", "ModelExporter.vcxproj")
-    )
-    paths.extend(WHIPLIB.glob("*.h"))
-    paths.extend(WHIPLIB.glob("*.cpp"))
     paths.extend(EDITOR.glob("*.h"))
     paths.extend(EDITOR.glob("*.cpp"))
     paths.extend(EDITOR.glob("*.ui"))
@@ -48,9 +38,9 @@ def source_and_build_files() -> list[Path]:
 
 class RemovalTests(unittest.TestCase):
     def test_the_exporter_and_its_build_module_are_gone(self) -> None:
+        # WhipLib, which held the exporter, has since been deleted outright.
         for path in (
-            WHIPLIB / "FBXExporter.cpp",
-            WHIPLIB / "FBXExporter.h",
+            ROOT / "WhipLib",
             ROOT / "cmake" / "TrackEditorFBX.cmake",
         ):
             self.assertFalse(path.exists(), f"{path} should have been removed")
@@ -69,27 +59,31 @@ class RemovalTests(unittest.TestCase):
                 violations.append(str(path.relative_to(ROOT)))
         self.assertEqual([], violations)
 
-    def test_the_retired_model_exporter_no_longer_includes_a_deleted_header(
-        self,
-    ) -> None:
-        # It is not in the CMake build, so nothing would have caught the
-        # dangling include; it writes OBJ only now.
-        main = (ROOT / "ModelExporter" / "Main.cpp").read_text(
-            encoding="utf-8"
-        )
-        self.assertNotIn('#include "FBXExporter.h"', main)
-        self.assertIn("CObjExporter", main)
-        makefile = (ROOT / "ModelExporter" / "Makefile").read_text(
-            encoding="utf-8"
-        )
-        self.assertNotIn("external/FBX", makefile)
+    def test_the_retired_model_exporter_is_gone(self) -> None:
+        # This used to check that ModelExporter's dangling FBX include was
+        # cleaned up. ModelExporter was deleted outright along with WhipLib,
+        # which settles the question more thoroughly.
+        self.assertFalse((ROOT / "ModelExporter").exists())
 
     def test_the_option_cannot_be_configured_back_on(self) -> None:
         # A leftover option() would let a build turn on a feature whose source
         # no longer exists.
         cmake = (ROOT / "CMakeLists.txt").read_text(encoding="utf-8")
         self.assertNotIn("FBX", cmake)
-        self.assertFalse((ROOT / "cmake").exists())
+
+        # This used to assert that cmake/ did not exist at all, which was a
+        # proxy for "FindFBX.cmake is gone" and held only while the directory
+        # had no other reason to exist. E5-S2's link-closure guard gave it one,
+        # so the check is now the thing the proxy was protecting.
+        module_directory = ROOT / "cmake"
+        if module_directory.is_dir():
+            for path in module_directory.rglob("*"):
+                if not path.is_file():
+                    continue
+                self.assertNotIn("FBX", path.name)
+                self.assertNotIn(
+                    "FBX", path.read_text(encoding="utf-8", errors="ignore")
+                )
 
     def test_ci_configures_without_an_fbx_flag(self) -> None:
         workflow = (ROOT / ".github" / "workflows" / "build.yml").read_text(

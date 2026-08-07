@@ -2,7 +2,7 @@
 #include "EditorRenderService.h"
 #include "MainWindow.h"
 #include "qapplication.h"
-#include "qdesktopwidget.h"
+#include "qscreen.h"
 #include <qstring.h>
 #include "qdir.h"
 #include "qmessagebox.h"
@@ -37,7 +37,12 @@ int main(int argc, char* argv[])
 
   CEditorRenderService RenderService(sAppPath);
   RenderService.Start();
-  float fScale = app.desktop()->logicalDpiX() / 96.0 * 100.0;
+  // Qt 6 removed QDesktopWidget; the primary screen carries the same logical
+  // DPI QApplication::desktop() reported. Qt 6 also always enables high-DPI
+  // scaling, so this is 96 on a scaled display and the scale comes out at 100:
+  // the thumbnail sizes below stay in logical pixels and Qt applies the device
+  // pixel ratio itself, which is the same apparent size Qt 5 produced.
+  float fScale = QGuiApplication::primaryScreen()->logicalDotsPerInchX() / 96.0 * 100.0;
   CMainWindow *pMainWin = new CMainWindow(sAppPath, fScale, &RenderService);
   
   int iRetCode = app.exec();
