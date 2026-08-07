@@ -65,10 +65,12 @@ class VendoredCgltfTests(unittest.TestCase):
         self.assertIn("#undef CGLTF_IMPLEMENTATION", impl)
 
     def test_the_licence_is_attributed(self) -> None:
-        attribution = (EXTERNAL / "TrackEditor_LicensedLibs.txt").read_text(
-            encoding="utf-8"
-        )
-        self.assertIn("cgltf", attribution.lower())
+        # The external/*_LicensedLibs.txt manifests were removed in 0f83af9;
+        # a vendored library now carries its own licence text in-tree, which
+        # is what the MIT grant actually requires.
+        licence = (EXTERNAL / "cgltf" / "LICENSE").read_text(encoding="utf-8")
+        self.assertIn("Johannes Kuhlmann", licence)
+        self.assertIn("Permission is hereby granted", licence)
 
 
 class ExporterBoundaryTests(unittest.TestCase):

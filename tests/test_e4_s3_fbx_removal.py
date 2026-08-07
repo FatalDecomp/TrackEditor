@@ -31,8 +31,6 @@ def source_and_build_files() -> list[Path]:
         ROOT / "TrackEditor" / "CMakeLists.txt",
         ROOT / ".github" / "workflows" / "build.yml",
         ROOT / "docs" / "building.md",
-        ROOT / "external" / "TrackEditor_LicensedLibs.txt",
-        ROOT / "external" / "WhipLib_LicensedLibs.txt",
     ]
     # ModelExporter is retired from the CMake build but its sources are still
     # tracked, and it used to #include the header this story deleted.
