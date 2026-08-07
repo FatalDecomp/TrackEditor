@@ -4,6 +4,8 @@ import pathlib
 import re
 import unittest
 
+from pathlib import Path
+
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 WHIPLIB = ROOT / "WhipLib"
@@ -63,6 +65,7 @@ class E3S4WhipLibEngineContractTests(unittest.TestCase):
             ROOT / "README.md",
             ROOT / "WhipLib" / "CMakeLists.txt",
             ROOT / "TrackEditor" / "CMakeLists.txt",
+            ROOT / "cmake" / "TrackEditorNoOpenGL.cmake",
             ROOT / ".github" / "workflows" / "build.yml",
             ROOT / "docs" / "building.md",
             ROOT / "ModelExporter" / "Main.cpp",
@@ -74,14 +77,24 @@ class E3S4WhipLibEngineContractTests(unittest.TestCase):
         audited_paths.extend((ROOT / "TrackEditor").glob("*.h"))
         audited_paths.extend((ROOT / "TrackEditor").glob("*.cpp"))
 
+        # E5-S2's link-closure guard names these libraries in order to forbid
+        # them, which this audit cannot tell apart from using them. It is the
+        # single deliberate exception, exempted by name so that moving or
+        # renaming it puts the file back under the audit.
+        exempt = {Path("cmake") / "TrackEditorNoOpenGL.cmake"}
+
         forbidden = re.compile(
             r"glew|<GL/|find_package\s*\(\s*OpenGL|OpenGL::GL|Qt[56]::OpenGL",
             re.IGNORECASE,
         )
         violations = []
         for path in audited_paths:
+            relative = path.relative_to(ROOT)
+            if relative in exempt:
+                self.assertTrue(path.is_file(), f"{relative} is exempt but missing")
+                continue
             if forbidden.search(path.read_text(encoding="utf-8", errors="ignore")):
-                violations.append(str(path.relative_to(ROOT)))
+                violations.append(str(relative))
         self.assertEqual([], violations)
 
     def test_document_model_assets_and_cpu_export_geometry_remain(self) -> None:

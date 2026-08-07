@@ -21,11 +21,19 @@ if(NOT TARGET ROLLER::core)
     message(FATAL_ERROR "The ROLLER submodule did not provide ROLLER::core")
 endif()
 
+# E5-S2. Keeps the Qt module set at Core/Gui/Widgets by walking the real link
+# closure at configure time. Lives in its own module because it is the one place
+# allowed to name the libraries it forbids.
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+include(TrackEditorNoOpenGL)
+
 if(TRACKEDITOR_BUILD_APPLICATION)
     find_package(Qt6 6.8 REQUIRED COMPONENTS Core Gui Widgets)
 
     add_subdirectory(WhipLib)
     add_subdirectory(TrackEditor)
+
+    trackeditor_assert_no_opengl_in_link_closure(TrackEditor)
 endif()
 
 include(CTest)
@@ -163,6 +171,11 @@ if(BUILD_TESTING)
             COMMAND "${Python3_EXECUTABLE}"
                     "${CMAKE_CURRENT_SOURCE_DIR}/tests/test_e5_s1_qt6_provisioning.py"
                     -v)
+        add_test(
+            NAME trackeditor-e5-s2-module-set-contract
+            COMMAND "${Python3_EXECUTABLE}"
+                    "${CMAKE_CURRENT_SOURCE_DIR}/tests/test_e5_s2_module_set.py"
+                    -v)
     endif()
 
     if(TARGET TrackEditor)
@@ -184,6 +197,8 @@ if(BUILD_TESTING)
         target_link_libraries(trackeditor-e3-s1-frame-delivery-test PRIVATE
             Qt6::Core
             Qt6::Gui)
+        trackeditor_assert_no_opengl_in_link_closure(
+            trackeditor-e3-s1-frame-delivery-test)
         add_test(NAME trackeditor-e3-s1-frame-delivery
                  COMMAND trackeditor-e3-s1-frame-delivery-test)
 
@@ -202,6 +217,8 @@ if(BUILD_TESTING)
         target_link_libraries(trackeditor-e3-s1-render-service-test PRIVATE
             Qt6::Core
             Qt6::Gui)
+        trackeditor_assert_no_opengl_in_link_closure(
+            trackeditor-e3-s1-render-service-test)
         add_test(NAME trackeditor-e3-s1-render-service
                  COMMAND trackeditor-e3-s1-render-service-test)
 
@@ -301,6 +318,16 @@ if(BUILD_TESTING)
                 PROPERTIES
                     DEPENDS trackeditor-e4-s2-gltf-exporter
                     TIMEOUT 300)
+        endif()
+
+        # E5-S2 acceptance: the criterion is about the linked artifact, not the
+        # build files, so read the module names out of the executable itself.
+        if(Python3_Interpreter_FOUND)
+            add_test(
+                NAME trackeditor-e5-s2-linked-qt-modules
+                COMMAND "${Python3_EXECUTABLE}"
+                        "${CMAKE_CURRENT_SOURCE_DIR}/tests/check_linked_qt_modules.py"
+                        "$<TARGET_FILE:TrackEditor>")
         endif()
 
         add_test(NAME trackeditor-smoke COMMAND TrackEditor --cmake-smoke-test)

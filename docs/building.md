@@ -59,3 +59,7 @@ Adjust the Qt prefix for the version and location selected in the installer.
 
 The executable is `TrackEditor` (`TrackEditor.exe` on Windows). The viewport is a plain Qt widget that blits worker-rendered `QImage` frames, so it does not create a Qt OpenGL context or require runtime GLSL files. The noninteractive `--cmake-smoke-test` switch initializes Qt and exits successfully; CTest uses it on all three CI platforms.
 
+## Qt modules
+
+The editor links Qt Core, Gui, and Widgets only. `cmake/TrackEditorNoOpenGL.cmake` walks each Qt-linked target's link closure at configure time and fails the build if Qt OpenGL reaches it, and the `trackeditor-e5-s2-linked-qt-modules` test reads the module names back out of the built executable. Deploying the editor therefore needs those three Qt libraries and the platform plugin, nothing more.
+

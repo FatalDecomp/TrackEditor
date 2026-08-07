@@ -89,7 +89,20 @@ class RemovalTests(unittest.TestCase):
         # no longer exists.
         cmake = (ROOT / "CMakeLists.txt").read_text(encoding="utf-8")
         self.assertNotIn("FBX", cmake)
-        self.assertFalse((ROOT / "cmake").exists())
+
+        # This used to assert that cmake/ did not exist at all, which was a
+        # proxy for "FindFBX.cmake is gone" and held only while the directory
+        # had no other reason to exist. E5-S2's link-closure guard gave it one,
+        # so the check is now the thing the proxy was protecting.
+        module_directory = ROOT / "cmake"
+        if module_directory.is_dir():
+            for path in module_directory.rglob("*"):
+                if not path.is_file():
+                    continue
+                self.assertNotIn("FBX", path.name)
+                self.assertNotIn(
+                    "FBX", path.read_text(encoding="utf-8", errors="ignore")
+                )
 
     def test_ci_configures_without_an_fbx_flag(self) -> None:
         workflow = (ROOT / ".github" / "workflows" / "build.yml").read_text(

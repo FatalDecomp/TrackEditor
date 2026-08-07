@@ -47,15 +47,8 @@ class Qt6ProvisioningTests(unittest.TestCase):
                 offenders.append(str(path.relative_to(ROOT)))
         self.assertEqual([], offenders)
 
-    def test_every_qt_link_target_is_qt6_core_gui_or_widgets(self) -> None:
-        allowed = {"Qt6::Core", "Qt6::Gui", "Qt6::Widgets"}
-        found = set()
-        for path in build_files():
-            found.update(
-                re.findall(r"Qt\d::\w+", path.read_text(encoding="utf-8"))
-            )
-        self.assertTrue(found, "no Qt link targets found at all")
-        self.assertEqual(set(), found - allowed)
+    # The Qt module set itself belongs to E5-S2; see
+    # tests/test_e5_s2_module_set.py.
 
     def test_ci_provisions_qt_6_8_on_all_three_platforms(self) -> None:
         workflow = WORKFLOW.read_text(encoding="utf-8")
