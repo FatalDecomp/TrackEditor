@@ -68,6 +68,7 @@ class TrackAssetsContractTests(unittest.TestCase):
         for forbidden in (
             "ROLLER::core",
             "Qt5::",
+            "Qt6::",
             "Renderer",
             "glew",
             "<GL/",

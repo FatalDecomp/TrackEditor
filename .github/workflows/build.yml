@@ -19,12 +19,13 @@ jobs:
       - name: Install binary dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install --yes libsdl3-dev libsdl3-image-dev ninja-build
+          sudo apt-get install --yes libsdl3-dev libsdl3-image-dev ninja-build \
+            libgl1-mesa-dev libxkbcommon-dev libxcb-cursor0
 
-      - name: Install dynamic Qt 5.15
+      - name: Install dynamic Qt 6.8 LTS
         uses: jurplel/install-qt-action@v4
         with:
-          version: '5.15.2'
+          version: '6.8.3'
           cache: true
 
       - name: Configure
@@ -51,10 +52,10 @@ jobs:
       - name: Install binary dependencies
         run: brew install --force-bottle sdl3 sdl3_image ninja
 
-      - name: Install dynamic Qt 5.15
+      - name: Install dynamic Qt 6.8 LTS
         uses: jurplel/install-qt-action@v4
         with:
-          version: '5.15.2'
+          version: '6.8.3'
           cache: true
 
       - name: Configure
@@ -76,11 +77,11 @@ jobs:
         with:
           submodules: recursive
 
-      - name: Install dynamic Qt 5.15
+      - name: Install dynamic Qt 6.8 LTS
         uses: jurplel/install-qt-action@v4
         with:
-          version: '5.15.2'
-          arch: win64_msvc2019_64
+          version: '6.8.3'
+          arch: win64_msvc2022_64
           cache: true
 
       - name: Install prebuilt SDL development packages

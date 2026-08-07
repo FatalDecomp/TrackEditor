@@ -3,7 +3,7 @@
 #include "Texture.h"
 #include "Palette.h"
 #include "qpushbutton.h"
-#include "qdesktopwidget.h"
+#include "qscreen.h"
 #include "QtHelpers.h"
 //-------------------------------------------------------------------------------------------------
 #if defined(_DEBUG) && defined(IS_WINDOWS)
@@ -16,7 +16,7 @@ CTilePicker::CTilePicker(QWidget *pParent, int iIndex, CTexture *pTexture)
   , m_iIndex(iIndex)
 {
   setupUi(this);
-  resize(QDesktopWidget().availableGeometry(this).size() * 0.3);
+  resize(screen()->availableGeometry().size() * 0.3);
   connect(pbCancel, &QPushButton::clicked, this, &CTilePicker::reject);
 
   if (pTexture) {
@@ -50,7 +50,7 @@ CTilePicker::CTilePicker(QWidget *pParent, int iIndex, CPalette *pPalette)
   , m_iIndex(iIndex)
 {
   setupUi(this);
-  resize(QDesktopWidget().availableGeometry(this).size() * 0.3);
+  resize(screen()->availableGeometry().size() * 0.3);
   connect(pbCancel, &QPushButton::clicked, this, &CTilePicker::reject);
 
   if (pPalette) {

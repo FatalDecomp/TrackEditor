@@ -109,6 +109,6 @@ target_link_libraries(TrackEditor
         TrackEditor::WhipLib
         TrackEditor::cgltf
         ROLLER::core
-        Qt5::Core
-        Qt5::Gui
-        Qt5::Widgets)
+        Qt6::Core
+        Qt6::Gui
+        Qt6::Widgets)

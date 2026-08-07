@@ -22,7 +22,7 @@ if(NOT TARGET ROLLER::core)
 endif()
 
 if(TRACKEDITOR_BUILD_APPLICATION)
-    find_package(Qt5 5.15 REQUIRED COMPONENTS Core Gui Widgets)
+    find_package(Qt6 6.8 REQUIRED COMPONENTS Core Gui Widgets)
 
     add_subdirectory(WhipLib)
     add_subdirectory(TrackEditor)
@@ -158,6 +158,11 @@ if(BUILD_TESTING)
             COMMAND "${Python3_EXECUTABLE}"
                     "${CMAKE_CURRENT_SOURCE_DIR}/tests/test_e4a_s6_scenery_export.py"
                     -v)
+        add_test(
+            NAME trackeditor-e5-s1-qt6-provisioning-contract
+            COMMAND "${Python3_EXECUTABLE}"
+                    "${CMAKE_CURRENT_SOURCE_DIR}/tests/test_e5_s1_qt6_provisioning.py"
+                    -v)
     endif()
 
     if(TARGET TrackEditor)
@@ -177,8 +182,8 @@ if(BUILD_TESTING)
             "${CMAKE_CURRENT_SOURCE_DIR}/TrackEditor"
             "${CMAKE_CURRENT_SOURCE_DIR}/external/ROLLER/PROJECTS/ROLLER")
         target_link_libraries(trackeditor-e3-s1-frame-delivery-test PRIVATE
-            Qt5::Core
-            Qt5::Gui)
+            Qt6::Core
+            Qt6::Gui)
         add_test(NAME trackeditor-e3-s1-frame-delivery
                  COMMAND trackeditor-e3-s1-frame-delivery-test)
 
@@ -195,8 +200,8 @@ if(BUILD_TESTING)
             "${CMAKE_CURRENT_SOURCE_DIR}/TrackEditor"
             "${CMAKE_CURRENT_SOURCE_DIR}/external/ROLLER/PROJECTS/ROLLER")
         target_link_libraries(trackeditor-e3-s1-render-service-test PRIVATE
-            Qt5::Core
-            Qt5::Gui)
+            Qt6::Core
+            Qt6::Gui)
         add_test(NAME trackeditor-e3-s1-render-service
                  COMMAND trackeditor-e3-s1-render-service-test)
 

@@ -1,6 +1,6 @@
 #include "TrackEditor.h"
 #include "AssignBacksDialog.h"
-#include "qdesktopwidget.h"
+#include "qscreen.h"
 #include "Track.h"
 #include "Texture.h"
 #include "BackWidget.h"
@@ -15,7 +15,8 @@ CAssignBacksDialog::CAssignBacksDialog(QWidget *pParent, CTrack *pTrack)
   , m_pTrack(pTrack)
 {
   setupUi(this);
-  resize(QDesktopWidget().availableGeometry(this).size().width() * 0.1, QDesktopWidget().availableGeometry(this).size().height() * 0.8);
+  const QSize availableSize = screen()->availableGeometry().size();
+  resize(static_cast<int>(availableSize.width() * 0.1), static_cast<int>(availableSize.height() * 0.8));
   connect(pbCancel, &QPushButton::clicked, this, &CAssignBacksDialog::reject);
   connect(pbApply, &QPushButton::clicked, this, &CAssignBacksDialog::OnApplyClicked);
   

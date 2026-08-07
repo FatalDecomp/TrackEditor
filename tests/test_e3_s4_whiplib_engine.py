@@ -75,7 +75,7 @@ class E3S4WhipLibEngineContractTests(unittest.TestCase):
         audited_paths.extend((ROOT / "TrackEditor").glob("*.cpp"))
 
         forbidden = re.compile(
-            r"glew|<GL/|find_package\s*\(\s*OpenGL|OpenGL::GL|Qt5::OpenGL",
+            r"glew|<GL/|find_package\s*\(\s*OpenGL|OpenGL::GL|Qt[56]::OpenGL",
             re.IGNORECASE,
         )
         violations = []

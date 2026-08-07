@@ -4,7 +4,7 @@
 #include "qmessagebox.h"
 #include "qfiledialog.h"
 #include "qsettings.h"
-#include "qdesktopwidget.h"
+#include "qscreen.h"
 #include "Track.h"
 #include "LogDialog.h"
 #include "Palette.h"
@@ -970,7 +970,7 @@ void CMainWindow::OnDebug()
   p->m_logDialog.raise();
   p->m_logDialog.show();
   p->m_logDialog.setFocus();
-  p->m_logDialog.resize(QDesktopWidget().availableGeometry(this).size() * 0.3);
+  p->m_logDialog.resize(screen()->availableGeometry().size() * 0.3);
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -1204,7 +1204,7 @@ void CMainWindow::LoadSettings()
     restoreState(state);
   } else {
     move(10, 10);
-    resize(QDesktopWidget().availableGeometry(this).size() * 0.8);
+    resize(screen()->availableGeometry().size() * 0.8);
   }
 
   //setup dock widgets
