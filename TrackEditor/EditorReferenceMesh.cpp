@@ -15,6 +15,7 @@ CEditorReferenceMesh::CEditorReferenceMesh()
   , m_iZ(0)
   , m_dScale(1.0)
   , m_bWireframe(false)
+  , m_bHasNormals(false)
 {
 }
 
@@ -31,6 +32,14 @@ void CEditorReferenceMesh::SetGeometry(const tEdReferenceVertex *pVertices,
   }
 
   m_Vertices.assign(pVertices, pVertices + uiVertexCount);
+  // A file with no vn lines leaves every normal at zero. Detecting that here
+  // rather than trusting the caller keeps the decision with the data.
+  m_bHasNormals = false;
+  for (size_t i = 0; i < m_Vertices.size() && !m_bHasNormals; ++i) {
+    const tEdReferenceVertex &Vertex = m_Vertices[i];
+    m_bHasNormals = Vertex.fNormal[0] != 0.0f || Vertex.fNormal[1] != 0.0f
+        || Vertex.fNormal[2] != 0.0f;
+  }
   if (puiIndices && uiIndexCount > 0)
     m_Indices.assign(puiIndices, puiIndices + uiIndexCount);
   else
@@ -43,6 +52,7 @@ void CEditorReferenceMesh::Clear()
 {
   m_Vertices.clear();
   m_Indices.clear();
+  m_bHasNormals = false;
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -96,7 +106,9 @@ tEdReferenceMesh CEditorReferenceMesh::GetMesh() const
   Mesh.fScale[2] = Mesh.fScale[0];
   // The importer supplies per-vertex normals, so the core does not regenerate
   // them. Wireframe is the host's choice, not a property of the file.
-  Mesh.uiFlags = ROLLER_ED_REFERENCE_HAS_NORMALS;
+  // AD-13: with the flag clear the core generates the normals itself, which
+  // is the right answer for a file that carried none.
+  Mesh.uiFlags = m_bHasNormals ? ROLLER_ED_REFERENCE_HAS_NORMALS : 0u;
   if (m_bWireframe)
     Mesh.uiFlags |= ROLLER_ED_REFERENCE_WIREFRAME;
   return Mesh;

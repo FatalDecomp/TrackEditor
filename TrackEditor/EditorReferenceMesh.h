@@ -46,6 +46,11 @@ public:
   void SetWireframe(bool bWireframe);
 
   bool HasMesh() const { return !m_Vertices.empty(); }
+  // E4-S6. Whether the imported file actually supplied normals. An OBJ with
+  // no vn lines leaves them zero, and claiming HAS_NORMALS over zeros is worse
+  // than not claiming it: AD-13 says the core generates them when the flag is
+  // clear, so a model without normals shades correctly only if we say so.
+  bool HasNormals() const { return m_bHasNormals; }
   size_t VertexCount() const { return m_Vertices.size(); }
   size_t IndexCount() const { return m_Indices.size(); }
 
@@ -67,6 +72,7 @@ private:
   int m_iZ;
   double m_dScale;
   bool m_bWireframe;
+  bool m_bHasNormals;
 };
 
 #endif

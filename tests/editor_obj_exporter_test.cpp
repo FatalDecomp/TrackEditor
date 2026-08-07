@@ -222,6 +222,64 @@ void test_the_axis_conversion_matches_adr_0003()
     assert(std::fabs(afCross[i] - afNewZ[i]) < 1e-6f);
 }
 
+void test_the_import_conversion_is_the_exact_inverse_of_the_export()
+{
+  // E4-S6. The reference-model importer has to undo exactly what the exporter
+  // did, or a track this editor exported comes back lying on its side. Two
+  // halves of one mapping in two files is how they drift, so they live
+  // together and this pins them to each other.
+  const float aafRoller[][3] = {
+    { 100.0f, 200.0f, 300.0f },
+    { -4250.5f, 90000.0f, 14.25f },
+    { 0.0f, 0.0f, 0.0f },
+    { 1.0f, -1.0f, 1.0f }
+  };
+  for (size_t i = 0; i < sizeof(aafRoller) / sizeof(aafRoller[0]); ++i) {
+    float afFile[3];
+    float afBack[3];
+    CEditorExportConventions::ConvertPosition(aafRoller[i], afFile);
+    CEditorExportConventions::ImportPosition(afFile, afBack);
+    for (int c = 0; c < 3; ++c)
+      assert(std::fabs(afBack[c] - aafRoller[i][c]) < 1e-3f);
+
+    CEditorExportConventions::ConvertDirection(aafRoller[i], afFile);
+    CEditorExportConventions::ImportDirection(afFile, afBack);
+    for (int c = 0; c < 3; ++c)
+      assert(std::fabs(afBack[c] - aafRoller[i][c]) < 1e-6f);
+  }
+
+  // The import is a real rotation, not a copy: an OBJ's +Y is ROLLER's +Z.
+  const float afObjUp[3] = { 0.0f, 1.0f, 0.0f };
+  float afRollerUp[3];
+  CEditorExportConventions::ImportDirection(afObjUp, afRollerUp);
+  assert(std::fabs(afRollerUp[0]) < 1e-6f);
+  assert(std::fabs(afRollerUp[1]) < 1e-6f);
+  assert(std::fabs(afRollerUp[2] - 1.0f) < 1e-6f);
+
+  // And it restores the unit scale, so a metre in the file is 100 track units.
+  const float afObjMetre[3] = { 1.0f, 0.0f, 0.0f };
+  float afRollerMetre[3];
+  CEditorExportConventions::ImportPosition(afObjMetre, afRollerMetre);
+  assert(std::fabs(afRollerMetre[0] - 100.0f) < 1e-3f);
+
+  // Handedness survives the round trip, which is why neither direction flips
+  // winding.
+  const float afX[3] = { 1.0f, 0.0f, 0.0f };
+  const float afY[3] = { 0.0f, 1.0f, 0.0f };
+  const float afZ[3] = { 0.0f, 0.0f, 1.0f };
+  float afNewX[3], afNewY[3], afNewZ[3];
+  CEditorExportConventions::ImportDirection(afX, afNewX);
+  CEditorExportConventions::ImportDirection(afY, afNewY);
+  CEditorExportConventions::ImportDirection(afZ, afNewZ);
+  const float afCross[3] = {
+    afNewX[1] * afNewY[2] - afNewX[2] * afNewY[1],
+    afNewX[2] * afNewY[0] - afNewX[0] * afNewY[2],
+    afNewX[0] * afNewY[1] - afNewX[1] * afNewY[0]
+  };
+  for (int i = 0; i < 3; ++i)
+    assert(std::fabs(afCross[i] - afNewZ[i]) < 1e-6f);
+}
+
 void test_every_named_surface_group_is_emitted()
 {
   CExtractionBuilder Builder;
@@ -603,6 +661,7 @@ void test_vertex_indices_are_continuous_across_objects()
 int main()
 {
   test_the_axis_conversion_matches_adr_0003();
+  test_the_import_conversion_is_the_exact_inverse_of_the_export();
   test_every_named_surface_group_is_emitted();
   test_combined_sections_produce_one_object();
   test_back_faces_use_the_back_material_and_reverse_the_winding();

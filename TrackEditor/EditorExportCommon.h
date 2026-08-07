@@ -126,6 +126,15 @@ public:
   // Same rotation without the scale, so unit normals stay unit length.
   static void ConvertDirection(const float afRollerXYZ[3], float afOutXYZ[3]);
 
+  // E4-S6. The exact inverse, for reading an interchange file back in. The
+  // reference mesh is ROLLER world space (AD-13 inherits ADR 0003), and an OBJ
+  // is +Y up, so an importer that copies the file's axes straight across lays
+  // the model on its side. Kept beside the export conversion, and asserted to
+  // round-trip against it, because two halves of one mapping in two files is
+  // how they drift apart.
+  static void ImportPosition(const float afFileXYZ[3], float afRollerXYZ[3]);
+  static void ImportDirection(const float afFileXYZ[3], float afRollerXYZ[3]);
+
   static bool IsTexturedKind(uint32_t uiKind);
   // A missing back material does not imply single-sidedness (editor_api.h):
   // SURFACE_FLAG_CONCAVE surfaces are drawn from both sides with the same

@@ -149,6 +149,22 @@ void CEditorExportConventions::ConvertDirection(const float afRollerXYZ[3],
   afOutXYZ[2] = -afRollerXYZ[1];
 }
 
+void CEditorExportConventions::ImportPosition(const float afFileXYZ[3],
+                                              float afRollerXYZ[3])
+{
+  afRollerXYZ[0] = afFileXYZ[0] / ED_EXPORT_UNIT_SCALE;
+  afRollerXYZ[1] = -afFileXYZ[2] / ED_EXPORT_UNIT_SCALE;
+  afRollerXYZ[2] = afFileXYZ[1] / ED_EXPORT_UNIT_SCALE;
+}
+
+void CEditorExportConventions::ImportDirection(const float afFileXYZ[3],
+                                               float afRollerXYZ[3])
+{
+  afRollerXYZ[0] = afFileXYZ[0];
+  afRollerXYZ[1] = -afFileXYZ[2];
+  afRollerXYZ[2] = afFileXYZ[1];
+}
+
 bool CEditorExportConventions::IsTexturedKind(uint32_t uiKind)
 {
   return uiKind == ROLLER_ED_MATERIAL_TEXTURED_TILE

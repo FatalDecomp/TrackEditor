@@ -148,6 +148,11 @@ if(BUILD_TESTING)
             COMMAND "${Python3_EXECUTABLE}"
                     "${CMAKE_CURRENT_SOURCE_DIR}/tests/test_e4_s5_export_ui.py"
                     -v)
+        add_test(
+            NAME trackeditor-e4-s6-reference-import-contract
+            COMMAND "${Python3_EXECUTABLE}"
+                    "${CMAKE_CURRENT_SOURCE_DIR}/tests/test_e4_s6_reference_import.py"
+                    -v)
     endif()
 
     if(TARGET TrackEditor)

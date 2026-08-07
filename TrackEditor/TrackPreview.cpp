@@ -347,9 +347,8 @@ void CTrackPreview::OpenReferenceModel()
   if (sFile.isEmpty())
     return;
 
-  // WhipLib's importer is the editor's own: it applies the same x100 unit
-  // scale these OBJ files have always been read at, so a model that lined up
-  // before still lines up.
+  // WhipLib's importer is the editor's own; since E4-S6 it returns the file's
+  // raw units and axes, and the interchange conversion happens below.
   CShapeData *pShape = NULL;
   if (!CObjImporter::GetObjImporter().ImportObj(
           sFile.toStdString(), &pShape, NULL)
@@ -364,16 +363,23 @@ void CTrackPreview::OpenReferenceModel()
   // Convert to the facade's AD-13 vertex. Only position and normal survive:
   // the legacy editor overwrote every reference-model UV with a flat colour,
   // and roller-core draws it that way too, so UVs would be discarded anyway.
+  //
+  // E4-S6. The reference mesh is ROLLER world space (AD-13 inherits ADR 0003:
+  // +Z up, legacy track units) and an OBJ is +Y up in whatever unit it was
+  // authored in. Running the file through the exact inverse of the export
+  // conversion is what makes a track this editor exported re-import lined up
+  // with itself.
   std::vector<tEdReferenceVertex> Vertices(pShape->m_uiNumVerts);
   for (uint32 i = 0; i < pShape->m_uiNumVerts; ++i) {
     const tVertex &Source = pShape->m_vertices[i];
     tEdReferenceVertex &Target = Vertices[i];
-    Target.fPosition[0] = Source.position.x;
-    Target.fPosition[1] = Source.position.y;
-    Target.fPosition[2] = Source.position.z;
-    Target.fNormal[0] = Source.normal.x;
-    Target.fNormal[1] = Source.normal.y;
-    Target.fNormal[2] = Source.normal.z;
+    const float afFilePosition[3] = { Source.position.x, Source.position.y,
+                                      Source.position.z };
+    const float afFileNormal[3] = { Source.normal.x, Source.normal.y,
+                                    Source.normal.z };
+    CEditorExportConventions::ImportPosition(afFilePosition,
+                                             Target.fPosition);
+    CEditorExportConventions::ImportDirection(afFileNormal, Target.fNormal);
     Target.fUV[0] = 0.0f;
     Target.fUV[1] = 0.0f;
   }
