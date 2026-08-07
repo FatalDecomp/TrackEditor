@@ -66,15 +66,19 @@ struct tFeatureToggle
 // a reordering of it would not be, which is why the values are spelled out
 // here with their names rather than computed.
 //
-// The X and Y model pairs collapse onto one design. WhipLib's own GetCoords
-// already returned identical geometry for CAR_XAUTO and CAR_YAUTO: the pair
-// is a texture-variant distinction, which ROLLER expresses through the
-// design's carType and its advanced-cars texture switch, not a second plan.
+// The X and Y model pairs share one design, because WhipLib's own GetCoords
+// returned identical geometry for CAR_XAUTO and CAR_YAUTO. They are not
+// interchangeable, though: the Y variant is ROLLER's advanced-cars skin, with
+// its own `y*.bm` texture bank and a palette remap for parts like the
+// mirrors. So the pair differs by skin, carried in bAdvanced, rather than by
+// plan. F1WACK and DEATH have no Y variant, which is also the range ROLLER's
+// own loader guards.
 //-------------------------------------------------------------------------------------------------
 struct tCarModelDesign
 {
   eWhipModel model;
   uint32_t uiDesign;
+  bool bAdvanced;
 };
 
 const uint32_t ROLLER_CAR_DESIGN_AUTO = 0u;
@@ -89,24 +93,24 @@ const uint32_t ROLLER_CAR_DESIGN_F1WACK = 12u;
 const uint32_t ROLLER_CAR_DESIGN_DEATH = 13u;
 
 const tCarModelDesign g_aCarDesigns[] = {
-  { eWhipModel::CAR_F1WACK,   ROLLER_CAR_DESIGN_F1WACK },
-  { eWhipModel::CAR_XAUTO,    ROLLER_CAR_DESIGN_AUTO },
-  { eWhipModel::CAR_XDESILVA, ROLLER_CAR_DESIGN_DESILVA },
-  { eWhipModel::CAR_XPULSE,   ROLLER_CAR_DESIGN_PULSE },
-  { eWhipModel::CAR_XGLOBAL,  ROLLER_CAR_DESIGN_GLOBAL },
-  { eWhipModel::CAR_XMILLION, ROLLER_CAR_DESIGN_MILLION },
-  { eWhipModel::CAR_XMISSION, ROLLER_CAR_DESIGN_MISSION },
-  { eWhipModel::CAR_XZIZIN,   ROLLER_CAR_DESIGN_ZIZIN },
-  { eWhipModel::CAR_XREISE,   ROLLER_CAR_DESIGN_REISE },
-  { eWhipModel::CAR_YAUTO,    ROLLER_CAR_DESIGN_AUTO },
-  { eWhipModel::CAR_YDESILVA, ROLLER_CAR_DESIGN_DESILVA },
-  { eWhipModel::CAR_YPULSE,   ROLLER_CAR_DESIGN_PULSE },
-  { eWhipModel::CAR_YGLOBAL,  ROLLER_CAR_DESIGN_GLOBAL },
-  { eWhipModel::CAR_YMILLION, ROLLER_CAR_DESIGN_MILLION },
-  { eWhipModel::CAR_YMISSION, ROLLER_CAR_DESIGN_MISSION },
-  { eWhipModel::CAR_YZIZIN,   ROLLER_CAR_DESIGN_ZIZIN },
-  { eWhipModel::CAR_YREISE,   ROLLER_CAR_DESIGN_REISE },
-  { eWhipModel::CAR_DEATH,    ROLLER_CAR_DESIGN_DEATH }
+  { eWhipModel::CAR_F1WACK,   ROLLER_CAR_DESIGN_F1WACK, false },
+  { eWhipModel::CAR_XAUTO,    ROLLER_CAR_DESIGN_AUTO, false },
+  { eWhipModel::CAR_XDESILVA, ROLLER_CAR_DESIGN_DESILVA, false },
+  { eWhipModel::CAR_XPULSE,   ROLLER_CAR_DESIGN_PULSE, false },
+  { eWhipModel::CAR_XGLOBAL,  ROLLER_CAR_DESIGN_GLOBAL, false },
+  { eWhipModel::CAR_XMILLION, ROLLER_CAR_DESIGN_MILLION, false },
+  { eWhipModel::CAR_XMISSION, ROLLER_CAR_DESIGN_MISSION, false },
+  { eWhipModel::CAR_XZIZIN,   ROLLER_CAR_DESIGN_ZIZIN, false },
+  { eWhipModel::CAR_XREISE,   ROLLER_CAR_DESIGN_REISE, false },
+  { eWhipModel::CAR_YAUTO,    ROLLER_CAR_DESIGN_AUTO, true },
+  { eWhipModel::CAR_YDESILVA, ROLLER_CAR_DESIGN_DESILVA, true },
+  { eWhipModel::CAR_YPULSE,   ROLLER_CAR_DESIGN_PULSE, true },
+  { eWhipModel::CAR_YGLOBAL,  ROLLER_CAR_DESIGN_GLOBAL, true },
+  { eWhipModel::CAR_YMILLION, ROLLER_CAR_DESIGN_MILLION, true },
+  { eWhipModel::CAR_YMISSION, ROLLER_CAR_DESIGN_MISSION, true },
+  { eWhipModel::CAR_YZIZIN,   ROLLER_CAR_DESIGN_ZIZIN, true },
+  { eWhipModel::CAR_YREISE,   ROLLER_CAR_DESIGN_REISE, true },
+  { eWhipModel::CAR_DEATH,    ROLLER_CAR_DESIGN_DEATH,  false }
 };
 
 const tFeatureToggle g_aFeatures[] = {
@@ -150,6 +154,19 @@ uint32_t CEditorOverlaySettings::CarDesignForModel(eWhipModel carModel)
   // facade's range check, where it would fail the whole overlay push and take
   // every other toggle down with it.
   return ROLLER_CAR_DESIGN_AUTO;
+}
+
+//-------------------------------------------------------------------------------------------------
+
+bool CEditorOverlaySettings::IsAdvancedModel(eWhipModel carModel)
+{
+  for (const tCarModelDesign &Design : g_aCarDesigns) {
+    if (Design.model == carModel)
+      return Design.bAdvanced;
+  }
+  // Not a car; CarDesignForModel answers AUTO for the same input, and the
+  // plain skin goes with it.
+  return false;
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -254,6 +271,11 @@ void CEditorOverlaySettings::Rebuild()
   // key "wrong_way": the car faces back down the track.
   if (m_bMillionPlus)
     m_Overlay.uiFlags |= ROLLER_ED_OVERLAY_TEST_CAR_MILLION_PLUS;
+  // The Y variants share their twin's plan but use ROLLER's advanced-cars
+  // skin -- a different texture bank plus the mirror palette remap -- so the
+  // model selects a design and a skin, not a design alone.
+  if (IsAdvancedModel(m_carModel))
+    m_Overlay.uiFlags |= ROLLER_ED_OVERLAY_TEST_CAR_ADVANCED;
   m_Overlay.uiTestCarDesign = CarDesignForModel(m_carModel);
   m_Overlay.uiTestCarAiLine = AiLineForSection(m_carAILine);
 }

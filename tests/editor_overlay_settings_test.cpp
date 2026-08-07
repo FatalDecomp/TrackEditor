@@ -215,7 +215,8 @@ void test_no_undefined_flag_or_class_bit_is_ever_published()
                 | ROLLER_ED_OVERLAY_SHOW_STUNT_MARKERS
                 | ROLLER_ED_OVERLAY_SHOW_TEST_CAR
                 | ROLLER_ED_OVERLAY_SHOW_REFERENCE_MESH
-                | ROLLER_ED_OVERLAY_TEST_CAR_MILLION_PLUS)) == 0);
+                | ROLLER_ED_OVERLAY_TEST_CAR_MILLION_PLUS
+                | ROLLER_ED_OVERLAY_TEST_CAR_ADVANCED)) == 0);
   }
 }
 
@@ -256,28 +257,29 @@ struct tExpectedCar
 {
   eWhipModel model;
   uint32_t uiDesign;
+  bool bAdvanced;
   const char *szName;
 };
 
 const tExpectedCar g_aExpectedCars[] = {
-  { eWhipModel::CAR_F1WACK,   12u, "f1wack" },
-  { eWhipModel::CAR_XAUTO,     0u, "xauto" },
-  { eWhipModel::CAR_XDESILVA,  1u, "xdesilva" },
-  { eWhipModel::CAR_XPULSE,    2u, "xpulse" },
-  { eWhipModel::CAR_XGLOBAL,   3u, "xglobal" },
-  { eWhipModel::CAR_XMILLION,  4u, "xmillion" },
-  { eWhipModel::CAR_XMISSION,  5u, "xmission" },
-  { eWhipModel::CAR_XZIZIN,    6u, "xzizin" },
-  { eWhipModel::CAR_XREISE,    7u, "xreise" },
-  { eWhipModel::CAR_YAUTO,     0u, "yauto" },
-  { eWhipModel::CAR_YDESILVA,  1u, "ydesilva" },
-  { eWhipModel::CAR_YPULSE,    2u, "ypulse" },
-  { eWhipModel::CAR_YGLOBAL,   3u, "yglobal" },
-  { eWhipModel::CAR_YMILLION,  4u, "ymillion" },
-  { eWhipModel::CAR_YMISSION,  5u, "ymission" },
-  { eWhipModel::CAR_YZIZIN,    6u, "yzizin" },
-  { eWhipModel::CAR_YREISE,    7u, "yreise" },
-  { eWhipModel::CAR_DEATH,    13u, "death" }
+  { eWhipModel::CAR_F1WACK, 12u, false, "f1wack" },
+  { eWhipModel::CAR_XAUTO, 0u, false, "xauto" },
+  { eWhipModel::CAR_XDESILVA, 1u, false, "xdesilva" },
+  { eWhipModel::CAR_XPULSE, 2u, false, "xpulse" },
+  { eWhipModel::CAR_XGLOBAL, 3u, false, "xglobal" },
+  { eWhipModel::CAR_XMILLION, 4u, false, "xmillion" },
+  { eWhipModel::CAR_XMISSION, 5u, false, "xmission" },
+  { eWhipModel::CAR_XZIZIN, 6u, false, "xzizin" },
+  { eWhipModel::CAR_XREISE, 7u, false, "xreise" },
+  { eWhipModel::CAR_YAUTO, 0u, true, "yauto" },
+  { eWhipModel::CAR_YDESILVA, 1u, true, "ydesilva" },
+  { eWhipModel::CAR_YPULSE, 2u, true, "ypulse" },
+  { eWhipModel::CAR_YGLOBAL, 3u, true, "yglobal" },
+  { eWhipModel::CAR_YMILLION, 4u, true, "ymillion" },
+  { eWhipModel::CAR_YMISSION, 5u, true, "ymission" },
+  { eWhipModel::CAR_YZIZIN, 6u, true, "yzizin" },
+  { eWhipModel::CAR_YREISE, 7u, true, "yreise" },
+  { eWhipModel::CAR_DEATH, 13u, false, "death" }
 };
 
 void test_every_car_model_maps_to_a_design_in_range()
@@ -287,6 +289,9 @@ void test_every_car_model_maps_to_a_design_in_range()
         CEditorOverlaySettings::CarDesignForModel(Expected.model);
 
     assert(uiDesign == Expected.uiDesign);
+    // The Y variants share their twin's plan but use the advanced-cars skin.
+    assert(CEditorOverlaySettings::IsAdvancedModel(Expected.model)
+           == Expected.bAdvanced);
     // The facade refuses the whole overlay push for an out-of-range design,
     // which would take every other toggle down with it.
     assert(uiDesign < ROLLER_ED_TEST_CAR_DESIGN_COUNT);
@@ -302,6 +307,29 @@ void test_a_non_car_model_still_yields_a_valid_design()
       CEditorOverlaySettings::CarDesignForModel(eWhipModel::SIGN_TREE);
 
   assert(uiDesign < ROLLER_ED_TEST_CAR_DESIGN_COUNT);
+  assert(!CEditorOverlaySettings::IsAdvancedModel(eWhipModel::SIGN_TREE));
+}
+
+void test_the_y_variants_publish_the_advanced_skin()
+{
+  CEditorOverlaySettings Settings;
+
+  Settings.SetShowModels(SHOW_CENTER_SURF_MODEL | SHOW_TEST_CAR);
+  Settings.SetTestCar(eWhipModel::CAR_XZIZIN, eShapeSection::AILINE1, false);
+  assert(Settings.GetOverlayState().uiTestCarDesign == 6u);
+  assert((Settings.GetOverlayState().uiFlags
+          & ROLLER_ED_OVERLAY_TEST_CAR_ADVANCED) == 0);
+
+  // Same plan, different skin: the design must not move with it.
+  Settings.SetTestCar(eWhipModel::CAR_YZIZIN, eShapeSection::AILINE1, false);
+  assert(Settings.GetOverlayState().uiTestCarDesign == 6u);
+  assert((Settings.GetOverlayState().uiFlags
+          & ROLLER_ED_OVERLAY_TEST_CAR_ADVANCED) != 0);
+
+  // F1WACK and DEATH have no Y variant and never ask for the skin.
+  Settings.SetTestCar(eWhipModel::CAR_DEATH, eShapeSection::AILINE1, false);
+  assert((Settings.GetOverlayState().uiFlags
+          & ROLLER_ED_OVERLAY_TEST_CAR_ADVANCED) == 0);
 }
 
 void test_both_ai_line_spellings_reach_the_same_index()
@@ -486,6 +514,7 @@ int main()
   test_selection_range_uses_the_sentinel_for_no_selection();
   test_every_car_model_maps_to_a_design_in_range();
   test_a_non_car_model_still_yields_a_valid_design();
+  test_the_y_variants_publish_the_advanced_skin();
   test_both_ai_line_spellings_reach_the_same_index();
   test_the_test_car_selection_reaches_the_overlay();
   test_the_car_selection_survives_the_show_car_checkbox();

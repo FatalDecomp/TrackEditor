@@ -38,6 +38,9 @@ class PinnedCoreTests(unittest.TestCase):
         self.assertIn(
             "ROLLER_ED_OVERLAY_TEST_CAR_MILLION_PLUS = 1u << 10", header
         )
+        self.assertIn(
+            "ROLLER_ED_OVERLAY_TEST_CAR_ADVANCED = 1u << 11", header
+        )
 
 
 class TranslationTests(unittest.TestCase):
@@ -79,9 +82,12 @@ class TranslationTests(unittest.TestCase):
                 f"{model} has no ROLLER design",
             )
 
-    def test_the_x_and_y_variants_share_one_design(self) -> None:
-        # WhipLib's GetCoords already returned identical geometry for the
-        # pair; ROLLER expresses the difference through the design's carType.
+    def test_the_x_and_y_variants_share_a_design_but_not_a_skin(self) -> None:
+        # WhipLib's GetCoords returned identical geometry for the pair, so the
+        # plan is shared -- but the Y variant is ROLLER's advanced-cars set,
+        # with its own texture bank and the mirror palette remap, so the skin
+        # is not. Getting only the first half right left every Y model drawing
+        # its X twin.
         table = self.source[
             self.source.index("g_aCarDesigns[]") : self.source.index(
                 "};", self.source.index("g_aCarDesigns[]")
@@ -90,10 +96,28 @@ class TranslationTests(unittest.TestCase):
         for name in ("AUTO", "DESILVA", "PULSE", "GLOBAL", "MILLION",
                      "MISSION", "ZIZIN", "REISE"):
             self.assertEqual(
-                table.count(f"ROLLER_CAR_DESIGN_{name} "),
+                table.count(f"ROLLER_CAR_DESIGN_{name},"),
                 2,
                 f"CAR_X{name} and CAR_Y{name} must share one design",
             )
+
+        # Every X row takes the plain skin and every Y row the advanced one.
+        for line in table.splitlines():
+            if "eWhipModel::CAR_X" in line or line.strip().startswith(
+                "{ eWhipModel::CAR_F1WACK"
+            ) or line.strip().startswith("{ eWhipModel::CAR_DEATH"):
+                self.assertIn("false", line, line)
+            elif "eWhipModel::CAR_Y" in line:
+                self.assertIn("true", line, line)
+
+    def test_the_advanced_skin_reaches_the_overlay(self) -> None:
+        header = (EDITOR / "EditorOverlaySettings.h").read_text(encoding="utf-8")
+        self.assertIn("IsAdvancedModel", header)
+        body = without_comments(
+            function_body(self.source, "void CEditorOverlaySettings::Rebuild(")
+        )
+        self.assertIn("ROLLER_ED_OVERLAY_TEST_CAR_ADVANCED", body)
+        self.assertIn("IsAdvancedModel(m_carModel)", body)
 
     def test_million_plus_is_published_as_a_flag(self) -> None:
         body = without_comments(

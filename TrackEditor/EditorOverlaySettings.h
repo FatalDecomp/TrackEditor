@@ -43,6 +43,10 @@ public:
   // without reaching into Rebuild().
   static uint32_t CarDesignForModel(eWhipModel carModel);
   static uint32_t AiLineForSection(eShapeSection aiLine);
+  // True for the Y model variants, which share a plan with their X twin but
+  // use ROLLER's advanced-cars skin: the second texture bank plus the palette
+  // remap that recolours parts like the mirrors.
+  static bool IsAdvancedModel(eWhipModel carModel);
 
 private:
   void Rebuild();
