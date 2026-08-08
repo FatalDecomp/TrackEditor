@@ -1,0 +1,91 @@
+name: Release
+
+# E6-S3. A tag publishes per-OS release assets.
+#
+# There is deliberately no build logic here. The tag is built by E6-S1's
+# reusable workflow with E6-S2's deploy steps, exactly as a pull request is, so
+# a release cannot be built differently from what CI has been testing all along.
+# This workflow only renames the artifacts and attaches them to the release.
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build
+    uses: ./.github/workflows/editor-build.yml
+
+  publish:
+    name: Publish release assets
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      # The only job in the repository that writes anything.
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download the per-OS artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Assemble the release assets
+        id: assemble
+        run: |
+          set -euo pipefail
+          tag="${GITHUB_REF_NAME}"
+          mkdir -p release
+
+          # Windows is the one platform whose payload is a directory, so it is
+          # the one that needs archiving; the other two already ship as single
+          # files and are better left that way. Re-zipping an AppImage would
+          # only make a user unpack and chmod it again.
+          ( cd artifacts/TrackEditor-Windows \
+            && zip -qr "$GITHUB_WORKSPACE/release/TrackEditor-${tag}-windows-x64.zip" . )
+          cp artifacts/TrackEditor-macOS/TrackEditor-macOS.tar.gz \
+             "release/TrackEditor-${tag}-macos.tar.gz"
+          cp artifacts/TrackEditor-Linux/TrackEditor-x86_64.AppImage \
+             "release/TrackEditor-${tag}-linux-x86_64.AppImage"
+
+          test "$(ls release | wc -l)" -eq 3
+          ls -l release
+
+          # v1.2.0-rc1 is a pre-release; v1.2.0 is not.
+          if [ "${tag#*-}" != "$tag" ]; then
+            echo 'prerelease=--prerelease' >> "$GITHUB_OUTPUT"
+          else
+            echo 'prerelease=' >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Write the release notes
+        run: |
+          set -euo pipefail
+          cat > release-notes.md <<'NOTES'
+          Built from this tag by the same workflow that gates every pull
+          request. Qt 6.8 LTS is bundled with each asset; nothing needs to be
+          installed alongside.
+
+          | Asset | How to run it |
+          |---|---|
+          | `…-windows-x64.zip` | Unzip and run `TrackEditor\TrackEditor.exe`. Needs the Microsoft Visual C++ 2015-2022 redistributable, which most machines already have. |
+          | `…-macos.tar.gz` | `tar xzf` it and open `TrackEditor.app`. It is unsigned, so the first launch needs right-click → Open. |
+          | `…-linux-x86_64.AppImage` | `chmod +x` it and run it. |
+          NOTES
+          printf '\nCommit: %s\n' "${GITHUB_SHA}" >> release-notes.md
+
+      - name: Publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: >-
+          gh release create "${GITHUB_REF_NAME}"
+          --title "TrackEditor ${GITHUB_REF_NAME}"
+          --notes-file release-notes.md
+          --verify-tag
+          ${{ steps.assemble.outputs.prerelease }}
+          release/*
