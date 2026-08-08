@@ -39,8 +39,8 @@ build() {
     local repo="$1" tag="$2" name="$3"
     shift 3
     echo "building $name $tag" >&2
-    git clone --depth 1 --branch "$tag" "https://github.com/libsdl-org/${repo}.git" \
-        "$work/$name"
+    git -c advice.detachedHead=false clone --quiet --depth 1 --branch "$tag" \
+        "https://github.com/libsdl-org/${repo}.git" "$work/$name"
     cmake -S "$work/$name" -B "$work/$name-build" -G Ninja \
         -DCMAKE_BUILD_TYPE=Release \
         -DCMAKE_INSTALL_PREFIX="$prefix" \
@@ -55,10 +55,22 @@ build SDL "release-${SDL_VERSION}" SDL3 \
     -DSDL_TEST_LIBRARY=OFF \
     -DSDL_EXAMPLES=OFF
 
-# Vendored decoders keep this independent of what the old base image happens to
-# package, which is the whole point of building on an old base image.
+# roller-core uses exactly one thing from SDL_image: IMG_SavePNG, in
+# png_writer.c. (IMG_Load lives in roller.c, which is the game, not the core.)
+# So every other decoder is dead weight here.
+#
+# That matters because SDLIMAGE_VENDORED=ON expects the upstream submodules to
+# be present -- a --depth 1 clone without --recurse-submodules leaves
+# external/dav1d, external/aom, and external/libavif empty and configure fails
+# on them. Fetching them would mean building two AV1 codecs from source on
+# every cold cache, to decode formats this project never opens. Turning the
+# formats off is both the faster and the more honest fix.
 build SDL_image "release-${SDL_IMAGE_VERSION}" SDL3_image \
-    -DSDLIMAGE_VENDORED=ON \
+    -DSDLIMAGE_VENDORED=OFF \
+    -DSDLIMAGE_AVIF=OFF \
+    -DSDLIMAGE_JXL=OFF \
+    -DSDLIMAGE_TIF=OFF \
+    -DSDLIMAGE_WEBP=OFF \
     -DSDLIMAGE_SAMPLES=OFF \
     -DSDLIMAGE_TESTS=OFF
 

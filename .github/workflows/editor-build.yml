@@ -80,7 +80,8 @@ jobs:
             libgl1-mesa-dev libegl1-mesa-dev libasound2-dev libpulse-dev \
             libx11-dev libxext-dev libxrandr-dev libxcursor-dev libxi-dev \
             libxfixes-dev libxss-dev libwayland-dev libxkbcommon-dev \
-            libdrm-dev libgbm-dev libudev-dev
+            libdrm-dev libgbm-dev libudev-dev \
+            libpng-dev libjpeg-dev
 
       # No distro old enough to be a sensible AppImage base packages SDL3, so
       # it is built once and cached against the pinned versions.
