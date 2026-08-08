@@ -43,6 +43,7 @@ class E3S4WhipLibEngineContractTests(unittest.TestCase):
             ROOT / "TrackAssets" / "CMakeLists.txt",
             ROOT / "cmake" / "TrackEditorNoOpenGL.cmake",
             ROOT / ".github" / "workflows" / "build.yml",
+            ROOT / ".github" / "workflows" / "editor-build.yml",
             ROOT / "docs" / "building.md",
         ]
         for directory in (EDITOR, TRACK_MODEL, TRACK_ASSETS):

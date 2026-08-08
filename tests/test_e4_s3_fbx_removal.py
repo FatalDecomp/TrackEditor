@@ -28,6 +28,7 @@ def source_and_build_files() -> list[Path]:
         ROOT / "README.md",
         ROOT / "TrackEditor" / "CMakeLists.txt",
         ROOT / ".github" / "workflows" / "build.yml",
+        ROOT / ".github" / "workflows" / "editor-build.yml",
         ROOT / "docs" / "building.md",
     ]
     paths.extend(EDITOR.glob("*.h"))
@@ -86,8 +87,10 @@ class RemovalTests(unittest.TestCase):
                 )
 
     def test_ci_configures_without_an_fbx_flag(self) -> None:
-        workflow = (ROOT / ".github" / "workflows" / "build.yml").read_text(
-            encoding="utf-8"
+        # E6-S1 split the workflow into a reusable half and a caller.
+        workflow = "\n".join(
+            path.read_text(encoding="utf-8")
+            for path in (ROOT / ".github" / "workflows").glob("*.yml")
         )
         self.assertNotIn("FBX", workflow)
         # The Windows step used a backtick continuation for the removed flag.

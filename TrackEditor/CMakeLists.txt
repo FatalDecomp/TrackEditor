@@ -93,7 +93,16 @@ if(WIN32)
     list(APPEND trackeditor_sources TrackEditor.rc)
 endif()
 
-add_executable(TrackEditor WIN32 ${trackeditor_sources})
+# E6-S2. WIN32 and MACOSX_BUNDLE each apply only on their own platform. The
+# bundle is what macdeployqt operates on; without it there is nothing on macOS
+# for the deploy step to fill in.
+add_executable(TrackEditor WIN32 MACOSX_BUNDLE ${trackeditor_sources})
+
+set_target_properties(TrackEditor PROPERTIES
+    MACOSX_BUNDLE_BUNDLE_NAME "TrackEditor"
+    MACOSX_BUNDLE_GUI_IDENTIFIER "com.fataldecomp.trackeditor"
+    MACOSX_BUNDLE_BUNDLE_VERSION "${PROJECT_VERSION}"
+    MACOSX_BUNDLE_SHORT_VERSION_STRING "${PROJECT_VERSION}")
 
 set_target_properties(TrackEditor PROPERTIES
     AUTOMOC ON
