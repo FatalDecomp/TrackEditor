@@ -13,7 +13,10 @@
 #
 # usage: install-sdl-linux.sh <prefix>
 #
-# Prints the prefix, which is what CMAKE_PREFIX_PATH wants.
+# The prefix is an argument, not a return value: the caller already knows it.
+# Everything this prints goes to stderr, so the script has no stdout contract
+# for anyone to capture by mistake -- CMake writes its configure progress to
+# stdout, and $(...) around this would pick that up too.
 
 set -euo pipefail
 
@@ -28,7 +31,6 @@ prefix="$(cd "$prefix" && pwd)"
 if [ -f "$prefix/lib/cmake/SDL3/SDL3Config.cmake" ] \
    && [ -f "$prefix/lib/cmake/SDL3_image/SDL3_imageConfig.cmake" ]; then
     echo "SDL already present in $prefix" >&2
-    echo "$prefix"
     exit 0
 fi
 
@@ -41,14 +43,17 @@ build() {
     echo "building $name $tag" >&2
     git -c advice.detachedHead=false clone --quiet --depth 1 --branch "$tag" \
         "https://github.com/libsdl-org/${repo}.git" "$work/$name"
+    # CMake writes progress to stdout. Send it to stderr so it is still in the
+    # CI log but never lands in a caller's $(...) -- capturing it is what put
+    # "-- Detecting C compiler ABI info" into a GITHUB_ENV entry.
     cmake -S "$work/$name" -B "$work/$name-build" -G Ninja \
         -DCMAKE_BUILD_TYPE=Release \
         -DCMAKE_INSTALL_PREFIX="$prefix" \
         -DCMAKE_PREFIX_PATH="$prefix" \
         -DBUILD_SHARED_LIBS=ON \
-        "$@"
-    cmake --build "$work/$name-build" --parallel
-    cmake --install "$work/$name-build"
+        "$@" >&2
+    cmake --build "$work/$name-build" --parallel >&2
+    cmake --install "$work/$name-build" >&2
 }
 
 build SDL "release-${SDL_VERSION}" SDL3 \
@@ -74,4 +79,4 @@ build SDL_image "release-${SDL_IMAGE_VERSION}" SDL3_image \
     -DSDLIMAGE_SAMPLES=OFF \
     -DSDLIMAGE_TESTS=OFF
 
-echo "$prefix"
+echo "SDL installed into $prefix" >&2

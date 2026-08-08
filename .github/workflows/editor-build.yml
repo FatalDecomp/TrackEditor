@@ -93,12 +93,17 @@ jobs:
           path: ${{ runner.temp }}/sdl
           key: sdl-${{ matrix.os }}-${{ hashFiles('scripts/install-sdl-linux.sh') }}
 
+      # The prefix is the path passed in, so read it from there rather than
+      # capturing the script's stdout: CMake writes its configure progress to
+      # stdout, so $(...) returns "-- Detecting C compiler ABI info" and friends
+      # along with the answer, and a multi-line value is not a legal GITHUB_ENV
+      # entry.
       - name: Build SDL from source (Linux)
         if: runner.os == 'Linux'
         run: |
-          prefix="$(bash scripts/install-sdl-linux.sh "$RUNNER_TEMP/sdl")"
-          echo "CMAKE_PREFIX_PATH=$prefix" >> "$GITHUB_ENV"
-          echo "LD_LIBRARY_PATH=$prefix/lib:${LD_LIBRARY_PATH:-}" >> "$GITHUB_ENV"
+          bash scripts/install-sdl-linux.sh "$RUNNER_TEMP/sdl"
+          echo "CMAKE_PREFIX_PATH=$RUNNER_TEMP/sdl" >> "$GITHUB_ENV"
+          echo "LD_LIBRARY_PATH=$RUNNER_TEMP/sdl/lib:${LD_LIBRARY_PATH:-}" >> "$GITHUB_ENV"
 
       - name: Install binary dependencies (macOS)
         if: runner.os == 'macOS'
