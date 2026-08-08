@@ -40,7 +40,12 @@ jobs:
       matrix:
         include:
           - name: Linux
-            os: ubuntu-26.04
+            # An AppImage runs only on a glibc at least as new as the one it
+            # was built against. Built on ubuntu-26.04 it demanded GLIBC_2.43
+            # and ran nowhere but ubuntu-26.04. The oldest base still offered
+            # is the most portable one, and it is why SDL is built from source
+            # below: nothing this old packages SDL3.
+            os: ubuntu-22.04
             qt-arch: linux_gcc_64
             generator-args: '-G Ninja'
           - name: macOS
@@ -71,8 +76,28 @@ jobs:
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
-          sudo apt-get install --yes libsdl3-dev libsdl3-image-dev ninja-build \
-            libgl1-mesa-dev libxkbcommon-dev libxcb-cursor0
+          sudo apt-get install --yes ninja-build \
+            libgl1-mesa-dev libegl1-mesa-dev libasound2-dev libpulse-dev \
+            libx11-dev libxext-dev libxrandr-dev libxcursor-dev libxi-dev \
+            libxfixes-dev libxss-dev libwayland-dev libxkbcommon-dev \
+            libdrm-dev libgbm-dev libudev-dev
+
+      # No distro old enough to be a sensible AppImage base packages SDL3, so
+      # it is built once and cached against the pinned versions.
+      - name: Cache SDL
+        if: runner.os == 'Linux'
+        id: sdl-cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ runner.temp }}/sdl
+          key: sdl-${{ matrix.os }}-${{ hashFiles('scripts/install-sdl-linux.sh') }}
+
+      - name: Build SDL from source (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          prefix="$(bash scripts/install-sdl-linux.sh "$RUNNER_TEMP/sdl")"
+          echo "CMAKE_PREFIX_PATH=$prefix" >> "$GITHUB_ENV"
+          echo "LD_LIBRARY_PATH=$prefix/lib:${LD_LIBRARY_PATH:-}" >> "$GITHUB_ENV"
 
       - name: Install binary dependencies (macOS)
         if: runner.os == 'macOS'
@@ -132,8 +157,52 @@ jobs:
               "$stage\TrackEditor.exe"
           # SDL has no system package manager here; take the DLLs from the
           # archives scripts/install-sdl-windows.ps1 unpacked.
+          #
+          # Take them from lib\x64 explicitly. The archives ship arm64, x64, and
+          # x86 copies of each DLL, so a recursive glob finds all three, copies
+          # them over each other in one flat directory, and leaves whichever
+          # sorted last -- x86. A 64-bit exe beside a 32-bit SDL3.dll starts
+          # with 0xc000007b and nothing else looks wrong.
           Get-ChildItem -Path "$env:RUNNER_TEMP\sdl" -Recurse -Include SDL3.dll, SDL3_image.dll |
+              Where-Object { $_.Directory.Name -eq 'x64' } |
               ForEach-Object { Copy-Item $_.FullName $stage }
+
+          # Assert it rather than assume it: read the PE machine field of every
+          # binary staged. This is cheap and it is exactly the check that was
+          # missing when the mismatch above shipped.
+          $wrong = Get-ChildItem $stage -Recurse -Include *.exe, *.dll | Where-Object {
+              $stream = [IO.File]::OpenRead($_.FullName)
+              try {
+                  $reader = New-Object IO.BinaryReader($stream)
+                  $stream.Position = 0x3C
+                  $stream.Position = $reader.ReadInt32() + 4
+                  $reader.ReadUInt16() -ne 0x8664   # IMAGE_FILE_MACHINE_AMD64
+              } finally { $stream.Close() }
+          }
+          if ($wrong) {
+              throw "not x64: $($wrong.Name -join ', ')"
+          }
+          Write-Host "$((Get-ChildItem $stage -Recurse -Include *.exe, *.dll).Count) staged binaries, all x64"
+
+          # Then actually run it, with only the system directories on PATH.
+          # "Self-contained" is a claim about a directory nobody had executed:
+          # the build tree's smoke test passes using SDL from PATH, so it says
+          # nothing about what was staged here. This is the check that was
+          # missing, and it catches a wrong architecture, a DLL windeployqt did
+          # not bring, and a missing platform plugin alike.
+          #
+          # Start-Process -Wait rather than the call operator: TrackEditor is a
+          # GUI-subsystem binary, so `&` returns immediately and leaves
+          # $LASTEXITCODE unset, which would make this check pass no matter
+          # what. A loader failure like 0xc000007b is reported as the exit code
+          # of the process, so it has to be waited for to be seen.
+          $env:PATH = "$env:SystemRoot\system32;$env:SystemRoot"
+          $smoke = Start-Process -FilePath "$stage\TrackEditor.exe" `
+              -ArgumentList '--cmake-smoke-test' -Wait -PassThru
+          if ($smoke.ExitCode -ne 0) {
+              throw ("the staged artifact does not run standalone (exit 0x{0:X8})" -f $smoke.ExitCode)
+          }
+          Write-Host "staged artifact runs with only the system PATH"
 
       - name: Deploy (macOS)
         if: inputs.upload-artifacts && runner.os == 'macOS'
@@ -173,6 +242,19 @@ jobs:
             --plugin qt --output appimage
           mkdir -p dist
           mv TrackEditor-x86_64.AppImage dist/
+
+          # Report the glibc floor the AppImage inherited from this runner. It
+          # is the number that decides where the thing will actually run, and
+          # it was invisible until an artifact failed to start.
+          echo "highest glibc symbol required:"
+          objdump -T AppDir/usr/bin/TrackEditor \
+            | grep -o 'GLIBC_[0-9.]*' | sort -V -u | tail -3
+
+          # Then run it, the same way the Windows deploy runs what it staged.
+          # A deploy tool reporting success says nothing about whether the
+          # result starts.
+          QT_QPA_PLATFORM=offscreen ./dist/TrackEditor-x86_64.AppImage --cmake-smoke-test
+          echo "AppImage runs"
 
       - name: Describe the artifact
         if: inputs.upload-artifacts

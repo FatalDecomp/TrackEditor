@@ -26,7 +26,10 @@ REUSABLE = WORKFLOWS / "editor-build.yml"
 CALLER = WORKFLOWS / "build.yml"
 
 EXPECTED_PLATFORMS = {
-    "Linux": "ubuntu-26.04",
+    # Deliberately old: an AppImage runs only on a glibc at least as new as the
+    # one it was built against, and building on ubuntu-26.04 produced one that
+    # demanded GLIBC_2.43 and ran nowhere else.
+    "Linux": "ubuntu-22.04",
     "macOS": "macos-15-intel",
     "Windows": "windows-2022",
 }
@@ -101,10 +104,13 @@ class PlatformFactsTests(unittest.TestCase):
 
     def test_every_platform_provisions_sdl(self) -> None:
         text = reusable_text()
-        self.assertIn("libsdl3-dev libsdl3-image-dev", text)   # Linux
+        # Linux builds it: no distro old enough to be a sensible AppImage base
+        # packages SDL3.
+        self.assertIn("install-sdl-linux.sh", text)
         self.assertIn("brew install --force-bottle sdl3", text)  # macOS
         self.assertIn("install-sdl-windows.ps1", text)           # Windows
-        self.assertTrue((ROOT / "scripts" / "install-sdl-windows.ps1").is_file())
+        for script in ("install-sdl-windows.ps1", "install-sdl-linux.sh"):
+            self.assertTrue((ROOT / "scripts" / script).is_file(), script)
 
     def test_the_platform_only_steps_are_guarded_by_runner_os(self) -> None:
         text = reusable_text()

@@ -57,6 +57,53 @@ class DeployToolTests(unittest.TestCase):
         self.assertNotIn("6.8.3/msvc", text)
 
 
+class DeployedArtifactTests(unittest.TestCase):
+    """The rules that came out of the first nightly, which shipped two broken
+    artifacts.
+
+    Windows staged a 64-bit exe beside 32-bit SDL DLLs -- the archives carry
+    arm64, x64, and x86 copies, and a recursive glob flattened all three into
+    one directory with x86 sorting last. It started with 0xc000007b and looked
+    complete. Linux built the AppImage on ubuntu-26.04, so it demanded
+    GLIBC_2.43 and ran on ubuntu-26.04 and nowhere else.
+
+    Both had the same root cause: the deploy tools reported success and nobody
+    ran the result. The build tree's own smoke test does not count -- it finds
+    SDL on PATH, so it says nothing about what was staged.
+    """
+
+    def test_windows_takes_sdl_from_the_x64_directory_only(self) -> None:
+        self.assertIn("$_.Directory.Name -eq 'x64'", workflow())
+
+    def test_windows_verifies_every_staged_binary_is_x64(self) -> None:
+        text = workflow()
+        self.assertIn("0x8664", text)          # IMAGE_FILE_MACHINE_AMD64
+        self.assertIn("not x64:", text)
+
+    def test_every_deployed_artifact_is_executed_before_upload(self) -> None:
+        text = workflow()
+        # Windows: run the staged tree with only the system directories on PATH.
+        self.assertIn('$env:PATH = "$env:SystemRoot\\system32;$env:SystemRoot"', text)
+        # And wait for it. TrackEditor is a GUI-subsystem binary, so the call
+        # operator returns immediately and leaves $LASTEXITCODE unset -- a
+        # check written that way passes no matter what, which is the same class
+        # of defect this whole test exists to catch.
+        self.assertIn("Start-Process -FilePath \"$stage\\TrackEditor.exe\"", text)
+        self.assertIn("-Wait -PassThru", text)
+        self.assertIn("$smoke.ExitCode -ne 0", text)
+        # Linux: run the AppImage itself.
+        self.assertIn(
+            "QT_QPA_PLATFORM=offscreen ./dist/TrackEditor-x86_64.AppImage "
+            "--cmake-smoke-test",
+            text,
+        )
+
+    def test_the_appimage_glibc_floor_is_reported(self) -> None:
+        # It is the number that decides where the AppImage runs, and it was
+        # invisible until an artifact failed to start.
+        self.assertIn("GLIBC_", workflow())
+
+
 class PackagingPrerequisiteTests(unittest.TestCase):
     def test_the_macos_target_is_a_bundle(self) -> None:
         # macdeployqt operates on a .app; without MACOSX_BUNDLE there is
