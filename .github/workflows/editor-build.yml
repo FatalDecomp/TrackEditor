@@ -1,0 +1,105 @@
+name: Editor build
+
+# E6-S1. The reusable half of the editor CI: provisioning, configure, build,
+# and test for all three desktop platforms in one matrix. E2-S3 stood the three
+# platforms up as three hand-written jobs whose steps had drifted into near
+# duplicates; this is the same work expressed once, callable by any workflow
+# that needs a built editor.
+#
+# E6-S2 (per-OS deploy artifacts) and E6-S3 (tagged releases) are meant to call
+# this rather than restate the provisioning, which is what "reusable" buys.
+
+on:
+  workflow_call:
+    inputs:
+      build-type:
+        description: 'CMake configuration to build and test.'
+        type: string
+        default: Release
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      # These were three independent jobs before E6-S1, so one platform failing
+      # never hid the other two. A matrix cancels its siblings by default, which
+      # would lose exactly the information a three-OS matrix exists to give.
+      fail-fast: false
+      matrix:
+        include:
+          - name: Linux
+            os: ubuntu-26.04
+            qt-arch: linux_gcc_64
+            generator-args: '-G Ninja'
+          - name: macOS
+            os: macos-15-intel
+            qt-arch: clang_64
+            generator-args: '-G Ninja'
+          - name: Windows
+            os: windows-2022
+            qt-arch: win64_msvc2022_64
+            # Durable E2 state: plain Ninja without an initialized MSVC
+            # environment lets CMake select MinGW and windres, which cannot
+            # consume the UTF-16 TrackEditor.rc. Do not unpin this generator
+            # without CI evidence.
+            generator-args: '-G "Visual Studio 17 2022" -A x64'
+            # E5-S3. Windows is the platform whose /W4 output has been read end
+            # to end, so it is the one that enforces. Linux and macOS build at
+            # the same raised level and print their warnings; flip them to
+            # errors once a run has confirmed those logs are clean.
+            extra-configure-args: '-DTRACKEDITOR_WARNINGS_AS_ERRORS=ON'
+    env:
+      HOMEBREW_NO_BOTTLE_SOURCE_FALLBACK: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install binary dependencies (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes libsdl3-dev libsdl3-image-dev ninja-build \
+            libgl1-mesa-dev libxkbcommon-dev libxcb-cursor0
+
+      - name: Install binary dependencies (macOS)
+        if: runner.os == 'macOS'
+        run: brew install --force-bottle sdl3 sdl3_image ninja
+
+      - name: Install dynamic Qt 6.8 LTS
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: '6.8.3'
+          arch: ${{ matrix.qt-arch }}
+          cache: true
+
+      # Windows has no system package manager for SDL; the script downloads the
+      # official development archives and verifies their SHA-256 hashes.
+      - name: Install prebuilt SDL development packages (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: .\scripts\install-sdl-windows.ps1 -Destination "$env:RUNNER_TEMP\sdl"
+
+      # bash on all three so the generator argument quotes read the same way.
+      # CMAKE_BUILD_TYPE is ignored by the multi-config Visual Studio generator
+      # and --config is ignored by single-config Ninja, so one pair of commands
+      # covers both without branching.
+      - name: Configure
+        shell: bash
+        run: >-
+          cmake -S . -B build
+          ${{ matrix.generator-args }}
+          -DCMAKE_BUILD_TYPE=${{ inputs.build-type }}
+          ${{ matrix.extra-configure-args }}
+
+      - name: Build
+        shell: bash
+        run: cmake --build build --config ${{ inputs.build-type }} --parallel
+
+      - name: Test
+        shell: bash
+        run: ctest --test-dir build -C ${{ inputs.build-type }} --output-on-failure

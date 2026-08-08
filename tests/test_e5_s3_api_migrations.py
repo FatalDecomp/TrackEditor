@@ -19,7 +19,8 @@ import unittest
 ROOT = Path(__file__).resolve().parents[1]
 WARNINGS_MODULE = ROOT / "cmake" / "TrackEditorWarnings.cmake"
 TOP_LEVEL_CMAKE = ROOT / "CMakeLists.txt"
-WORKFLOW = ROOT / ".github" / "workflows" / "build.yml"
+# E6-S1 moved the configure step into the reusable workflow.
+WORKFLOW = ROOT / ".github" / "workflows" / "editor-build.yml"
 EDITOR = ROOT / "TrackEditor"
 
 # Every target this repository owns and compiles.

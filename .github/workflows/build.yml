@@ -1,5 +1,9 @@
 name: Build
 
+# E6-S1. The PR gate is a thin caller; everything it does lives in the reusable
+# editor-build workflow so that E6-S2 and E6-S3 can reuse it rather than restate
+# the provisioning.
+
 on:
   push:
   pull_request:
@@ -8,97 +12,6 @@ permissions:
   contents: read
 
 jobs:
-  linux:
-    name: Linux
-    runs-on: ubuntu-26.04
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          submodules: recursive
-
-      - name: Install binary dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install --yes libsdl3-dev libsdl3-image-dev ninja-build \
-            libgl1-mesa-dev libxkbcommon-dev libxcb-cursor0
-
-      - name: Install dynamic Qt 6.8 LTS
-        uses: jurplel/install-qt-action@v4
-        with:
-          version: '6.8.3'
-          cache: true
-
-      - name: Configure
-        run: >-
-          cmake -S . -B build -G Ninja
-          -DCMAKE_BUILD_TYPE=Release
-
-      - name: Build
-        run: cmake --build build --parallel
-
-      - name: Test
-        run: ctest --test-dir build --output-on-failure
-
-  macos:
-    name: macOS
-    runs-on: macos-15-intel
-    env:
-      HOMEBREW_NO_BOTTLE_SOURCE_FALLBACK: '1'
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          submodules: recursive
-
-      - name: Install binary dependencies
-        run: brew install --force-bottle sdl3 sdl3_image ninja
-
-      - name: Install dynamic Qt 6.8 LTS
-        uses: jurplel/install-qt-action@v4
-        with:
-          version: '6.8.3'
-          cache: true
-
-      - name: Configure
-        run: >-
-          cmake -S . -B build -G Ninja
-          -DCMAKE_BUILD_TYPE=Release
-
-      - name: Build
-        run: cmake --build build --parallel
-
-      - name: Test
-        run: ctest --test-dir build --output-on-failure
-
-  windows:
-    name: Windows
-    runs-on: windows-2022
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          submodules: recursive
-
-      - name: Install dynamic Qt 6.8 LTS
-        uses: jurplel/install-qt-action@v4
-        with:
-          version: '6.8.3'
-          arch: win64_msvc2022_64
-          cache: true
-
-      - name: Install prebuilt SDL development packages
-        shell: pwsh
-        run: .\scripts\install-sdl-windows.ps1 -Destination "$env:RUNNER_TEMP\sdl"
-
-      # E5-S3. Windows is the platform whose /W4 output has been read end to
-      # end, so it is the one that enforces. Linux and macOS build at the same
-      # raised level and print their warnings; flip them to errors once a run
-      # has confirmed those logs are clean.
-      - name: Configure
-        shell: pwsh
-        run: |
-          cmake -S . -B build -G "Visual Studio 17 2022" -A x64 -DTRACKEDITOR_WARNINGS_AS_ERRORS=ON
-
-      - name: Build
-        run: cmake --build build --config Release --parallel
-
-      - name: Test
-        run: ctest --test-dir build -C Release --output-on-failure
+  editor:
+    name: Editor
+    uses: ./.github/workflows/editor-build.yml
