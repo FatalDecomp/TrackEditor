@@ -185,6 +185,11 @@ if(BUILD_TESTING)
             COMMAND "${Python3_EXECUTABLE}"
                     "${CMAKE_CURRENT_SOURCE_DIR}/tests/test_e6_s1_editor_build_workflow.py"
                     -v)
+        add_test(
+            NAME trackeditor-e6-s2-deploy-artifacts-contract
+            COMMAND "${Python3_EXECUTABLE}"
+                    "${CMAKE_CURRENT_SOURCE_DIR}/tests/test_e6_s2_deploy_artifacts.py"
+                    -v)
     endif()
 
     if(TARGET TrackEditor)

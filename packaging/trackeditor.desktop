@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Roller Track Editor
+GenericName=Track Editor
+Comment=Whiplash/Fatal Racing track editor and model exporter
+Exec=TrackEditor
+Icon=trackeditor
+Categories=Development;Graphics;
+Terminal=false

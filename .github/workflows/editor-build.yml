@@ -16,6 +16,14 @@ on:
         description: 'CMake configuration to build and test.'
         type: string
         default: Release
+      upload-artifacts:
+        description: >-
+          E6-S2. Deploy a self-contained package per platform and upload it.
+          On by default: this project needs a runnable build for manual
+          acceptance constantly, and staging those by hand is what E6-S2
+          exists to stop.
+        type: boolean
+        default: true
 
 permissions:
   contents: read
@@ -103,3 +111,103 @@ jobs:
       - name: Test
         shell: bash
         run: ctest --test-dir build -C ${{ inputs.build-type }} --output-on-failure
+
+      # E6-S2. Each platform's own deploy tool bundles dynamic Qt beside the
+      # binary, so the artifact runs on a machine with no Qt and nothing on
+      # PATH. install-qt-action exports QT_ROOT_DIR, which is where all three
+      # tools live.
+      - name: Deploy (Windows)
+        if: inputs.upload-artifacts && runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $stage = 'dist/TrackEditor'
+          New-Item -ItemType Directory -Force -Path $stage | Out-Null
+          Copy-Item "build/TrackEditor/${{ inputs.build-type }}/TrackEditor.exe" $stage
+          # --no-opengl-sw keeps the deployment honest about E5-S2: the viewport
+          # is a plain QWidget blitting a QImage and links no Qt OpenGL.
+          & "$env:QT_ROOT_DIR\bin\windeployqt.exe" `
+              --release --no-translations --no-system-d3d-compiler --no-opengl-sw `
+              --no-compiler-runtime `
+              "$stage\TrackEditor.exe"
+          # SDL has no system package manager here; take the DLLs from the
+          # archives scripts/install-sdl-windows.ps1 unpacked.
+          Get-ChildItem -Path "$env:RUNNER_TEMP\sdl" -Recurse -Include SDL3.dll, SDL3_image.dll |
+              ForEach-Object { Copy-Item $_.FullName $stage }
+
+      - name: Deploy (macOS)
+        if: inputs.upload-artifacts && runner.os == 'macOS'
+        run: |
+          set -euo pipefail
+          "$QT_ROOT_DIR/bin/macdeployqt" build/TrackEditor/TrackEditor.app
+          mkdir -p dist
+          # Tar rather than hand the .app to upload-artifact directly: the
+          # framework symlinks inside a bundle do not survive being zipped.
+          tar czf dist/TrackEditor-macOS.tar.gz -C build/TrackEditor TrackEditor.app
+
+      - name: Deploy (Linux)
+        if: inputs.upload-artifacts && runner.os == 'Linux'
+        env:
+          # The runners have no FUSE, so the AppImage tools have to unpack
+          # themselves instead of mounting.
+          APPIMAGE_EXTRACT_AND_RUN: '1'
+        run: |
+          set -euo pipefail
+          base=https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous
+          plugin=https://github.com/linuxdeploy/linuxdeploy-plugin-qt/releases/download/continuous
+          curl -fsSL -o linuxdeploy "$base/linuxdeploy-x86_64.AppImage"
+          curl -fsSL -o linuxdeploy-plugin-qt "$plugin/linuxdeploy-plugin-qt-x86_64.AppImage"
+          chmod +x linuxdeploy linuxdeploy-plugin-qt
+          # linuxdeploy resolves --plugin qt by finding linuxdeploy-plugin-qt
+          # on PATH.
+          export PATH="$PWD:$PATH"
+          # linuxdeploy keys the icon on its filename, which has to match the
+          # desktop file's Icon= entry.
+          cp TrackEditor/images/stunt.png trackeditor.png
+          export QMAKE="$QT_ROOT_DIR/bin/qmake"
+          export OUTPUT=TrackEditor-x86_64.AppImage
+          ./linuxdeploy --appdir AppDir \
+            --executable build/TrackEditor/TrackEditor \
+            --desktop-file packaging/trackeditor.desktop \
+            --icon-file trackeditor.png \
+            --plugin qt --output appimage
+          mkdir -p dist
+          mv TrackEditor-x86_64.AppImage dist/
+
+      - name: Describe the artifact
+        if: inputs.upload-artifacts
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p dist
+          {
+            echo "TrackEditor - ${{ matrix.name }} ${{ inputs.build-type }} build"
+            echo
+            echo "Commit:  ${GITHUB_SHA}"
+            echo "Branch:  ${GITHUB_REF_NAME}"
+            echo "Qt:      6.8.3 dynamic, bundled beside the binary"
+            echo
+            case "${{ runner.os }}" in
+              Windows) echo "Run TrackEditor\\TrackEditor.exe. Needs nothing on PATH."
+                       echo "Requires the Microsoft Visual C++ 2015-2022 redistributable,"
+                       echo "which SDL3 also depends on and most Windows machines have." ;;
+              macOS)   echo "tar xzf TrackEditor-macOS.tar.gz, then open TrackEditor.app."
+                       echo "It is unsigned, so the first launch needs right-click > Open." ;;
+              Linux)   echo "chmod +x TrackEditor-x86_64.AppImage and run it." ;;
+            esac
+          } > dist/READ-ME-FIRST.txt
+          if [ -z "$(find dist -mindepth 1 ! -name READ-ME-FIRST.txt -print -quit)" ]; then
+            echo "::error::the deploy step produced no payload" >&2
+            exit 1
+          fi
+          ls -R dist
+
+      - name: Upload the artifact
+        if: inputs.upload-artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: TrackEditor-${{ matrix.name }}
+          path: dist/
+          if-no-files-found: error
+          # Manual acceptance happens within days of a build, not months.
+          retention-days: 14
