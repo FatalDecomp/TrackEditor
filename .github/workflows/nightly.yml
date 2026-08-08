@@ -1,0 +1,118 @@
+name: Nightly
+
+# A rolling pre-release built from master, so a recent runnable editor is one
+# click away on all three platforms instead of being staged by hand. Four of
+# those hand-staged builds exist under out/ and each one was the same work.
+#
+# It shares everything with the tagged-release path: the same reusable build
+# workflow, the same deploy steps, and the same asset assembly script. The only
+# differences are the trigger, the rolling tag, and that it publishes nothing
+# when master has not moved.
+
+on:
+  schedule:
+    # Off the hour, as GitHub asks. Scheduled runs are best-effort and can slip.
+    - cron: '17 4 * * *'
+  # Nothing here has ever run; being able to trigger it by hand is how you find
+  # out whether it works without waiting a day per attempt.
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: nightly
+  cancel-in-progress: true
+
+jobs:
+  changes:
+    name: Check for new commits
+    runs-on: ubuntu-latest
+    outputs:
+      should_build: ${{ steps.check.outputs.should_build }}
+    steps:
+      - uses: actions/checkout@v4
+
+      # Rebuilding an unchanged master every night republishes identical
+      # binaries and burns three runners doing it. A manual dispatch always
+      # builds, because that is someone deliberately asking.
+      - name: Compare master with the last nightly
+        id: check
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          previous="$(gh api "repos/${GITHUB_REPOSITORY}/git/ref/tags/nightly" \
+                        --jq .object.sha 2>/dev/null || echo none)"
+          echo "last nightly: ${previous}"
+          echo "master:       ${GITHUB_SHA}"
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo 'should_build=true' >> "$GITHUB_OUTPUT"
+            echo "manual dispatch; building regardless"
+          elif [ "$previous" = "$GITHUB_SHA" ]; then
+            echo 'should_build=false' >> "$GITHUB_OUTPUT"
+            echo "master has not moved since the last nightly; nothing to do"
+          else
+            echo 'should_build=true' >> "$GITHUB_OUTPUT"
+          fi
+
+  build:
+    name: Build
+    needs: changes
+    if: needs.changes.outputs.should_build == 'true'
+    uses: ./.github/workflows/editor-build.yml
+
+  publish:
+    name: Publish the nightly
+    needs: [changes, build]
+    if: needs.changes.outputs.should_build == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download the per-OS artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Assemble the release assets
+        run: bash scripts/assemble-release-assets.sh nightly artifacts release
+
+      - name: Write the release notes
+        run: |
+          set -euo pipefail
+          cat > release-notes.md <<'NOTES'
+          An automatic build of the latest `master`. It is replaced every night
+          that master moves, so treat the download as disposable and the link as
+          permanent.
+
+          Built by the same workflow that gates every pull request, with Qt 6.8
+          LTS bundled; nothing needs to be installed alongside.
+
+          | Asset | How to run it |
+          |---|---|
+          | `…-windows-x64.zip` | Unzip and run `TrackEditor\TrackEditor.exe`. Needs the Microsoft Visual C++ 2015-2022 redistributable, which most machines already have. |
+          | `…-macos.tar.gz` | `tar xzf` it and open `TrackEditor.app`. It is unsigned, so the first launch needs right-click → Open. |
+          | `…-linux-x86_64.AppImage` | `chmod +x` it and run it. |
+          NOTES
+          printf '\nCommit: %s\nBuilt:  %s\n' \
+            "${GITHUB_SHA}" "$(date -u '+%Y-%m-%d %H:%M:%S UTC')" >> release-notes.md
+
+      # Delete and recreate rather than upload over the top: it moves the tag to
+      # the new commit, drops assets from platforms that have since been renamed
+      # or removed, and leaves exactly one nightly release behind, so there is no
+      # cleanup job to get wrong.
+      - name: Publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh release delete nightly --cleanup-tag --yes 2>/dev/null || true
+          gh release create nightly \
+            --target "${GITHUB_SHA}" \
+            --title "Nightly build" \
+            --notes-file release-notes.md \
+            --prerelease \
+            release/*

@@ -40,21 +40,9 @@ jobs:
         run: |
           set -euo pipefail
           tag="${GITHUB_REF_NAME}"
-          mkdir -p release
-
-          # Windows is the one platform whose payload is a directory, so it is
-          # the one that needs archiving; the other two already ship as single
-          # files and are better left that way. Re-zipping an AppImage would
-          # only make a user unpack and chmod it again.
-          ( cd artifacts/TrackEditor-Windows \
-            && zip -qr "$GITHUB_WORKSPACE/release/TrackEditor-${tag}-windows-x64.zip" . )
-          cp artifacts/TrackEditor-macOS/TrackEditor-macOS.tar.gz \
-             "release/TrackEditor-${tag}-macos.tar.gz"
-          cp artifacts/TrackEditor-Linux/TrackEditor-x86_64.AppImage \
-             "release/TrackEditor-${tag}-linux-x86_64.AppImage"
-
-          test "$(ls release | wc -l)" -eq 3
-          ls -l release
+          # Shared with the nightly so the two cannot ship differently shaped
+          # downloads.
+          bash scripts/assemble-release-assets.sh "$tag" artifacts release
 
           # v1.2.0-rc1 is a pre-release; v1.2.0 is not.
           if [ "${tag#*-}" != "$tag" ]; then
