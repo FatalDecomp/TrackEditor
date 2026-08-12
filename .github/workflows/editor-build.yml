@@ -49,7 +49,16 @@ jobs:
             qt-arch: linux_gcc_64
             generator-args: '-G Ninja'
             extra-configure-args: '-DTRACKEDITOR_WARNINGS_AS_ERRORS=ON'
-          - name: macOS
+          # Two macOS legs because a bundle is single-architecture: Homebrew is
+          # not universal, so SDL comes from whichever runner built it. Apple
+          # Silicon is where nearly every current Mac is, and Intel still runs
+          # what it always did rather than needing Rosetta.
+          - name: macOS-arm64
+            os: macos-15
+            qt-arch: clang_64
+            generator-args: '-G Ninja'
+            extra-configure-args: '-DTRACKEDITOR_WARNINGS_AS_ERRORS=ON'
+          - name: macOS-x86_64
             os: macos-15-intel
             qt-arch: clang_64
             generator-args: '-G Ninja'
@@ -111,7 +120,12 @@ jobs:
 
       - name: Install binary dependencies (macOS)
         if: runner.os == 'macOS'
-        run: brew install --force-bottle sdl3 sdl3_image ninja
+        run: |
+          brew install --force-bottle sdl3 sdl3_image ninja
+          # Apple Silicon puts Homebrew in /opt/homebrew, which is not on
+          # CMake's default search path the way Intel's /usr/local is. Asking
+          # brew keeps this correct on both legs.
+          echo "CMAKE_PREFIX_PATH=$(brew --prefix)" >> "$GITHUB_ENV"
 
       - name: Install dynamic Qt 6.8 LTS
         uses: jurplel/install-qt-action@v4

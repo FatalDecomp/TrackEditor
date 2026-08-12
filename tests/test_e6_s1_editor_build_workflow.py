@@ -30,7 +30,10 @@ EXPECTED_PLATFORMS = {
     # one it was built against, and building on ubuntu-26.04 produced one that
     # demanded GLIBC_2.43 and ran nowhere else.
     "Linux": "ubuntu-22.04",
-    "macOS": "macos-15-intel",
+    # Two macOS legs: a bundle is single-architecture and Homebrew is not
+    # universal, so each arch is built on its own runner.
+    "macOS-arm64": "macos-15",
+    "macOS-x86_64": "macos-15-intel",
     "Windows": "windows-2022",
 }
 
@@ -114,6 +117,8 @@ class PlatformFactsTests(unittest.TestCase):
 
     def test_the_platform_only_steps_are_guarded_by_runner_os(self) -> None:
         text = reusable_text()
+        # runner.os is the OS, not the matrix leg, so both macOS legs share
+        # one guard.
         guards = set(re.findall(r"if:\s*runner\.os == '(\w+)'", text))
         self.assertEqual({"Linux", "macOS", "Windows"}, guards)
 

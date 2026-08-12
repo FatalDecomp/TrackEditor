@@ -128,10 +128,12 @@ class AssetTests(unittest.TestCase):
         text = assemble_text()
         for asset in (
             "TrackEditor-${label}-windows-x64.zip",
-            "TrackEditor-${label}-macos.tar.gz",
+            "TrackEditor-${label}-macos-${arch}.tar.gz",
             "TrackEditor-${label}-linux-x86_64.AppImage",
         ):
             self.assertIn(asset, text, asset)
+        # Both macOS architectures ship; a bundle cannot carry them at once.
+        self.assertIn("for arch in arm64 x86_64", text)
 
     def test_only_the_windows_payload_is_re_archived(self) -> None:
         # The AppImage and the tarball already ship as single files; zipping
@@ -144,7 +146,8 @@ class AssetTests(unittest.TestCase):
     def test_a_missing_platform_fails_rather_than_publishing_a_partial_release(
         self,
     ) -> None:
-        self.assertIn("-ne 3", assemble_text())
+        self.assertIn('-ne "$expected"', assemble_text())
+        self.assertIn("expected=4", assemble_text())
 
     def test_a_hyphenated_tag_is_a_pre_release(self) -> None:
         text = release_text()

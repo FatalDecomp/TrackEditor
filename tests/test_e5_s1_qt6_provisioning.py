@@ -64,11 +64,14 @@ class Qt6ProvisioningTests(unittest.TestCase):
         self.assertEqual([PINNED_CI_QT_VERSION], versions)
         self.assertTrue(versions[0].startswith(REQUIRED_QT_MAJOR_MINOR + "."))
 
+        # One per matrix leg. Both macOS legs use clang_64 because Qt's macOS
+        # package is universal, so the same download serves Intel and Apple
+        # Silicon -- it is Homebrew, not Qt, that forces two legs.
         arches = re.findall(r"^\s*qt-arch:\s*(\S+)", workflow, re.MULTILINE)
         self.assertEqual(
-            ["linux_gcc_64", "clang_64", WINDOWS_QT_ARCH],
+            ["linux_gcc_64", "clang_64", "clang_64", WINDOWS_QT_ARCH],
             arches,
-            "one Qt arch per matrix platform",
+            "one Qt arch per matrix leg",
         )
 
         self.assertNotIn("5.15", workflow)

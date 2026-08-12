@@ -94,7 +94,8 @@ jobs:
           | Asset | How to run it |
           |---|---|
           | `…-windows-x64.zip` | Unzip and run `TrackEditor\TrackEditor.exe`. Needs the Microsoft Visual C++ 2015-2022 redistributable, which most machines already have. |
-          | `…-macos.tar.gz` | `tar xzf` it and open `TrackEditor.app`. It is unsigned, so the first launch needs right-click → Open. |
+          | `…-macos-arm64.tar.gz` | Apple Silicon. `tar xzf` it and open `TrackEditor.app`. It is unsigned, so the first launch needs right-click → Open. |
+          | `…-macos-x86_64.tar.gz` | Intel Macs. Same, but no Rosetta needed. |
           | `…-linux-x86_64.AppImage` | `chmod +x` it and run it. |
           NOTES
           printf '\nCommit: %s\nBuilt:  %s\n' \

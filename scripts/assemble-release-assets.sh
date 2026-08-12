@@ -30,15 +30,23 @@ output="$(cd "$3" && pwd)"
 # and chmod it again.
 ( cd "$artifacts/TrackEditor-Windows" \
   && zip -qr "$output/TrackEditor-${label}-windows-x64.zip" . )
-cp "$artifacts/TrackEditor-macOS/TrackEditor-macOS.tar.gz" \
-   "$output/TrackEditor-${label}-macos.tar.gz"
+
+# A macOS bundle is single-architecture, so there is one per arch. The tarball
+# inside each artifact has the same name; the artifact directory is what
+# distinguishes them.
+for arch in arm64 x86_64; do
+    cp "$artifacts/TrackEditor-macOS-${arch}/TrackEditor-macOS.tar.gz" \
+       "$output/TrackEditor-${label}-macos-${arch}.tar.gz"
+done
+
 cp "$artifacts/TrackEditor-Linux/TrackEditor-x86_64.AppImage" \
    "$output/TrackEditor-${label}-linux-x86_64.AppImage"
 
 # A missing platform must fail the release rather than publish a partial one.
+expected=4
 count="$(ls "$output" | wc -l)"
-if [ "$count" -ne 3 ]; then
-    echo "expected 3 release assets, found $count:" >&2
+if [ "$count" -ne "$expected" ]; then
+    echo "expected $expected release assets, found $count:" >&2
     ls -l "$output" >&2
     exit 1
 fi

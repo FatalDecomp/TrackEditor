@@ -162,9 +162,9 @@ class CiEnforcementTests(unittest.TestCase):
         # rather than asserted.
         workflow = WORKFLOW.read_text(encoding="utf-8")
         self.assertEqual(
-            3,
+            4,
             workflow.count("-DTRACKEDITOR_WARNINGS_AS_ERRORS=ON"),
-            "every matrix platform must enforce, not just the verified one",
+            "every matrix leg must enforce, not just the verified one",
         )
 
 
