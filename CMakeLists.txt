@@ -200,6 +200,11 @@ if(BUILD_TESTING)
             COMMAND "${Python3_EXECUTABLE}"
                     "${CMAKE_CURRENT_SOURCE_DIR}/tests/test_e6_s3_releases.py"
                     -v)
+        add_test(
+            NAME trackeditor-graphics-settings-contract
+            COMMAND "${Python3_EXECUTABLE}"
+                    "${CMAKE_CURRENT_SOURCE_DIR}/tests/test_graphics_settings.py"
+                    -v)
     endif()
 
     if(TARGET TrackEditor)

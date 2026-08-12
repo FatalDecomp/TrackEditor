@@ -218,6 +218,7 @@
      <string>Settings</string>
     </property>
     <addaction name="actPreferences"/>
+    <addaction name="actGraphics"/>
    </widget>
    <addaction name="menuFile"/>
    <addaction name="menuEdit"/>
@@ -416,6 +417,11 @@
   <action name="actExportGLTF">
    <property name="text">
     <string>Export to glTF</string>
+   </property>
+  </action>
+  <action name="actGraphics">
+   <property name="text">
+    <string>Graphics...</string>
    </property>
   </action>
   <action name="actExportAllOBJ">

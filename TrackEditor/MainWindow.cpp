@@ -28,6 +28,7 @@
 #include "Logging.h"
 #include "NewTrackDialog.h"
 #include "PreferencesDialog.h"
+#include "GraphicsDialog.h"
 #include "AssignBacksDialog.h"
 #include "EditorCameraController.h"
 #include "qtimer.h"
@@ -65,6 +66,20 @@ tPreferences::tPreferences()
   , bPasteDrawOrder(true)
   , bPasteSigns(true)
   , bPasteAudio(true)
+{ };
+
+//-------------------------------------------------------------------------------------------------
+
+tGraphicsPreferences::tGraphicsPreferences()
+  : iDrawDistancePercent(100)
+  , bHardwareRendering(true)
+  , iSoftwareDisplay(1)
+  , iAntiAliasing(0)
+  , iAnisotropy(3)
+  , iTextureFilter(0)
+  , bTrilinear(false)
+  , dLodBias(0.0)
+  , bEmulateTransparentBorders(true)
 { };
 
 //-------------------------------------------------------------------------------------------------
@@ -222,6 +237,7 @@ CMainWindow::CMainWindow(const QString &sAppPath, float fDesktopScale,
   connect(pBacksAction, &QAction::triggered, this, &CMainWindow::OnBacks);
   connect(p->m_pDebugAction, &QAction::triggered, this, &CMainWindow::OnDebug);
   connect(actPreferences, &QAction::triggered, this, &CMainWindow::OnPreferences);
+  connect(actGraphics, &QAction::triggered, this, &CMainWindow::OnGraphics);
   connect(actAbout, &QAction::triggered, this, &CMainWindow::OnAbout);
   connect(twViewer, &QTabWidget::tabCloseRequested, this, &CMainWindow::OnTabCloseRequested);
   connect(twViewer, &QTabWidget::currentChanged, this, &CMainWindow::OnTabChanged);
@@ -1034,6 +1050,14 @@ void CMainWindow::OnPreferences()
 
 //-------------------------------------------------------------------------------------------------
 
+void CMainWindow::OnGraphics()
+{
+  CGraphicsDialog dlg(this);
+  dlg.exec();
+}
+
+//-------------------------------------------------------------------------------------------------
+
 void CMainWindow::OnDebug()
 {
   p->m_logDialog.raise();
@@ -1377,6 +1401,35 @@ void CMainWindow::LoadSettings()
   m_preferences.bPasteSigns = settings.value("paste_signs", m_preferences.bPasteSigns).toBool();
   m_preferences.bPasteAudio = settings.value("paste_audio", m_preferences.bPasteAudio).toBool();
 
+  //graphics
+  m_graphics.iDrawDistancePercent = qBound(
+      0, settings.value("graphics_draw_distance",
+                        m_graphics.iDrawDistancePercent).toInt(), 100);
+  m_graphics.bHardwareRendering = settings.value(
+      "graphics_hardware_rendering",
+      m_graphics.bHardwareRendering).toBool();
+  m_graphics.iSoftwareDisplay = qBound(
+      0, settings.value("graphics_software_display",
+                        m_graphics.iSoftwareDisplay).toInt(), 1);
+  m_graphics.iAntiAliasing = qBound(
+      0, settings.value("graphics_antialiasing",
+                        m_graphics.iAntiAliasing).toInt(), 3);
+  m_graphics.iAnisotropy = qBound(
+      0, settings.value("graphics_anisotropy",
+                        m_graphics.iAnisotropy).toInt(), 3);
+  m_graphics.iTextureFilter = qBound(
+      0, settings.value("graphics_texture_filter",
+                        m_graphics.iTextureFilter).toInt(), 2);
+  m_graphics.bTrilinear = settings.value(
+      "graphics_trilinear", m_graphics.bTrilinear).toBool();
+  m_graphics.dLodBias = qBound(
+      -4.0, settings.value("graphics_lod_bias",
+                           m_graphics.dLodBias).toDouble(), 4.0);
+  m_graphics.bEmulateTransparentBorders = settings.value(
+      "graphics_emulate_transparent_borders",
+      m_graphics.bEmulateTransparentBorders).toBool();
+  ApplyGraphicsSettings();
+
   show();
 }
 
@@ -1422,6 +1475,49 @@ void CMainWindow::SaveSettings()
   settings.setValue("paste_draw_order", m_preferences.bPasteDrawOrder);
   settings.setValue("paste_signs", m_preferences.bPasteSigns);
   settings.setValue("paste_audio", m_preferences.bPasteAudio);
+  settings.setValue("graphics_draw_distance", m_graphics.iDrawDistancePercent);
+  settings.setValue("graphics_hardware_rendering",
+                    m_graphics.bHardwareRendering);
+  settings.setValue("graphics_software_display", m_graphics.iSoftwareDisplay);
+  settings.setValue("graphics_antialiasing", m_graphics.iAntiAliasing);
+  settings.setValue("graphics_anisotropy", m_graphics.iAnisotropy);
+  settings.setValue("graphics_texture_filter", m_graphics.iTextureFilter);
+  settings.setValue("graphics_trilinear", m_graphics.bTrilinear);
+  settings.setValue("graphics_lod_bias", m_graphics.dLodBias);
+  settings.setValue("graphics_emulate_transparent_borders",
+                    m_graphics.bEmulateTransparentBorders);
+}
+
+//-------------------------------------------------------------------------------------------------
+
+void CMainWindow::ApplyGraphicsSettings()
+{
+  if (!m_pRenderService)
+    return;
+
+  tEdGraphicsSettings Settings = {};
+  Settings.uiStructSize = sizeof(Settings);
+  Settings.uiVersion = ROLLER_ED_GRAPHICS_SETTINGS_VERSION;
+  Settings.eRenderer = m_graphics.bHardwareRendering
+      ? ROLLER_ED_RENDERER_GPU : ROLLER_ED_RENDERER_SOFTWARE;
+  Settings.eSoftwareDisplay = static_cast<eRollerEdSoftwareDisplay>(
+      m_graphics.iSoftwareDisplay);
+  Settings.eAntiAliasing =
+      static_cast<eRollerEdAntiAliasing>(m_graphics.iAntiAliasing);
+  Settings.eAnisotropy =
+      static_cast<eRollerEdAnisotropy>(m_graphics.iAnisotropy);
+  Settings.eTextureFilter =
+      static_cast<eRollerEdTextureFilter>(m_graphics.iTextureFilter);
+  Settings.uiTrilinear = m_graphics.bTrilinear ? 1u : 0u;
+  Settings.uiEmulateTransparentBorders =
+      m_graphics.bEmulateTransparentBorders ? 1u : 0u;
+  Settings.fDrawDistanceFraction =
+      static_cast<float>(m_graphics.iDrawDistancePercent) / 100.0f;
+  Settings.fLodBias = static_cast<float>(m_graphics.dLodBias);
+  m_pRenderService->SetGraphicsSettings(Settings);
+
+  if (GetCurrentPreview())
+    GetCurrentPreview()->RefreshGraphicsSettings();
 }
 
 //-------------------------------------------------------------------------------------------------

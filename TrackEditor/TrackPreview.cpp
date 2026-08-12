@@ -590,6 +590,13 @@ void CTrackPreview::Activate()
 
 //-------------------------------------------------------------------------------------------------
 
+void CTrackPreview::RefreshGraphicsSettings()
+{
+  ScheduleCameraRender();
+}
+
+//-------------------------------------------------------------------------------------------------
+
 void CTrackPreview::MarkDocumentEdited()
 {
   m_FrameState.MarkDocumentEdited();
