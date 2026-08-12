@@ -261,6 +261,8 @@ bool CEditorExportConventions::BuildObjects(
   std::vector<std::vector<tEdExportEntry>> SignBacks;
   std::vector<tEdExportEntry> SceneryFront;
   std::vector<tEdExportEntry> SceneryBack;
+  std::vector<tEdExportEntry> SingleFront;
+  std::vector<tEdExportEntry> SingleBack;
 
   for (uint32_t i = 0; i < Geometry.uiPrimitiveCount; ++i) {
     const tEdPrimitive &Primitive = Geometry.pPrimitives[i];
@@ -281,7 +283,10 @@ bool CEditorExportConventions::BuildObjects(
     // what surface class exists for and neither is part of the track body.
     std::vector<tEdExportEntry> *pFront = nullptr;
     std::vector<tEdExportEntry> *pBack = nullptr;
-    if (Primitive.unContentClass == ROLLER_ED_CONTENT_AUTHORED_SIGN) {
+    if (!Grouping.sSingleObjectName.empty()) {
+      pFront = &SingleFront;
+      pBack = &SingleBack;
+    } else if (Primitive.unContentClass == ROLLER_ED_CONTENT_AUTHORED_SIGN) {
       SignFronts.emplace_back();
       SignBacks.emplace_back();
       pFront = &SignFronts.back();
@@ -329,7 +334,13 @@ bool CEditorExportConventions::BuildObjects(
     }
   }
 
-  if (Grouping.bSeparateSections) {
+  if (!Grouping.sSingleObjectName.empty()) {
+    AppendObject(ObjectsOut, Grouping.sSingleObjectName, SingleFront);
+    if (Grouping.bSeparateBackFaces) {
+      AppendObject(ObjectsOut, Grouping.sSingleObjectName + " (Back)",
+                   SingleBack);
+    }
+  } else if (Grouping.bSeparateSections) {
     for (uint32_t c = 0; c < g_uiExportedSurfaceClassCount; ++c) {
       AppendObject(ObjectsOut,
                    std::string(SurfaceClassName(g_aunExportedSurfaceClasses[c])),
@@ -356,18 +367,20 @@ bool CEditorExportConventions::BuildObjects(
       AppendObject(ObjectsOut, std::string("Track (Back)"), CombinedBacks);
   }
 
-  // Fronts then backs, matching the order the pre-migration exporter added
-  // its signAy and signBackAy nodes.
-  for (uint32_t i = 0; i < static_cast<uint32_t>(SignFronts.size()); ++i)
-    AppendObject(ObjectsOut, SignObjectName(i), SignFronts[i]);
-  if (Grouping.bSeparateBackFaces) {
-    for (uint32_t i = 0; i < static_cast<uint32_t>(SignBacks.size()); ++i)
-      AppendObject(ObjectsOut, SignObjectName(i) + " (Back)", SignBacks[i]);
-  }
-  AppendObject(ObjectsOut, std::string(SceneryObjectName()), SceneryFront);
-  if (Grouping.bSeparateBackFaces) {
-    AppendObject(ObjectsOut, std::string(SceneryObjectName()) + " (Back)",
-                 SceneryBack);
+  if (Grouping.sSingleObjectName.empty()) {
+    // Fronts then backs, matching the order the pre-migration exporter added
+    // its signAy and signBackAy nodes.
+    for (uint32_t i = 0; i < static_cast<uint32_t>(SignFronts.size()); ++i)
+      AppendObject(ObjectsOut, SignObjectName(i), SignFronts[i]);
+    if (Grouping.bSeparateBackFaces) {
+      for (uint32_t i = 0; i < static_cast<uint32_t>(SignBacks.size()); ++i)
+        AppendObject(ObjectsOut, SignObjectName(i) + " (Back)", SignBacks[i]);
+    }
+    AppendObject(ObjectsOut, std::string(SceneryObjectName()), SceneryFront);
+    if (Grouping.bSeparateBackFaces) {
+      AppendObject(ObjectsOut, std::string(SceneryObjectName()) + " (Back)",
+                   SceneryBack);
+    }
   }
 
   if (ObjectsOut.empty()) {

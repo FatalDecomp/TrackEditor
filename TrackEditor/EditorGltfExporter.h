@@ -32,6 +32,8 @@ struct tEdGltfTextureSource
 
 struct tEdGltfExportOptions
 {
+  // Set for a standalone non-track model such as a batch-exported car.
+  std::string sSingleObjectName;
   // Legacy "Include signs" checkbox, re-enabled in E4A-S6. False exports the
   // track body alone.
   bool bExportScenery = true;

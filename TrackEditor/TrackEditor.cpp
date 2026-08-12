@@ -1,5 +1,6 @@
 #include "TrackEditor.h"
 #include "EditorRenderService.h"
+#include "EditorBatchExporter.h"
 #include "MainWindow.h"
 #include "qapplication.h"
 #include "qscreen.h"
@@ -44,8 +45,37 @@ int main(int argc, char* argv[])
   // pixel ratio itself, which is the same apparent size Qt 5 produced.
   float fScale = QGuiApplication::primaryScreen()->logicalDotsPerInchX() / 96.0 * 100.0;
   CMainWindow *pMainWin = new CMainWindow(sAppPath, fScale, &RenderService);
-  
-  int iRetCode = app.exec();
+
+  int iRetCode = 0;
+  const int iBatchArg = app.arguments().indexOf("--batch-export-test");
+  if (iBatchArg >= 0) {
+    // Non-interactive acceptance hook. The menu remains the user-facing path;
+    // this lets real retail assets exercise that exact coordinator without
+    // automating native folder dialogs in CI or during release packaging.
+    const QStringList Arguments = app.arguments();
+    if (iBatchArg + 3 >= Arguments.size()
+        || (Arguments[iBatchArg + 1].compare("obj", Qt::CaseInsensitive) != 0
+            && Arguments[iBatchArg + 1].compare(
+                   "gltf", Qt::CaseInsensitive) != 0)) {
+      qWarning().noquote()
+          << "usage: --batch-export-test <obj|gltf> <FATDATA> <output>";
+      iRetCode = 2;
+    } else {
+      const eExportType exportType =
+          Arguments[iBatchArg + 1].compare("obj", Qt::CaseInsensitive) == 0
+          ? eExportType::EXPORT_OBJ : eExportType::EXPORT_GLTF;
+      CEditorBatchExporter Exporter(pMainWin, &RenderService);
+      const tEdBatchExportResult Result = Exporter.Export(
+          Arguments[iBatchArg + 2], Arguments[iBatchArg + 3], exportType);
+      qInfo().noquote() << QString("batch export: %1 succeeded, %2 failed")
+          .arg(Result.iSucceeded).arg(Result.iFailed);
+      for (const QString &Failure : Result.Failures)
+        qWarning().noquote() << Failure;
+      iRetCode = Result.iFailed == 0 && !Result.bCancelled ? 0 : 1;
+    }
+  } else {
+    iRetCode = app.exec();
+  }
 
   delete pMainWin;
   pMainWin = NULL;

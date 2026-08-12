@@ -183,6 +183,9 @@
     <addaction name="separator"/>
     <addaction name="actExportOBJ"/>
     <addaction name="actExportGLTF"/>
+    <addaction name="separator"/>
+    <addaction name="actExportAllOBJ"/>
+    <addaction name="actExportAllGLTF"/>
    </widget>
    <widget class="QMenu" name="menuHelp">
     <property name="title">
@@ -413,6 +416,16 @@
   <action name="actExportGLTF">
    <property name="text">
     <string>Export to glTF</string>
+   </property>
+  </action>
+  <action name="actExportAllOBJ">
+   <property name="text">
+    <string>Export all tracks and cars OBJ</string>
+   </property>
+  </action>
+  <action name="actExportAllGLTF">
+   <property name="text">
+    <string>Export all tracks and cars to glTF</string>
    </property>
   </action>
  </widget>

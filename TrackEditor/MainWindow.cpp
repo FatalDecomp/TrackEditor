@@ -1,8 +1,10 @@
 #include "TrackEditor.h"
 #include "EditorRenderService.h"
+#include "EditorBatchExporter.h"
 #include "MainWindow.h"
 #include "qmessagebox.h"
 #include "qfiledialog.h"
+#include "qdir.h"
 #include "qsettings.h"
 #include "qscreen.h"
 #include "Track.h"
@@ -204,6 +206,10 @@ CMainWindow::CMainWindow(const QString &sAppPath, float fDesktopScale,
   connect(actSaveAs, &QAction::triggered, this, &CMainWindow::OnSaveTrackAs);
   connect(actExportOBJ, &QAction::triggered, this, &CMainWindow::OnExportOBJ);
   connect(actExportGLTF, &QAction::triggered, this, &CMainWindow::OnExportGLTF);
+  connect(actExportAllOBJ, &QAction::triggered,
+          this, &CMainWindow::OnExportAllOBJ);
+  connect(actExportAllGLTF, &QAction::triggered,
+          this, &CMainWindow::OnExportAllGLTF);
   connect(actUndo, &QAction::triggered, this, &CMainWindow::OnUndo);
   connect(actRedo, &QAction::triggered, this, &CMainWindow::OnRedo);
   connect(actCut, &QAction::triggered, this, &CMainWindow::OnCut);
@@ -387,6 +393,66 @@ void CMainWindow::OnExportGLTF()
 {
   if (GetCurrentPreview())
     GetCurrentPreview()->Export(eExportType::EXPORT_GLTF);
+}
+
+//-------------------------------------------------------------------------------------------------
+
+void CMainWindow::OnExportAllOBJ()
+{
+  ExportAllTracksAndCars(eExportType::EXPORT_OBJ);
+}
+
+//-------------------------------------------------------------------------------------------------
+
+void CMainWindow::OnExportAllGLTF()
+{
+  ExportAllTracksAndCars(eExportType::EXPORT_GLTF);
+}
+
+//-------------------------------------------------------------------------------------------------
+
+void CMainWindow::ExportAllTracksAndCars(eExportType exportType)
+{
+  const QString sFatdataFolder = QDir::toNativeSeparators(
+      QFileDialog::getExistingDirectory(
+          this, "Select FATDATA Folder", m_sLastTrackFilesFolder,
+          QFileDialog::ShowDirsOnly | QFileDialog::DontResolveSymlinks));
+  if (sFatdataFolder.isEmpty())
+    return;
+  if (!CEditorBatchExporter::IsFatdataFolder(sFatdataFolder)) {
+    QMessageBox::warning(
+        this, "Export all tracks and cars",
+        "The selected folder is not a FATDATA folder. It must contain "
+        "PALETTE.PAL and at least one .TRK file.");
+    return;
+  }
+
+  const QString sOutputFolder = QDir::toNativeSeparators(
+      QFileDialog::getExistingDirectory(
+          this, "Select Output Folder", sFatdataFolder,
+          QFileDialog::ShowDirsOnly | QFileDialog::DontResolveSymlinks));
+  if (sOutputFolder.isEmpty())
+    return;
+
+  CEditorBatchExporter Exporter(this, m_pRenderService);
+  const tEdBatchExportResult Result = Exporter.Export(
+      sFatdataFolder, sOutputFolder, exportType);
+  QString sSummary = QString("Exported %1 model(s) to:\n%2")
+      .arg(Result.iSucceeded)
+      .arg(sOutputFolder);
+  if (Result.bCancelled)
+    sSummary += "\n\nThe export was cancelled before it finished.";
+  if (Result.iFailed != 0) {
+    sSummary += QString("\n\n%1 model(s) failed:\n").arg(Result.iFailed);
+    const int iShown = qMin(12, Result.Failures.size());
+    for (int i = 0; i < iShown; ++i)
+      sSummary += "\n" + Result.Failures[i];
+    if (Result.Failures.size() > iShown)
+      sSummary += QString("\n...and %1 more").arg(Result.Failures.size() - iShown);
+    QMessageBox::warning(this, "Export all tracks and cars", sSummary);
+  } else {
+    QMessageBox::information(this, "Export all tracks and cars", sSummary);
+  }
 }
 
 //-------------------------------------------------------------------------------------------------

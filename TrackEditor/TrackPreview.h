@@ -42,6 +42,11 @@ public:
   bool SaveTrack();
   bool SaveTrackAs();
   bool Export(eExportType exportType);
+  // Batch export uses the same canonical writers with the wizard defaults,
+  // but supplies the destination and never opens a save dialog.
+  bool ExportToFolder(eExportType exportType, const QString &sFolder,
+                      const QString &sName);
+  QString GetLastRenderError() const;
   QString GetTitle(bool bFullPath);
   const QString &GetFilename() { return m_sTrackFile; };
   void UpdateGeometrySelection();

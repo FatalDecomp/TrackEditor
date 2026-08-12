@@ -3,6 +3,7 @@
 //-------------------------------------------------------------------------------------------------
 #include "ui_MainWindow.h"
 #include "QtUserKeyMapper.h"
+#include "EditorExportFormat.h"
 #include <QElapsedTimer>
 //-------------------------------------------------------------------------------------------------
 class CMainWindowPrivate;
@@ -64,6 +65,8 @@ protected slots:
   void OnSaveTrackAs();
   void OnExportOBJ();
   void OnExportGLTF();
+  void OnExportAllOBJ();
+  void OnExportAllGLTF();
   void OnUndo();
   void OnRedo();
   void OnCut();
@@ -104,6 +107,7 @@ private:
   bool SaveChangesAndContinue();
   void UpdateGeometrySelection();
   void ConfigurePreview(CTrackPreview *pPreview);
+  void ExportAllTracksAndCars(eExportType exportType);
   void UpdateExportActions();
   int MirrorSurfaceType(int iSurfaceType);
 

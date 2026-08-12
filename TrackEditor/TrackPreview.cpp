@@ -951,6 +951,45 @@ bool CTrackPreview::Export(eExportType exportType)
 
 //-------------------------------------------------------------------------------------------------
 
+bool CTrackPreview::ExportToFolder(eExportType exportType,
+                                   const QString &sFolder,
+                                   const QString &sName)
+{
+  if (!CanExport() || sFolder.isEmpty() || sName.isEmpty())
+    return false;
+  if (!QDir().mkpath(sFolder))
+    return false;
+
+  // Batch glTF is deliberately the self-contained container: exporting every
+  // retail track already creates many files, and a .glb keeps each result to
+  // one portable model. OBJ retains its conventional MTL and atlas sidecars.
+  const QString sFilename = QDir(sFolder).filePath(
+      sName + (exportType == eExportType::EXPORT_GLTF ? ".glb" : ".obj"));
+
+  if (exportType == eExportType::EXPORT_GLTF) {
+    return ExportGltf_Internal(sFolder, sName, sFilename,
+                               true, true, true);
+  }
+
+  const QString sTexFile = QDir(sFolder).filePath(sName + ".png");
+  const QString sSignTexFile = QDir(sFolder).filePath(sName + "_BLD.png");
+  if (!p->m_track.m_assets.ExportTextures(
+          QFile::encodeName(sTexFile).constData(),
+          QFile::encodeName(sSignTexFile).constData())) {
+    return false;
+  }
+  return ExportObj_Internal(sFolder, sName, sFilename, true, true, true);
+}
+
+//-------------------------------------------------------------------------------------------------
+
+QString CTrackPreview::GetLastRenderError() const
+{
+  return QString::fromStdString(m_FrameState.GetErrorText());
+}
+
+//-------------------------------------------------------------------------------------------------
+
 QString CTrackPreview::GetTitle(bool bFullPath)
 {
   QString sTitle = m_sTrackFile;

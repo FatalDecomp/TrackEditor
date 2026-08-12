@@ -135,7 +135,9 @@ class MenuTests(unittest.TestCase):
         table_entries = re.findall(r"\{ (EXPORT_\w+),", self.formats)
         actions = re.findall(r'<addaction name="(actExport\w+)"/>',
                              self.window_ui)
-        model_actions = [a for a in actions if a != "actExportMangled"]
+        model_actions = [
+            a for a in actions if a in ("actExportOBJ", "actExportGLTF")
+        ]
         self.assertEqual(len(table_entries), len(model_actions))
         self.assertEqual(["actExportOBJ", "actExportGLTF"], model_actions)
 

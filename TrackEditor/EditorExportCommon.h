@@ -81,6 +81,11 @@ struct tEdExportObject
 
 struct tEdExportGrouping
 {
+  // Non-track models can ask the shared exporters for one explicitly named
+  // object. An empty name keeps the authored track/sign/scenery grouping
+  // below. This is used by batch car export, whose geometry still comes from
+  // ROLLER's canonical car plans but has no track surface class.
+  std::string sSingleObjectName;
   // Legacy "Include signs" checkbox, re-enabled in E4A-S6. ROLLER's
   // drawtrk3_emit_full_scenery now publishes advert panels and buildings with
   // no camera involved (ROLLER docs/adr/0005-camera-independent-scenery-

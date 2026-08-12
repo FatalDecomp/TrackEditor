@@ -156,6 +156,11 @@ if(BUILD_TESTING)
                     "${CMAKE_CURRENT_SOURCE_DIR}/tests/test_e4_s5_export_ui.py"
                     -v)
         add_test(
+            NAME trackeditor-batch-export-contract
+            COMMAND "${Python3_EXECUTABLE}"
+                    "${CMAKE_CURRENT_SOURCE_DIR}/tests/test_batch_export.py"
+                    -v)
+        add_test(
             NAME trackeditor-e4-s6-reference-import-contract
             COMMAND "${Python3_EXECUTABLE}"
                     "${CMAKE_CURRENT_SOURCE_DIR}/tests/test_e4_s6_reference_import.py"
@@ -309,6 +314,23 @@ if(BUILD_TESTING)
                  COMMAND trackeditor-e4-s2-gltf-exporter-test
                  WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}")
 
+        # Batch car export adapts ROLLER's immutable CarDesigns plans to the
+        # same canonical geometry vocabulary used by both file writers.
+        add_executable(trackeditor-batch-car-model-test
+            tests/editor_car_model_test.cpp
+            TrackEditor/EditorCarModel.cpp
+            TrackEditor/EditorCarModel.h
+            TrackEditor/EditorExportCommon.cpp
+            TrackEditor/EditorExportCommon.h)
+        target_compile_features(trackeditor-batch-car-model-test PRIVATE cxx_std_17)
+        target_include_directories(trackeditor-batch-car-model-test PRIVATE
+            "${CMAKE_CURRENT_SOURCE_DIR}/TrackEditor"
+            "${CMAKE_CURRENT_SOURCE_DIR}/external/ROLLER/PROJECTS/ROLLER")
+        target_link_libraries(trackeditor-batch-car-model-test PRIVATE
+            ROLLER::core)
+        add_test(NAME trackeditor-batch-car-model
+                 COMMAND trackeditor-batch-car-model-test)
+
         # E4-S2 acceptance: the story's criterion is that the output imports
         # natively in Blender, so check it when a Blender is available. Hosted
         # CI has none, and the rest of the suite must not depend on one, so
@@ -364,7 +386,8 @@ if(BUILD_TESTING)
             trackeditor-e3-s3-camera-input-test
             trackeditor-e4-s1-obj-exporter-test
             trackeditor-e4-s5-export-format-test
-            trackeditor-e4-s2-gltf-exporter-test)
+            trackeditor-e4-s2-gltf-exporter-test
+            trackeditor-batch-car-model-test)
         if(TARGET ${trackeditor_test_target})
             trackeditor_set_warnings(${trackeditor_test_target})
         endif()

@@ -129,7 +129,9 @@ class ExportAtlasTests(unittest.TestCase):
         assets = (ASSETS / "TrackAssets.cpp").read_text(encoding="utf-8")
         self.assertIn("ExportToPngFile", assets)
         preview = (EDITOR / "TrackPreview.cpp").read_text(encoding="utf-8")
-        self.assertEqual(2, preview.count("m_assets.ExportTextures"))
+        # Interactive OBJ, interactive glTF staging, and batch OBJ all reuse
+        # the same track-assets writer.
+        self.assertEqual(3, preview.count("m_assets.ExportTextures"))
         for exporter in ("EditorObjExporter.cpp", "EditorGltfExporter.cpp",
                          "EditorExportCommon.cpp"):
             text = without_comments(

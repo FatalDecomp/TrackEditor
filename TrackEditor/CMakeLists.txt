@@ -34,6 +34,10 @@ set(trackeditor_sources
     EditSurfaceDialog.ui
     EditorCameraController.cpp
     EditorCameraController.h
+    EditorBatchExporter.cpp
+    EditorBatchExporter.h
+    EditorCarModel.cpp
+    EditorCarModel.h
     EditorExportCommon.cpp
     EditorExportCommon.h
     EditorExportFormat.cpp

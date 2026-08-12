@@ -181,6 +181,7 @@ bool CEditorObjExporter::Export(const tEdExportGeometry &Geometry,
     return false;
 
   tEdExportGrouping Grouping;
+  Grouping.sSingleObjectName = Options.sSingleObjectName;
   Grouping.bExportScenery = Options.bExportScenery;
   Grouping.bSeparateSections = Options.bSeparateSections;
   Grouping.bSeparateBackFaces = Options.bSeparateBackFaces;
