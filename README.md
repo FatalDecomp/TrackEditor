@@ -45,3 +45,10 @@ The CMake build uses dynamic Qt 6.8 LTS and system/prebuilt SDL3 and SDL3_image 
 * stb_image 2.30: https://github.com/nothings/stb
 * stb_image_write 1.16: https://github.com/nothings/stb
 * cgltf 1.15 (vendored): https://github.com/jkuhlmann/cgltf
+
+[ci-shd]: https://img.shields.io/github/actions/workflow/status/FatalDecomp/ROLLER/ci.yml?branch=master&style=for-the-badge&logo=github&label=CI&labelColor=black
+[ci-url]: https://github.com/FatalDecomp/ROLLER/blob/master/.github/workflows/ci.yml
+[dl-shd]: https://img.shields.io/github/v/release/FatalDecomp/ROLLER?include_prereleases&style=for-the-badge&logo=github&label=Download&labelColor=black&color=blue
+[dl-url]: https://github.com/FatalDecomp/ROLLER/releases/latest
+[lc-shd]: https://img.shields.io/github/license/FatalDecomp/ROLLER.svg?style=for-the-badge&labelColor=black
+[lc-url]: https://github.com/FatalDecomp/ROLLER/blob/master/LICENSE.md
