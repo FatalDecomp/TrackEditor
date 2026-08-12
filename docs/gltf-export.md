@@ -83,6 +83,7 @@ cut-out, not a blend.
 | Canonical material | glTF `alphaMode` |
 |---|---|
 | Textured, `ROLLER_ED_MATERIAL_FLAG_ALPHA_BLEND` set | `MASK`, `alphaCutoff` 0.5 |
+| Textured authored sign/advert | `MASK`, `alphaCutoff` 0.5 |
 | Textured, flag clear | `OPAQUE` |
 | `FLAT_PALETTE_COLOR` | `OPAQUE` |
 | `SCREEN_DARKEN` | `BLEND` |
@@ -93,6 +94,12 @@ opaquely, which is what the renderer does. This is deliberately **more faithful
 than the OBJ path**, whose `.mtl` writes `map_d` for every textured material and
 so makes index 0 transparent everywhere — legacy behaviour E4-S1 preserved
 rather than changed.
+
+Advert/sign textures are the exception to the flag rule. The game routes them
+through its sign pipeline, where palette index 0 is discarded even after the
+surface's `PARTIAL_TRANS` flag is stripped for depth handling. The exporter
+therefore gives authored sign materials a separate `_BLD_cutout` identity while
+leaving ordinary building materials from the same atlas opaque.
 
 **Reverse sides.** Complete glTF exports explicitly double every authored
 quad, just like OBJ. Each reverse copy has opposite winding and normals. An

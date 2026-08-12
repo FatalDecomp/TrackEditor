@@ -170,6 +170,12 @@ class ExporterBoundaryTests(unittest.TestCase):
         self.assertIn("cgltf_alpha_mode_mask", alpha)
         self.assertIn("cgltf_alpha_mode_opaque", alpha)
 
+        sign_alpha = function_body(
+            self.source, "tEdMaterial ExportMaterialForEntry("
+        )
+        self.assertIn("ROLLER_ED_CONTENT_AUTHORED_SIGN", sign_alpha)
+        self.assertIn("ROLLER_ED_MATERIAL_FLAG_ALPHA_BLEND", sign_alpha)
+
     def test_atlas_tiles_collapse_to_one_material_per_identity(self) -> None:
         # The canonical table interns one material per atlas tile, but the
         # exported UVs are already atlas space, so 92 of them would arrive as

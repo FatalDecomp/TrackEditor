@@ -77,6 +77,23 @@ cgltf_alpha_mode AlphaModeFor(const tEdMaterial &Material)
   return cgltf_alpha_mode_opaque;
 }
 
+// Building/sign polygons use a dedicated renderer path. Advert textures are
+// cut-outs there even though building_polygon_surface_info deliberately strips
+// PARTIAL_TRANS for depth routing, so their canonical material does not carry
+// the ordinary alpha flag. Preserve that implicit sign-pipeline behavior in
+// glTF without making opaque building surfaces cut-outs too.
+tEdMaterial ExportMaterialForEntry(const tEdExportGeometry &Geometry,
+                                   const tEdExportEntry &Entry)
+{
+  tEdMaterial Material = Geometry.pMaterials[Entry.uiMaterial];
+  const tEdPrimitive &Primitive = Geometry.pPrimitives[Entry.uiPrimitive];
+  if (Primitive.unContentClass == ROLLER_ED_CONTENT_AUTHORED_SIGN
+      && CEditorExportConventions::IsTexturedKind(Material.uiKind)) {
+    Material.uiFlags |= ROLLER_ED_MATERIAL_FLAG_ALPHA_BLEND;
+  }
+  return Material;
+}
+
 bool IsDoubleSidedEntry(const tEdExportGeometry &Geometry,
                         const tEdGltfExportOptions &Options,
                         const tEdExportEntry &Entry)
@@ -298,8 +315,10 @@ bool CEditorGltfExporter::Export(const tEdExportGeometry &Geometry,
   // the glTF material, so it is a sound identity.
   std::vector<tGltfMeshBuild> Meshes;
   std::map<std::string, size_t> MaterialKeys;
-  // Resolved name plus a representative canonical material to build it from.
-  std::vector<std::pair<uint32_t, bool>> MaterialOrder;
+  // Resolved name plus the material to build it from. Sign entries may carry
+  // an export-only cut-out flag that is implicit in ROLLER's sign pipeline,
+  // so store the resolved value rather than only its canonical table index.
+  std::vector<std::pair<tEdMaterial, bool>> MaterialOrder;
 
   for (size_t o = 0; o < Objects.size(); ++o) {
     tGltfMeshBuild Mesh;
@@ -310,14 +329,15 @@ bool CEditorGltfExporter::Export(const tEdExportGeometry &Geometry,
       const tEdExportEntry &Entry = Objects[o].Entries[e];
       const bool bDoubleSided =
           IsDoubleSidedEntry(Geometry, Options, Entry);
+      const tEdMaterial ExportMaterial =
+          ExportMaterialForEntry(Geometry, Entry);
       const std::string sKey = MaterialName(
-          Options.sBaseName, Geometry.pMaterials[Entry.uiMaterial],
-          bDoubleSided);
+          Options.sBaseName, ExportMaterial, bDoubleSided);
 
       if (MaterialKeys.find(sKey) == MaterialKeys.end()) {
         MaterialKeys[sKey] = MaterialOrder.size();
         MaterialOrder.push_back(
-            std::pair<uint32_t, bool>(Entry.uiMaterial, bDoubleSided));
+            std::pair<tEdMaterial, bool>(ExportMaterial, bDoubleSided));
       }
 
       const std::map<std::string, size_t>::const_iterator Found =
@@ -350,7 +370,7 @@ bool CEditorGltfExporter::Export(const tEdExportGeometry &Geometry,
   std::vector<size_t> TextureForSet; // parallel to Options.Textures
   std::map<uint32_t, size_t> TextureIndexBySet;
   for (size_t k = 0; k < MaterialOrder.size(); ++k) {
-    const tEdMaterial &Material = Geometry.pMaterials[MaterialOrder[k].first];
+    const tEdMaterial &Material = MaterialOrder[k].first;
     if (!CEditorExportConventions::IsTexturedKind(Material.uiKind))
       continue;
     if (TextureIndexBySet.find(Material.uiTextureSet)
@@ -533,7 +553,7 @@ bool CEditorGltfExporter::Export(const tEdExportGeometry &Geometry,
   std::vector<cgltf_material> Materials(MaterialOrder.size());
   std::memset(Materials.data(), 0, Materials.size() * sizeof(cgltf_material));
   for (size_t k = 0; k < MaterialOrder.size(); ++k) {
-    const tEdMaterial &Source = Geometry.pMaterials[MaterialOrder[k].first];
+    const tEdMaterial &Source = MaterialOrder[k].first;
     const bool bDoubleSided = MaterialOrder[k].second;
     cgltf_material &Material = Materials[k];
 

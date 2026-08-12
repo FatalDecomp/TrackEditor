@@ -712,6 +712,17 @@ void test_signs_and_scenery_reach_the_gltf_scene()
   assert(FindMesh(pData, "Sign 2") == nullptr);
   assert(FindMesh(pData, "Scenery") != nullptr);
   assert(pData->meshes_count == 4);
+  // The game renders advert/sign textures through a cut-out pipeline even
+  // when their substituted surface flags do not retain PARTIAL_TRANS. glTF
+  // must preserve that implicit behavior without punching holes in ordinary
+  // opaque building textures that share the same atlas.
+  const cgltf_material *pSignMaterial =
+      FindMesh(pData, "Sign 0")->primitives[0].material;
+  const cgltf_material *pSceneryMaterial =
+      FindMesh(pData, "Scenery")->primitives[0].material;
+  assert(pSignMaterial->alpha_mode == cgltf_alpha_mode_mask);
+  assert(pSceneryMaterial->alpha_mode == cgltf_alpha_mode_opaque);
+  assert(pSignMaterial != pSceneryMaterial);
   // The second atlas is referenced now, so E4-S4's _BLD.png is no longer a
   // file nothing points at.
   assert(pData->images_count == 2);
