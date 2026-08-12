@@ -19,28 +19,31 @@ constexpr uint32_t kIndicesPerQuad = 6u;
 
 struct tCarDescription
 {
-  const char *szName;
-  const char *szTexture;
+  const char *szNormalName;
+  const char *szAdvancedName;
+  const char *szNormalTexture;
+  const char *szAdvancedTexture;
 };
 
-// CarDesigns is ordered by the public CAR_DESIGN_* numbering. Designs 8..11
-// intentionally reuse one of the first eight physical plans with a different
-// livery, while F1WACK and DEATH use their own texture banks.
+// CarDesigns is ordered by the public CAR_DESIGN_* numbering. The first eight
+// selectable cars have X (normal) and Y (advanced) texture banks. Designs
+// 8..11 are cheat cars that reuse a physical plan with a special livery;
+// F1WACK and DEATH are also cheat cars and have their own single texture bank.
 const tCarDescription g_aCars[] = {
-  { "AUTO",     "xauto.bm" },
-  { "DESILVA",  "xdesilva.bm" },
-  { "PULSE",    "xpulse.bm" },
-  { "GLOBAL",   "xglobal.bm" },
-  { "MILLION",  "xmillion.bm" },
-  { "MISSION",  "xmission.bm" },
-  { "ZIZIN",    "xzizin.bm" },
-  { "REISE",    "xreise.bm" },
-  { "SUICYCO",  "xzizin.bm" },
-  { "MAYTE",    "xauto.bm" },
-  { "2X4B523P", "xpulse.bm" },
-  { "TINKLE",   "xreise.bm" },
-  { "F1WACK",   "red28.bm" },
-  { "DEATH",    "death.bm" }
+  { "XAUTO",     "YAUTO",     "xauto.bm",    "yauto.bm" },
+  { "XDESILVA",  "YDESILVA",  "xdesilva.bm", "ydesilva.bm" },
+  { "XPULSE",    "YPULSE",    "xpulse.bm",   "ypulse.bm" },
+  { "XGLOBAL",   "YGLOBAL",   "xglobal.bm",  "yglobal.bm" },
+  { "XMILLION",  "YMILLION",  "xmillion.bm", "ymillion.bm" },
+  { "XMISSION",  "YMISSION",  "xmission.bm", "ymission.bm" },
+  { "XZIZIN",    "YZIZIN",    "xzizin.bm",   "yzizin.bm" },
+  { "XREISE",    "YREISE",    "xreise.bm",   "yreise.bm" },
+  { "SUICYCO",   nullptr,      "xzizin.bm",   nullptr },
+  { "MAYTE",     nullptr,      "xauto.bm",    nullptr },
+  { "2X4B523P",  nullptr,      "xpulse.bm",   nullptr },
+  { "TINKLE",    nullptr,      "xreise.bm",   nullptr },
+  { "F1WACK",    nullptr,      "red28.bm",    nullptr },
+  { "DEATH",     nullptr,      "death.bm",    nullptr }
 };
 
 static_assert(sizeof(g_aCars) / sizeof(g_aCars[0]) ==
@@ -55,6 +58,21 @@ uint32_t ResolveFrontSurface(const tCarDesign &Design,
     const tAnimation &Animation = Design.pAnms[static_cast<uint8_t>(uiSurface)];
     if (Animation.uiCount != 0u)
       uiSurface = Animation.framesAy[0];
+  }
+  return uiSurface;
+}
+
+uint32_t ApplyAdvancedColour(uint32_t uiDesign, uint32_t uiSurface,
+                             bool bAdvanced)
+{
+  if (!bAdvanced || (uiSurface & SURFACE_FLAG_APPLY_TEXTURE) != 0)
+    return uiSurface;
+
+  const tCarColorRemap &Remap = car_flat_remap[uiDesign];
+  if (Remap.uiColorFrom <= 0xFFu
+      && (uiSurface & 0xFFu) == Remap.uiColorFrom) {
+    uiSurface &= ~0xFFu;
+    uiSurface |= Remap.uiColorTo & 0xFFu;
   }
   return uiSurface;
 }
@@ -139,23 +157,45 @@ uint32_t CEditorCarModel::Count()
   return static_cast<uint32_t>(sizeof(g_aCars) / sizeof(g_aCars[0]));
 }
 
-const char *CEditorCarModel::Name(uint32_t uiDesign)
+uint32_t CEditorCarModel::ExportCount()
 {
-  return uiDesign < Count() ? g_aCars[uiDesign].szName : nullptr;
+  uint32_t uiCount = 0;
+  for (uint32_t i = 0; i < Count(); ++i)
+    uiCount += HasAdvancedVariant(i) ? 2u : 1u;
+  return uiCount;
 }
 
-const char *CEditorCarModel::TextureFileName(uint32_t uiDesign)
+bool CEditorCarModel::HasAdvancedVariant(uint32_t uiDesign)
 {
-  return uiDesign < Count() ? g_aCars[uiDesign].szTexture : nullptr;
+  return uiDesign < Count() && g_aCars[uiDesign].szAdvancedName != nullptr;
 }
 
-bool CEditorCarModel::Build(uint32_t uiDesign, uint32_t uiTextureTileCount,
+const char *CEditorCarModel::Name(uint32_t uiDesign, bool bAdvanced)
+{
+  if (uiDesign >= Count())
+    return nullptr;
+  return bAdvanced ? g_aCars[uiDesign].szAdvancedName
+                   : g_aCars[uiDesign].szNormalName;
+}
+
+const char *CEditorCarModel::TextureFileName(uint32_t uiDesign,
+                                             bool bAdvanced)
+{
+  if (uiDesign >= Count())
+    return nullptr;
+  return bAdvanced ? g_aCars[uiDesign].szAdvancedTexture
+                   : g_aCars[uiDesign].szNormalTexture;
+}
+
+bool CEditorCarModel::Build(uint32_t uiDesign, bool bAdvanced,
+                            uint32_t uiTextureTileCount,
                             tEdCarGeometry &GeometryOut,
                             std::string &sError)
 {
   GeometryOut.Clear();
   sError.clear();
-  if (uiDesign >= Count() || uiTextureTileCount == 0u) {
+  if (uiDesign >= Count() || uiTextureTileCount == 0u
+      || (bAdvanced && !HasAdvancedVariant(uiDesign))) {
     sError = "the car design or texture tile count is invalid";
     return false;
   }
@@ -200,12 +240,14 @@ bool CEditorCarModel::Build(uint32_t uiDesign, uint32_t uiTextureTileCount,
       afVertices[v][2] = Point.fZ;
     }
 
-    const uint32_t uiSurface = ResolveFrontSurface(Design, Polygon);
+    const uint32_t uiSurface = ApplyAdvancedColour(
+        uiDesign, ResolveFrontSurface(Design, Polygon), bAdvanced);
     tEdSurfaceInfo Info = {};
     Info.uiChunkId = ROLLER_ED_INVALID_CHUNK_ID;
     Info.uiRenderFlags = uiSurface;
     Info.uiBackSurfaceFlags = Design.pBacks
-        ? Design.pBacks[i] : ED_MATERIAL_ID_NONE;
+        ? ApplyAdvancedColour(uiDesign, Design.pBacks[i], bAdvanced)
+        : ED_MATERIAL_ID_NONE;
     Info.uiTextureSet = kCarTextureSet;
     Info.bPairTextureEnabled =
         (uiSurface & SURFACE_FLAG_TEXTURE_PAIR) != 0;

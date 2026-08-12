@@ -25,10 +25,14 @@ class CEditorCarModel
 {
 public:
   static uint32_t Count();
-  static const char *Name(uint32_t uiDesign);
-  static const char *TextureFileName(uint32_t uiDesign);
+  static uint32_t ExportCount();
+  static bool HasAdvancedVariant(uint32_t uiDesign);
+  static const char *Name(uint32_t uiDesign, bool bAdvanced = false);
+  static const char *TextureFileName(uint32_t uiDesign,
+                                     bool bAdvanced = false);
 
-  static bool Build(uint32_t uiDesign, uint32_t uiTextureTileCount,
+  static bool Build(uint32_t uiDesign, bool bAdvanced,
+                    uint32_t uiTextureTileCount,
                     tEdCarGeometry &GeometryOut, std::string &sError);
 };
 

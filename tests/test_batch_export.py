@@ -91,12 +91,28 @@ class BatchExportPipelineTests(unittest.TestCase):
             encoding="utf-8"
         )
 
-    def test_all_tracks_and_all_fourteen_car_designs_are_walked(self) -> None:
+    def test_all_tracks_and_all_car_variants_are_walked(self) -> None:
         self.assertIn('suffix().compare("trk", Qt::CaseInsensitive)', self.batch)
         self.assertIn("CEditorCarModel::Count()", self.batch)
+        self.assertIn("CEditorCarModel::ExportCount()", self.batch)
+        self.assertIn("CEditorCarModel::HasAdvancedVariant", self.batch)
         self.assertIn("ROLLER_ED_TEST_CAR_DESIGN_COUNT", self.car)
-        for name in ("AUTO", "SUICYCO", "F1WACK", "DEATH"):
+        for name in (
+            "XAUTO",
+            "YAUTO",
+            "XZIZIN",
+            "YZIZIN",
+            "SUICYCO",
+            "F1WACK",
+            "DEATH",
+        ):
             self.assertIn(f'"{name}"', self.car)
+
+    def test_advanced_cars_use_y_textures_and_flat_colour_remaps(self) -> None:
+        self.assertIn('"yauto.bm"', self.car)
+        self.assertIn('"yzizin.bm"', self.car)
+        self.assertIn("car_flat_remap[uiDesign]", self.car)
+        self.assertIn("ApplyAdvancedColour", self.car)
 
     def test_outputs_are_organized_and_gltf_is_self_contained(self) -> None:
         self.assertIn('filePath("Tracks")', self.batch)

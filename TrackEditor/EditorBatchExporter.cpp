@@ -95,12 +95,14 @@ bool WaitForTrack(CTrackPreview &Preview, const QString &sTrackFile,
 
 bool ExportCar(const QString &sFatdataFolder, const QString &sCarsFolder,
                eExportType exportType, uint32_t uiDesign,
+               bool bAdvanced,
                CPalette &Palette,
                const std::vector<tEdExportPaletteEntry> &ExportColours,
                QString &sError)
 {
-  const char *szName = CEditorCarModel::Name(uiDesign);
-  const char *szTexture = CEditorCarModel::TextureFileName(uiDesign);
+  const char *szName = CEditorCarModel::Name(uiDesign, bAdvanced);
+  const char *szTexture = CEditorCarModel::TextureFileName(
+      uiDesign, bAdvanced);
   if (!szName || !szTexture) {
     sError = "unknown car design";
     return false;
@@ -123,7 +125,7 @@ bool ExportCar(const QString &sFatdataFolder, const QString &sCarsFolder,
 
   tEdCarGeometry OwnedGeometry;
   std::string sBuildError;
-  if (!CEditorCarModel::Build(uiDesign,
+  if (!CEditorCarModel::Build(uiDesign, bAdvanced,
                               static_cast<uint32_t>(Texture.GetNumTiles()),
                               OwnedGeometry, sBuildError)) {
     sError = QString::fromStdString(sBuildError);
@@ -235,7 +237,8 @@ tEdBatchExportResult CEditorBatchExporter::Export(
     return Result;
   }
 
-  const int iTotal = Tracks.size() + static_cast<int>(CEditorCarModel::Count());
+  const int iTotal = Tracks.size()
+      + static_cast<int>(CEditorCarModel::ExportCount());
   QProgressDialog Progress("Preparing batch export...", "Cancel", 0, iTotal,
                            m_pParent);
   Progress.setWindowTitle("Export all tracks and cars");
@@ -279,27 +282,34 @@ tEdBatchExportResult CEditorBatchExporter::Export(
   for (uint32_t uiDesign = 0;
        !Result.bCancelled && uiDesign < CEditorCarModel::Count();
        ++uiDesign) {
-    const QString sName = QString::fromLatin1(CEditorCarModel::Name(uiDesign));
-    Progress.setLabelText("Exporting car " + sName);
-    QApplication::processEvents();
-    if (Progress.wasCanceled()) {
-      Result.bCancelled = true;
-      break;
-    }
+    const uint32_t uiVariantCount =
+        CEditorCarModel::HasAdvancedVariant(uiDesign) ? 2u : 1u;
+    for (uint32_t uiVariant = 0;
+         !Result.bCancelled && uiVariant < uiVariantCount; ++uiVariant) {
+      const bool bAdvanced = uiVariant == 1u;
+      const QString sName = QString::fromLatin1(
+          CEditorCarModel::Name(uiDesign, bAdvanced));
+      Progress.setLabelText("Exporting car " + sName);
+      QApplication::processEvents();
+      if (Progress.wasCanceled()) {
+        Result.bCancelled = true;
+        break;
+      }
 
-    QString sError;
-    const bool bExported = bPaletteLoaded
-        && ExportCar(sFatdataFolder, sCarsFolder, exportType, uiDesign,
-                     Palette, Colours, sError);
-    if (bExported) {
-      Result.iSucceeded++;
-    } else {
-      Result.iFailed++;
-      if (!bPaletteLoaded)
-        sError = "could not read PALETTE.PAL";
-      Result.Failures << QString("%1: %2").arg(sName, sError);
+      QString sError;
+      const bool bExported = bPaletteLoaded
+          && ExportCar(sFatdataFolder, sCarsFolder, exportType, uiDesign,
+                       bAdvanced, Palette, Colours, sError);
+      if (bExported) {
+        Result.iSucceeded++;
+      } else {
+        Result.iFailed++;
+        if (!bPaletteLoaded)
+          sError = "could not read PALETTE.PAL";
+        Result.Failures << QString("%1: %2").arg(sName, sError);
+      }
+      Progress.setValue(++iProgress);
     }
-    Progress.setValue(++iProgress);
   }
 
   Progress.setValue(iTotal);
