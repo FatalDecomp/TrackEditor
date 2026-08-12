@@ -35,6 +35,7 @@ struct tGraphicsPreferences
   tGraphicsPreferences();
   int iDrawDistancePercent;
   bool bHardwareRendering;
+  int iSoftwareDisplay;
   int iAntiAliasing;
   int iAnisotropy;
   int iTextureFilter;

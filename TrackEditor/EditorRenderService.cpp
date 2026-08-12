@@ -583,6 +583,7 @@ CEditorRenderService::CEditorRenderService(const QString &sAssetRoot, QObject *p
   m_GraphicsSettings.uiStructSize = sizeof(m_GraphicsSettings);
   m_GraphicsSettings.uiVersion = ROLLER_ED_GRAPHICS_SETTINGS_VERSION;
   m_GraphicsSettings.eRenderer = ROLLER_ED_RENDERER_GPU;
+  m_GraphicsSettings.eSoftwareDisplay = ROLLER_ED_SOFTWARE_DISPLAY_SVGA;
   m_GraphicsSettings.eAntiAliasing = ROLLER_ED_ANTI_ALIASING_OFF;
   m_GraphicsSettings.eAnisotropy = ROLLER_ED_ANISOTROPY_16X;
   m_GraphicsSettings.eTextureFilter = ROLLER_ED_TEXTURE_FILTER_NEAREST;

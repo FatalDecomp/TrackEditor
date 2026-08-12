@@ -307,6 +307,7 @@ int main(int argc, char **argv)
   Graphics.uiStructSize = sizeof(Graphics);
   Graphics.uiVersion = ROLLER_ED_GRAPHICS_SETTINGS_VERSION;
   Graphics.eRenderer = ROLLER_ED_RENDERER_SOFTWARE;
+  Graphics.eSoftwareDisplay = ROLLER_ED_SOFTWARE_DISPLAY_VGA;
   Graphics.eAntiAliasing = ROLLER_ED_ANTI_ALIASING_2X;
   Graphics.eAnisotropy = ROLLER_ED_ANISOTROPY_8X;
   Graphics.eTextureFilter = ROLLER_ED_TEXTURE_FILTER_BILINEAR;
@@ -361,6 +362,8 @@ int main(int argc, char **argv)
   assert(g_uiOverlayCount == 1);
   assert(g_uiGraphicsCount == 1);
   assert(g_LastGraphicsSettings.eRenderer == ROLLER_ED_RENDERER_SOFTWARE);
+  assert(g_LastGraphicsSettings.eSoftwareDisplay
+         == ROLLER_ED_SOFTWARE_DISPLAY_VGA);
   assert(g_LastGraphicsSettings.eAntiAliasing
          == ROLLER_ED_ANTI_ALIASING_2X);
   assert(g_LastGraphicsSettings.eAnisotropy == ROLLER_ED_ANISOTROPY_8X);

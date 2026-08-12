@@ -60,6 +60,10 @@ class GraphicsSettingsTests(unittest.TestCase):
         for label in (
             "Draw Dist",
             "Hardware Rendering",
+            "Software Rendering Options",
+            "Display",
+            "VGA",
+            "SVGA",
             "Anti-aliasing",
             "Anisotropy",
             "Texture Filter",
@@ -74,6 +78,7 @@ class GraphicsSettingsTests(unittest.TestCase):
         for expected in (
             "iDrawDistancePercent(100)",
             "bHardwareRendering(true)",
+            "iSoftwareDisplay(1)",
             "iAntiAliasing(0)",
             "iAnisotropy(3)",
             "iTextureFilter(0)",
@@ -82,6 +87,8 @@ class GraphicsSettingsTests(unittest.TestCase):
             "bEmulateTransparentBorders(true)",
         ):
             self.assertIn(expected, defaults)
+        self.assertIn('<widget class="QSlider" name="slDrawDistance">', self.dialog_ui)
+        self.assertNotIn('name="sbDrawDistance"', self.dialog_ui)
 
     def test_software_mode_disables_every_hardware_option(self) -> None:
         update = function_body(
@@ -89,6 +96,10 @@ class GraphicsSettingsTests(unittest.TestCase):
         )
         self.assertIn(
             "gbHardwareOptions->setEnabled(ckHardwareRendering->isChecked())",
+            update,
+        )
+        self.assertIn(
+            "gbSoftwareOptions->setEnabled(!ckHardwareRendering->isChecked())",
             update,
         )
         for control in (
@@ -111,11 +122,23 @@ class GraphicsSettingsTests(unittest.TestCase):
                 )
             ]
             self.assertIn(f'name="{control}"', hardware_group)
+        software_group = self.dialog_ui[
+            self.dialog_ui.index(
+                '<widget class="QGroupBox" name="gbSoftwareOptions">'
+            ) : self.dialog_ui.index(
+                '<spacer name="verticalSpacer">',
+                self.dialog_ui.index(
+                    '<widget class="QGroupBox" name="gbSoftwareOptions">'
+                ),
+            )
+        ]
+        self.assertIn('name="cbSoftwareDisplay"', software_group)
 
     def test_all_values_round_trip_through_trackeditor_ini(self) -> None:
         keys = (
             "graphics_draw_distance",
             "graphics_hardware_rendering",
+            "graphics_software_display",
             "graphics_antialiasing",
             "graphics_anisotropy",
             "graphics_texture_filter",
@@ -156,10 +179,15 @@ class GraphicsSettingsTests(unittest.TestCase):
         ):
             self.assertIn(setter, self.adapter)
         self.assertIn("g_fDrawDistanceFraction", self.adapter)
+        self.assertIn("eSoftwareDisplay", self.api)
+        self.assertIn("editor_scene_set_legacy_display", self.adapter)
         visibility = function_body(
             self.track_draw, "int CalcVisibleTrackEditor(unsigned int uiViewMode)"
         )
         self.assertIn("g_fDrawDistanceFraction", visibility)
+        self.assertIn("TrakView[iCurrChunk].byForwardMainChunks", visibility)
+        self.assertIn("TrakView[iCurrChunk].byBackwardMainChunks", visibility)
+        self.assertIn("(TRAK_LEN - 1) - TrackSize", visibility)
         self.assertIn("TRAK_LEN - 1", visibility)
 
 

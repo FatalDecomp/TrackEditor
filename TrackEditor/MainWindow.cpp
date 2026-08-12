@@ -73,6 +73,7 @@ tPreferences::tPreferences()
 tGraphicsPreferences::tGraphicsPreferences()
   : iDrawDistancePercent(100)
   , bHardwareRendering(true)
+  , iSoftwareDisplay(1)
   , iAntiAliasing(0)
   , iAnisotropy(3)
   , iTextureFilter(0)
@@ -1407,6 +1408,9 @@ void CMainWindow::LoadSettings()
   m_graphics.bHardwareRendering = settings.value(
       "graphics_hardware_rendering",
       m_graphics.bHardwareRendering).toBool();
+  m_graphics.iSoftwareDisplay = qBound(
+      0, settings.value("graphics_software_display",
+                        m_graphics.iSoftwareDisplay).toInt(), 1);
   m_graphics.iAntiAliasing = qBound(
       0, settings.value("graphics_antialiasing",
                         m_graphics.iAntiAliasing).toInt(), 3);
@@ -1474,6 +1478,7 @@ void CMainWindow::SaveSettings()
   settings.setValue("graphics_draw_distance", m_graphics.iDrawDistancePercent);
   settings.setValue("graphics_hardware_rendering",
                     m_graphics.bHardwareRendering);
+  settings.setValue("graphics_software_display", m_graphics.iSoftwareDisplay);
   settings.setValue("graphics_antialiasing", m_graphics.iAntiAliasing);
   settings.setValue("graphics_anisotropy", m_graphics.iAnisotropy);
   settings.setValue("graphics_texture_filter", m_graphics.iTextureFilter);
@@ -1495,6 +1500,8 @@ void CMainWindow::ApplyGraphicsSettings()
   Settings.uiVersion = ROLLER_ED_GRAPHICS_SETTINGS_VERSION;
   Settings.eRenderer = m_graphics.bHardwareRendering
       ? ROLLER_ED_RENDERER_GPU : ROLLER_ED_RENDERER_SOFTWARE;
+  Settings.eSoftwareDisplay = static_cast<eRollerEdSoftwareDisplay>(
+      m_graphics.iSoftwareDisplay);
   Settings.eAntiAliasing =
       static_cast<eRollerEdAntiAliasing>(m_graphics.iAntiAliasing);
   Settings.eAnisotropy =
