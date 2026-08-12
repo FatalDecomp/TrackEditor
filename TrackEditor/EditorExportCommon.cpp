@@ -331,7 +331,6 @@ bool CEditorExportConventions::BuildObjects(
     if (bNeedsBackGeometry) {
       Back.uiMaterial = ReverseSideMaterial(Primitive);
       Back.bBack = true;
-      Back.bMirrorMaterialU = HasDistinctReverseMaterial(Primitive);
       (Grouping.bSeparateBackFaces ? pBack : pFront)->push_back(std::move(Back));
     }
   }

@@ -389,10 +389,10 @@ void test_back_faces_use_the_back_material_and_reverse_the_winding()
   assert(Back[1] - iBackBase == 1);
   assert(Back[2] - iBackBase == 0);
 
-  // The back side's UVs come from the back material's bias and mirror local U
-  // for the reverse viewpoint: local 0 becomes 1, so 0.5 + 0.125 = 0.625.
-  assert(Contains(sObj, "vt 0.500000"));
-    assert(Contains(sObj, "vt 0.625000 0.750000"));
+  // The back side's UVs come from the back material's bias without an extra
+  // mirror: directional reverse textures are already authored for that side.
+  assert(Contains(sObj, "vt 0.500000 0.750000"));
+  assert(Contains(sObj, "vt 0.625000 0.750000"));
   // ROLLER's UV origin is top-left and OBJ's is bottom-left, so V is flipped.
   assert(Contains(sObj, "vt 0.000000 1.000000"));
 }

@@ -90,9 +90,7 @@ void WriteObject(std::ostream &Out, const tEdExportObject &Object,
     const tEdMaterial &Material = Geometry.pMaterials[Entries[e].uiMaterial];
     for (size_t v = 0; v < Entries[e].Vertices.size(); ++v) {
       const tEdVertex &Vertex = Geometry.pVertices[Entries[e].Vertices[v]];
-      const float fLocalU = Entries[e].bMirrorMaterialU
-          ? 1.0f - Vertex.fUV[0] : Vertex.fUV[0];
-      const float fU = fLocalU * Material.fAtlasScale[0]
+      const float fU = Vertex.fUV[0] * Material.fAtlasScale[0]
           + Material.fAtlasBias[0];
       const float fV = Vertex.fUV[1] * Material.fAtlasScale[1]
           + Material.fAtlasBias[1];

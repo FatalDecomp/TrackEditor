@@ -120,7 +120,6 @@ class BatchExportPipelineTests(unittest.TestCase):
         self.assertIn("Polygon.uiTex & SURFACE_FLAG_BACK", self.car)
         self.assertIn("bCompleteReverseGeometry = true", self.batch)
         self.assertIn("bGenerateAllReverseSides", self.common)
-        self.assertIn("bMirrorMaterialU", self.common)
 
     def test_outputs_are_organized_and_gltf_is_self_contained(self) -> None:
         self.assertIn('filePath("Tracks")', self.batch)

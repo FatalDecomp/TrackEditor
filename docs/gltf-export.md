@@ -96,10 +96,10 @@ rather than changed.
 
 **Reverse sides.** Complete glTF exports explicitly double every authored
 quad, just like OBJ. Each reverse copy has opposite winding and normals. An
-authored `uiBackMaterialId` supplies its texture or colour and mirrors its
-material-local U coordinate; without one, the front material and UVs are
-repeated. Materials remain single-sided so the front cannot leak through the
-alternate reverse geometry.
+authored `uiBackMaterialId` supplies its texture or colour using its authored
+UV orientation; without one, the front material and UVs are repeated.
+Materials remain single-sided so the front cannot leak through the alternate
+reverse geometry.
 
 The low-level exporter retains a compact mode that can use glTF
 `doubleSided: true`, but the Track Editor does not use that mode for user

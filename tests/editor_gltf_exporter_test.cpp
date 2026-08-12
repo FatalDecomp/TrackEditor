@@ -465,9 +465,9 @@ void test_a_distinct_back_tile_still_gets_real_geometry()
       FindAttribute(&pBack->primitives[0], cgltf_attribute_type_texcoord);
   const float *pUV = reinterpret_cast<const float *>(
       Output.Binary.data() + pTexCoord->buffer_view->offset);
-  // Alternate backs are authored from the reverse viewpoint, so their local
-  // U is mirrored: local 0 becomes local 1 before the back tile transform.
-  assert(std::fabs(pUV[0] - 0.625f) < 1e-6f);
+  // Alternate backs are already authored for the reverse viewpoint, so local
+  // U is preserved instead of receiving an additional mirror.
+  assert(std::fabs(pUV[0] - 0.5f) < 1e-6f);
   assert(std::fabs(pUV[1] - 0.25f) < 1e-6f);
 
   // And its normal points the other way.

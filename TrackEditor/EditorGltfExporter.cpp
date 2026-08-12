@@ -127,9 +127,7 @@ void AppendEntryToBatch(const tEdExportGeometry &Geometry,
     // transform (AD-7b); the reverse side resolves through the back material.
     // glTF's UV origin is top-left, the same as ROLLER's, so unlike OBJ there
     // is no V flip here.
-    const float fLocalU = Entry.bMirrorMaterialU
-        ? 1.0f - Vertex.fUV[0] : Vertex.fUV[0];
-    Batch.TexCoords.push_back(fLocalU * Material.fAtlasScale[0]
+    Batch.TexCoords.push_back(Vertex.fUV[0] * Material.fAtlasScale[0]
                               + Material.fAtlasBias[0]);
     Batch.TexCoords.push_back(Vertex.fUV[1] * Material.fAtlasScale[1]
                               + Material.fAtlasBias[1]);

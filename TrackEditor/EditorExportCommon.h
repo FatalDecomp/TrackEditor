@@ -68,11 +68,6 @@ struct tEdExportEntry
   uint32_t uiPrimitive = 0;
   uint32_t uiMaterial = 0;
   bool bBack = false;
-  // Alternate reverse textures are authored as viewed from the other side of
-  // the quad. Mirror their material-local U coordinate when the reversed copy
-  // is emitted. A reverse side that simply repeats the front keeps the front
-  // UVs unchanged, matching the legacy doubled-model exporter.
-  bool bMirrorMaterialU = false;
   std::vector<uint32_t> Vertices;  // global vertex ids, first-use order
   std::vector<uint32_t> Triangles; // indices into Vertices
 };

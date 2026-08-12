@@ -67,9 +67,9 @@ correct it.
 
 Complete exports explicitly double every authored quad. The reverse copy has
 opposite winding and normals. If `uiBackMaterialId` names an authored reverse
-texture or colour, that material is used and its material-local U coordinate
-is mirrored for the reverse viewpoint. Otherwise the front material and UVs
-are repeated, closing surfaces such as wheel backs that have no alternate.
+texture or colour, that material and its authored UV orientation are used.
+Otherwise the front material and UVs are repeated, closing surfaces such as
+wheel backs that have no alternate.
 
 The wizard's *Export backfaces as separate models* checkbox only chooses
 whether those faces get their own `(Back)` object or are merged into the front

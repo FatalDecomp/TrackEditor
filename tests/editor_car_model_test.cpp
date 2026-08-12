@@ -112,16 +112,13 @@ int main()
   for (const tEdExportEntry &Entry : CompleteObjects[1].Entries) {
     if (Entry.uiPrimitive == 0u) {
       bFoundRepeatedFront = Entry.uiMaterial
-              == TwoByFour.Primitives[0].uiFrontMaterialId
-          && !Entry.bMirrorMaterialU;
+          == TwoByFour.Primitives[0].uiFrontMaterialId;
     } else if (Entry.uiPrimitive == 25u) {
       bFoundAlternateWheel = Entry.uiMaterial
-              == TwoByFour.Primitives[25].uiBackMaterialId
-          && Entry.bMirrorMaterialU;
+          == TwoByFour.Primitives[25].uiBackMaterialId;
     } else if (Entry.uiPrimitive == 33u) {
       bFoundBlackMirror = Entry.uiMaterial
-              == TwoByFour.Primitives[33].uiBackMaterialId
-          && Entry.bMirrorMaterialU;
+          == TwoByFour.Primitives[33].uiBackMaterialId;
     }
   }
   Require(bFoundRepeatedFront);
