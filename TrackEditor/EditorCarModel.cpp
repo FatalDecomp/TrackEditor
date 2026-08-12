@@ -52,13 +52,20 @@ static_assert(sizeof(g_aCars) / sizeof(g_aCars[0]) ==
 uint32_t ResolveFrontSurface(const tCarDesign &Design,
                              const tPolygon &Polygon)
 {
-  uint32_t uiSurface = Polygon.uiTex;
+  const uint32_t uiAuthoredSurface = Polygon.uiTex;
+  uint32_t uiSurface = uiAuthoredSurface;
   if ((uiSurface & CAR_FLAG_ANMS_LOOKUP) != 0
       && Design.pAnms != reinterpret_cast<tAnimation *>(-1)) {
     const tAnimation &Animation = Design.pAnms[static_cast<uint8_t>(uiSurface)];
     if (Animation.uiCount != 0u)
       uiSurface = Animation.framesAy[0];
   }
+  // Animation frames describe the material, but the polygon owns its sided
+  // behavior. Dropping these flags made animated wheel backs disappear or
+  // show the front wheel tile on their reverse side.
+  uiSurface |= uiAuthoredSurface
+      & (SURFACE_FLAG_BACK | SURFACE_FLAG_FLIP_BACKFACE
+         | SURFACE_FLAG_CONCAVE);
   return uiSurface;
 }
 
@@ -81,6 +88,22 @@ struct tCollectContext
 {
   tEdCarGeometry *pGeometry;
 };
+
+struct tMaterialCapture
+{
+  uint32_t uiMaterial = ED_MATERIAL_ID_NONE;
+  bool bCaptured = false;
+};
+
+void CaptureFrontMaterial(const tEdSurfaceEmission *pSurface,
+                          void *pUserData)
+{
+  if (!pSurface || !pUserData)
+    return;
+  tMaterialCapture *pCapture = static_cast<tMaterialCapture *>(pUserData);
+  pCapture->uiMaterial = pSurface->uiFrontMaterialId;
+  pCapture->bCaptured = true;
+}
 
 void CollectSurface(const tEdSurfaceEmission *pSurface, void *pUserData)
 {
@@ -245,9 +268,11 @@ bool CEditorCarModel::Build(uint32_t uiDesign, bool bAdvanced,
     tEdSurfaceInfo Info = {};
     Info.uiChunkId = ROLLER_ED_INVALID_CHUNK_ID;
     Info.uiRenderFlags = uiSurface;
-    Info.uiBackSurfaceFlags = Design.pBacks
-        ? ApplyAdvancedColour(uiDesign, Design.pBacks[i], bAdvanced)
-        : ED_MATERIAL_ID_NONE;
+    // Car pBacks[] applies to flat colours as well as textures, unlike the
+    // track texture_back[] table handled inside ed_emit_surface. Build it
+    // explicitly below so black mirror backs (palette 0) are not mistaken for
+    // an absent back and animated wheel backs retain their authored tile.
+    Info.uiBackSurfaceFlags = ED_MATERIAL_ID_NONE;
     Info.uiTextureSet = kCarTextureSet;
     Info.bPairTextureEnabled =
         (uiSurface & SURFACE_FLAG_TEXTURE_PAIR) != 0;
@@ -264,6 +289,32 @@ bool CEditorCarModel::Build(uint32_t uiDesign, bool bAdvanced,
       sError = "car polygon " + std::to_string(i)
           + " could not be converted with the selected texture bank";
       return false;
+    }
+
+    if (Design.pBacks && (Polygon.uiTex & SURFACE_FLAG_BACK) != 0) {
+      const uint32_t uiBackSurface = ApplyAdvancedColour(
+          uiDesign, Design.pBacks[i], bAdvanced);
+      tEdSurfaceInfo BackInfo = Info;
+      BackInfo.uiRenderFlags = uiBackSurface;
+      BackInfo.uiBackSurfaceFlags = ED_MATERIAL_ID_NONE;
+      BackInfo.bPairTextureEnabled =
+          (uiBackSurface & SURFACE_FLAG_TEXTURE_PAIR) != 0;
+      BackInfo.byRenderUVLayout = static_cast<uint8_t>(
+          BackInfo.bPairTextureEnabled
+              ? ROLLER_ED_RENDER_UV_PAIR_HORIZONTAL
+              : ROLLER_ED_RENDER_UV_TILE);
+
+      tMaterialCapture BackMaterial;
+      if (!ed_emit_surface(afVertices, &BackInfo, &Materials,
+                           CaptureFrontMaterial, &BackMaterial)
+          || !BackMaterial.bCaptured) {
+        GeometryOut.Clear();
+        sError = "car polygon " + std::to_string(i)
+            + " has an invalid reverse material";
+        return false;
+      }
+      GeometryOut.Primitives.back().uiBackMaterialId =
+          BackMaterial.uiMaterial;
     }
   }
 

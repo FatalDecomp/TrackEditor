@@ -40,13 +40,16 @@ struct tEdGltfExportOptions
   // Legacy "Sections" checkbox: one glTF mesh and node per surface class, or
   // a single combined "Track" node.
   bool bSeparateSections = true;
-  // Legacy "Backs" checkbox. Only reaches surfaces whose reverse side needs
-  // its own geometry - see bDoubleSidedMaterials.
+  // Legacy "Backs" checkbox. Chooses whether generated reverse faces get
+  // their own named mesh or are merged into the front mesh.
   bool bSeparateBackFaces = true;
-  // glTF can say "draw both sides" on the material, so a merely two-sided
-  // surface does not need a duplicated reverse-wound copy the way OBJ does.
-  // A surface whose uiBackMaterialId names a *different* tile still gets real
-  // geometry, because one material cannot address two tiles.
+  // Complete models carry explicit reverse-wound geometry for every quad.
+  // Where no alternate back exists, the front material and UVs are repeated.
+  // This takes precedence over bDoubleSidedMaterials.
+  bool bCompleteReverseGeometry = true;
+  // Compact-mode fallback used only when bCompleteReverseGeometry is false.
+  // glTF can then represent a merely two-sided surface on its material. A
+  // distinct alternate back still gets real geometry in either mode.
   bool bDoubleSidedMaterials = true;
   // True writes a self-contained .glb: JSON chunk plus one binary chunk
   // carrying the geometry and the embedded PNGs. False writes .gltf JSON that

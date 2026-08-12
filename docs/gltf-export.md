@@ -74,7 +74,7 @@ Taken from `tEdVertex.fNormal`, which the emitter generated (E4A-S4) and
 `RollerEd_FillGeometry` copies through. Nothing here generates normals, and
 `NORMAL` is always written, so an importer never has to guess them.
 
-## Alpha mode and double-sided state
+## Alpha mode and reverse-side geometry
 
 **Alpha.** The atlas alpha is binary: `CTexture` decodes palette index 0 to
 alpha 0 and every other index to 255. A transparent surface is therefore a
@@ -94,21 +94,16 @@ than the OBJ path**, whose `.mtl` writes `map_d` for every textured material and
 so makes index 0 transparent everywhere — legacy behaviour E4-S1 preserved
 rather than changed.
 
-**Double-sided.** glTF carries double-sidedness on the material, so a surface
-that is merely two-sided (`ROLLER_ED_PRIMITIVE_FLAG_TWO_SIDED`, which ADR 0003
-traces to `SURFACE_FLAG_CONCAVE` and `SURFACE_FLAG_FLIP_BACKFACE`) becomes one
-primitive with `doubleSided: true` rather than a duplicated reverse-wound copy.
-A viewer flips the normal for back-facing fragments itself, so this is
-equivalent and emits half the triangles.
+**Reverse sides.** Complete glTF exports explicitly double every authored
+quad, just like OBJ. Each reverse copy has opposite winding and normals. An
+authored `uiBackMaterialId` supplies its texture or colour and mirrors its
+material-local U coordinate; without one, the front material and UVs are
+repeated. Materials remain single-sided so the front cannot leak through the
+alternate reverse geometry.
 
-A surface whose `uiBackMaterialId` names a **different** tile still gets real
-reverse geometry, in every format: one material cannot address two tiles, and
-that side must resolve its UVs through the back material or it samples the
-wrong one (AD-7b / AD-7e).
-
-Because glTF materials are shared, one canonical material used by both a
-two-sided and a single-sided surface becomes **two** glTF materials, the
-double-sided one suffixed `_two_sided`.
+The low-level exporter retains a compact mode that can use glTF
+`doubleSided: true`, but the Track Editor does not use that mode for user
+exports.
 
 ## How canonical materials collapse
 
@@ -119,22 +114,14 @@ material per canonical material would hand an importer 92 identically named
 entries to rename to `TRACK3.001` and up.
 
 The glTF materials are therefore keyed on their **resolved name**, which is a
-pure function of everything that reaches the material: texture set, alpha mode,
-palette colour, darkening level, and double-sidedness. Names carry `_cutout`
-for `MASK` and `_two_sided` for double-sided, so two materials that must stay
-apart never collide.
+pure function of everything that reaches the material: texture set, alpha
+mode, palette colour, darkening level, and double-sidedness. Names carry
+`_cutout` for `MASK` and, in compact mode, `_two_sided`, so materials that must
+stay apart never collide.
 
-On retail `TRACK3` this collapses 92 canonical materials into five —
-`TRACK3`, `TRACK3_cutout`, `TRACK3_two_sided`, `TRACK3_cutout_two_sided`, and
-`TRACK3_color_10` — and takes the `.gltf` JSON from 255 KB to 22 KB.
-
-> **This is the one place glTF output differs in shape from OBJ.** On retail
-> `TRACK3`, which has 645 two-sided surfaces and no distinct back materials at
-> all, the OBJ export gains six `(Back)` objects and the glTF export gains
-> none. The rendered result is the same.
-
-The *Export backfaces as separate models* checkbox therefore only reaches
-surfaces with a genuinely different back tile.
+The *Export backfaces as separate models* checkbox chooses whether the
+explicit reverse geometry is placed in `(Back)` nodes or merged into each
+front node.
 
 ## AI lines and centre line
 
@@ -231,9 +218,10 @@ Outer Wall Floor, Left Lower Outer Wall, Right Lower Outer Wall,
 Left Upper Outer Wall, Right Upper Outer Wall
 ```
 
-plus a `<name> (Back)` node where reverse geometry exists. With *Export track
-sections separately* off, a single `Track` node. Empty groups are dropped rather
-than written as empty meshes. Within a mesh, one primitive per material.
+plus a `<name> (Back)` node for every non-empty front group. With *Export track
+sections separately* off, `Track` and `Track (Back)` nodes. Empty groups are
+dropped rather than written as empty meshes. Within a mesh, one primitive per
+material.
 
 ## Validation
 

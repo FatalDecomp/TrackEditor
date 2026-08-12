@@ -28,6 +28,9 @@ struct tEdObjExportOptions
   bool bSeparateSections = true;
   // Legacy "Backs" checkbox.
   bool bSeparateBackFaces = true;
+  // Emit an explicit reverse-wound copy of every quad. Alternate reverse
+  // materials are used where authored; otherwise the front is repeated.
+  bool bCompleteReverseGeometry = true;
   // Base name of the export, without extension. Drives the .mtl material
   // names and the atlas PNG file names, as the legacy exporter did.
   std::string sBaseName;

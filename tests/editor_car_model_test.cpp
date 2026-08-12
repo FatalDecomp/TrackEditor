@@ -75,6 +75,59 @@ int main()
   Require(Objects[0].sName == "XAUTO");
   Require(!Objects[0].Entries.empty());
 
+  // 2X4B523P uses the PULSE plan. Its animated wheel fronts (25..28) must
+  // retain the polygon's reverse-side flags and use textured tile 1 on the
+  // back. Its mirror faces (33..34) use flat palette black on the back.
+  tEdCarGeometry TwoByFour;
+  Require(CEditorCarModel::Build(10u, false, 256u, TwoByFour, sError));
+  Require(TwoByFour.Primitives.size() == CarDesigns[10].byNumPols);
+  for (uint32_t i = 25u; i <= 28u; ++i) {
+    const tEdPrimitive &Wheel = TwoByFour.Primitives[i];
+    Require((Wheel.unFlags & ROLLER_ED_PRIMITIVE_FLAG_TWO_SIDED) != 0);
+    Require(Wheel.uiBackMaterialId < TwoByFour.Materials.size());
+    const tEdMaterial &Back = TwoByFour.Materials[Wheel.uiBackMaterialId];
+    Require(CEditorExportConventions::IsTexturedKind(Back.uiKind));
+    Require(Back.uiTileIndex == 1u);
+  }
+  for (uint32_t i = 33u; i <= 34u; ++i) {
+    const tEdPrimitive &Mirror = TwoByFour.Primitives[i];
+    Require(Mirror.uiBackMaterialId < TwoByFour.Materials.size());
+    const tEdMaterial &Back = TwoByFour.Materials[Mirror.uiBackMaterialId];
+    Require(Back.uiKind == ROLLER_ED_MATERIAL_FLAT_PALETTE_COLOR);
+    Require(Back.uiPaletteColour == 0u);
+  }
+
+  tEdExportGrouping CompleteGrouping;
+  CompleteGrouping.sSingleObjectName = "2X4B523P";
+  CompleteGrouping.bGenerateAllReverseSides = true;
+  std::vector<tEdExportObject> CompleteObjects;
+  Require(CEditorExportConventions::BuildObjects(
+      TwoByFour.View(), CompleteGrouping, CompleteObjects, sError));
+  Require(CompleteObjects.size() == 2u);
+  Require(CompleteObjects[0].Entries.size() == TwoByFour.Primitives.size());
+  Require(CompleteObjects[1].Entries.size() == TwoByFour.Primitives.size());
+  bool bFoundRepeatedFront = false;
+  bool bFoundAlternateWheel = false;
+  bool bFoundBlackMirror = false;
+  for (const tEdExportEntry &Entry : CompleteObjects[1].Entries) {
+    if (Entry.uiPrimitive == 0u) {
+      bFoundRepeatedFront = Entry.uiMaterial
+              == TwoByFour.Primitives[0].uiFrontMaterialId
+          && !Entry.bMirrorMaterialU;
+    } else if (Entry.uiPrimitive == 25u) {
+      bFoundAlternateWheel = Entry.uiMaterial
+              == TwoByFour.Primitives[25].uiBackMaterialId
+          && Entry.bMirrorMaterialU;
+    } else if (Entry.uiPrimitive == 33u) {
+      bFoundBlackMirror = Entry.uiMaterial
+              == TwoByFour.Primitives[33].uiBackMaterialId
+          && Entry.bMirrorMaterialU;
+    }
+  }
+  Require(bFoundRepeatedFront);
+  Require(bFoundAlternateWheel);
+  Require(bFoundBlackMirror);
+
   // Advanced cars share their authored geometry with the normal car but use
   // the Y texture bank and the game's flat-colour remap. DESILVA maps CF to C3.
   tEdCarGeometry NormalDesilva;

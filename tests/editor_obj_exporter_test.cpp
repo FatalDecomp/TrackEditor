@@ -130,6 +130,9 @@ public:
 tEdObjExportOptions DefaultOptions()
 {
   tEdObjExportOptions Options;
+  // Most focused tests exercise the pre-existing selective reverse-side
+  // rules. Complete-model duplication has its own regression below.
+  Options.bCompleteReverseGeometry = false;
   Options.sBaseName = "TRACK3";
   Options.sMtlFileName = "TRACK3.mtl";
   return Options;
@@ -386,8 +389,10 @@ void test_back_faces_use_the_back_material_and_reverse_the_winding()
   assert(Back[1] - iBackBase == 1);
   assert(Back[2] - iBackBase == 0);
 
-  // The back side's UVs come from the back material's bias, not the front's.
+  // The back side's UVs come from the back material's bias and mirror local U
+  // for the reverse viewpoint: local 0 becomes 1, so 0.5 + 0.125 = 0.625.
   assert(Contains(sObj, "vt 0.500000"));
+    assert(Contains(sObj, "vt 0.625000 0.750000"));
   // ROLLER's UV origin is top-left and OBJ's is bottom-left, so V is flipped.
   assert(Contains(sObj, "vt 0.000000 1.000000"));
 }
@@ -416,6 +421,32 @@ void test_a_two_sided_surface_without_a_back_material_still_gets_a_back()
   // The reverse side points the other way.
   assert(Contains(sObj, "vn 0.000000 1.000000 0.000000"));
   assert(Contains(sObj, "vn 0.000000 -1.000000 0.000000"));
+}
+
+void test_complete_reverse_geometry_doubles_every_quad()
+{
+  CExtractionBuilder Builder;
+  const uint32_t uiMaterial = Builder.AddTexturedMaterial(
+      ROLLER_ED_TEXTURE_SET_TRACK, 0.125f, 0.125f, 0.25f, 0.0f);
+  // No alternate material and no two-sided source flag: the complete export
+  // still has to close this quad from the reverse side.
+  Builder.AddQuad(ROLLER_ED_SURFACE_CLASS_CENTER,
+                  ROLLER_ED_CONTENT_AUTHORED_TRACK, uiMaterial,
+                  ROLLER_ED_INVALID_MATERIAL_ID);
+
+  tEdObjExportOptions Options = DefaultOptions();
+  Options.bCompleteReverseGeometry = true;
+  std::ostringstream Obj;
+  std::ostringstream Mtl;
+  std::string sError;
+  assert(CEditorObjExporter::Export(Builder.View(), Options, nullptr, 0, Obj,
+                                    Mtl, sError));
+  const std::string sObj = Obj.str();
+  assert(ContainsLine(sObj, "o Center"));
+  assert(ContainsLine(sObj, "o Center (Back)"));
+  assert(CountLinesStartingWith(sObj, "f ") == 4);
+  // With no authored alternate, both sides repeat the same atlas rectangle.
+  assert(CountLinesStartingWith(sObj, "vt 0.250000 1.000000") == 2);
 }
 
 void test_merged_backs_land_in_the_front_object()
@@ -811,6 +842,7 @@ int main()
   test_combined_sections_produce_one_object();
   test_back_faces_use_the_back_material_and_reverse_the_winding();
   test_a_two_sided_surface_without_a_back_material_still_gets_a_back();
+  test_complete_reverse_geometry_doubles_every_quad();
   test_merged_backs_land_in_the_front_object();
   test_uvs_resolve_through_the_material_atlas_transform();
   test_texture_sets_choose_their_own_atlas_png();

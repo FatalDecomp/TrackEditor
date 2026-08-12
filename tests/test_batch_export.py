@@ -114,6 +114,14 @@ class BatchExportPipelineTests(unittest.TestCase):
         self.assertIn("car_flat_remap[uiDesign]", self.car)
         self.assertIn("ApplyAdvancedColour", self.car)
 
+    def test_complete_reverse_geometry_and_car_backs_are_preserved(self) -> None:
+        self.assertIn("SURFACE_FLAG_FLIP_BACKFACE", self.car)
+        self.assertIn("CaptureFrontMaterial", self.car)
+        self.assertIn("Polygon.uiTex & SURFACE_FLAG_BACK", self.car)
+        self.assertIn("bCompleteReverseGeometry = true", self.batch)
+        self.assertIn("bGenerateAllReverseSides", self.common)
+        self.assertIn("bMirrorMaterialU", self.common)
+
     def test_outputs_are_organized_and_gltf_is_self_contained(self) -> None:
         self.assertIn('filePath("Tracks")', self.batch)
         self.assertIn('filePath("Cars")', self.batch)

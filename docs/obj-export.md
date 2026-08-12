@@ -65,25 +65,16 @@ correct it.
 
 ## Reverse sides and the "backfaces" option
 
-A primitive has a reverse side when **either**:
+Complete exports explicitly double every authored quad. The reverse copy has
+opposite winding and normals. If `uiBackMaterialId` names an authored reverse
+texture or colour, that material is used and its material-local U coordinate
+is mirrored for the reverse viewpoint. Otherwise the front material and UVs
+are repeated, closing surfaces such as wheel backs that have no alternate.
 
-- `uiBackMaterialId != ROLLER_ED_INVALID_MATERIAL_ID` — `texture_back[]`
-  substitutes a different tile at draw time; or
-- `ROLLER_ED_PRIMITIVE_FLAG_TWO_SIDED` is set — the renderer bypasses its
-  facing test for `SURFACE_FLAG_CONCAVE` and `SURFACE_FLAG_FLIP_BACKFACE`
-  surfaces, so they are visible from both sides. A missing back material does
-  **not** imply single-sidedness; exporting these single-sided would leave
-  holes.
-
-When a reverse side exists it is always exported. The wizard's *Export
-backfaces as separate models* checkbox only chooses whether those faces get
-their own `(Back)` object or are merged into the front object — exactly what
-`eBackModeling::FRONTS` + `BACKS` versus `FRONTS_AND_BACKS` did before.
-
-A reverse face resolves its UVs through the **back** material's
-`fAtlasScale` / `fAtlasBias`. Reusing the front material's rectangle would
-sample the wrong tile whenever `texture_back[]` substituted a different one
-(AD-7b / AD-7e).
+The wizard's *Export backfaces as separate models* checkbox only chooses
+whether those faces get their own `(Back)` object or are merged into the front
+object — exactly what `eBackModeling::FRONTS` + `BACKS` versus
+`FRONTS_AND_BACKS` did before.
 
 ## UV
 

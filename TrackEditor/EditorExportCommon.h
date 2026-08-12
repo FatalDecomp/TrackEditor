@@ -68,6 +68,11 @@ struct tEdExportEntry
   uint32_t uiPrimitive = 0;
   uint32_t uiMaterial = 0;
   bool bBack = false;
+  // Alternate reverse textures are authored as viewed from the other side of
+  // the quad. Mirror their material-local U coordinate when the reversed copy
+  // is emitted. A reverse side that simply repeats the front keeps the front
+  // UVs unchanged, matching the legacy doubled-model exporter.
+  bool bMirrorMaterialU = false;
   std::vector<uint32_t> Vertices;  // global vertex ids, first-use order
   std::vector<uint32_t> Triangles; // indices into Vertices
 };
@@ -109,6 +114,11 @@ struct tEdExportGrouping
   // false. A surface with a genuinely different uiBackMaterialId always gets
   // geometry, in every format, because one material cannot carry two tiles.
   bool bReverseSideAsGeometry = true;
+  // The complete-model export path duplicates every authored triangle, even
+  // when the source did not explicitly flag it as two-sided. This prevents
+  // open wheel wells and other invisible reverse faces and reproduces the
+  // older FRONTS + BACKS model construction.
+  bool bGenerateAllReverseSides = false;
 };
 
 class CEditorExportConventions

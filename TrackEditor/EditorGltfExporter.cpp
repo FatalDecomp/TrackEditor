@@ -81,7 +81,8 @@ bool IsDoubleSidedEntry(const tEdExportGeometry &Geometry,
                         const tEdGltfExportOptions &Options,
                         const tEdExportEntry &Entry)
 {
-  if (!Options.bDoubleSidedMaterials || Entry.bBack)
+  if (Options.bCompleteReverseGeometry
+      || !Options.bDoubleSidedMaterials || Entry.bBack)
     return false;
   const tEdPrimitive &Primitive = Geometry.pPrimitives[Entry.uiPrimitive];
   // A surface with a genuinely different reverse tile got real reverse
@@ -126,7 +127,9 @@ void AppendEntryToBatch(const tEdExportGeometry &Geometry,
     // transform (AD-7b); the reverse side resolves through the back material.
     // glTF's UV origin is top-left, the same as ROLLER's, so unlike OBJ there
     // is no V flip here.
-    Batch.TexCoords.push_back(Vertex.fUV[0] * Material.fAtlasScale[0]
+    const float fLocalU = Entry.bMirrorMaterialU
+        ? 1.0f - Vertex.fUV[0] : Vertex.fUV[0];
+    Batch.TexCoords.push_back(fLocalU * Material.fAtlasScale[0]
                               + Material.fAtlasBias[0]);
     Batch.TexCoords.push_back(Vertex.fUV[1] * Material.fAtlasScale[1]
                               + Material.fAtlasBias[1]);
@@ -276,9 +279,10 @@ bool CEditorGltfExporter::Export(const tEdExportGeometry &Geometry,
   Grouping.bExportScenery = Options.bExportScenery;
   Grouping.bSeparateSections = Options.bSeparateSections;
   Grouping.bSeparateBackFaces = Options.bSeparateBackFaces;
-  // glTF says "draw both sides" on the material, so a merely two-sided surface
-  // does not need a duplicated reverse-wound copy.
+  // Compact mode may use glTF's double-sided material support. Complete model
+  // export overrides it and creates explicit reverse geometry for every quad.
   Grouping.bReverseSideAsGeometry = !Options.bDoubleSidedMaterials;
+  Grouping.bGenerateAllReverseSides = Options.bCompleteReverseGeometry;
 
   std::vector<tEdExportObject> Objects;
   if (!CEditorExportConventions::BuildObjects(Geometry, Grouping, Objects,

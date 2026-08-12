@@ -146,6 +146,7 @@ bool ExportCar(const QString &sFatdataFolder, const QString &sCarsFolder,
     Options.bExportScenery = true;
     Options.bSeparateSections = false;
     Options.bSeparateBackFaces = true;
+    Options.bCompleteReverseGeometry = true;
     Options.sBaseName = sName.toStdString();
     Options.sMtlFileName = (sName + ".mtl").toStdString();
     std::string sWriteError;
@@ -185,6 +186,7 @@ bool ExportCar(const QString &sFatdataFolder, const QString &sCarsFolder,
   Options.bExportScenery = true;
   Options.bSeparateSections = false;
   Options.bSeparateBackFaces = true;
+  Options.bCompleteReverseGeometry = true;
   Options.bDoubleSidedMaterials = true;
   Options.bBinary = true;
   Options.sBaseName = sName.toStdString();

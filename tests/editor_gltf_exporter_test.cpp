@@ -138,6 +138,9 @@ std::vector<uint8_t> FakePng()
 tEdGltfExportOptions DefaultOptions()
 {
   tEdGltfExportOptions Options;
+  // Keep focused tests on the selective legacy mode; complete-model reverse
+  // geometry is covered explicitly below and is the application default.
+  Options.bCompleteReverseGeometry = false;
   Options.sBaseName = "TRACK3";
   Options.sBufferUri = "TRACK3.bin";
   tEdGltfTextureSource Track;
@@ -388,6 +391,48 @@ void test_a_two_sided_surface_becomes_a_double_sided_material()
   cgltf_free(pData);
 }
 
+void test_complete_reverse_geometry_doubles_every_quad()
+{
+  CExtractionBuilder Builder;
+  const uint32_t uiMaterial =
+      Builder.AddTexturedMaterial(ROLLER_ED_TEXTURE_SET_TRACK, 0, 0.25f, 0.0f);
+  Builder.AddQuad(ROLLER_ED_SURFACE_CLASS_CENTER,
+                  ROLLER_ED_CONTENT_AUTHORED_TRACK, uiMaterial,
+                  ROLLER_ED_INVALID_MATERIAL_ID);
+
+  tEdGltfExportOptions Options = DefaultOptions();
+  Options.bCompleteReverseGeometry = true;
+  // Complete geometry takes precedence over glTF's double-sided material
+  // shortcut: the two sides need independent normals and potentially
+  // independent materials.
+  Options.bDoubleSidedMaterials = true;
+  tEdGltfExportOutput Output;
+  std::string sError;
+  assert(CEditorGltfExporter::Export(Builder.View(), Options, nullptr, 0,
+                                     Output, sError));
+  cgltf_data *pData = ParseGltf(Output, false);
+
+  const cgltf_mesh *pFront = FindMesh(pData, "Center");
+  const cgltf_mesh *pBack = FindMesh(pData, "Center (Back)");
+  assert(pFront && pBack);
+  assert(pFront->primitives[0].indices->count == 6);
+  assert(pBack->primitives[0].indices->count == 6);
+  assert(!pFront->primitives[0].material->double_sided);
+  assert(!pBack->primitives[0].material->double_sided);
+
+  const cgltf_accessor *pFrontUV =
+      FindAttribute(&pFront->primitives[0], cgltf_attribute_type_texcoord);
+  const cgltf_accessor *pBackUV =
+      FindAttribute(&pBack->primitives[0], cgltf_attribute_type_texcoord);
+  const float *pF = reinterpret_cast<const float *>(
+      Output.Binary.data() + pFrontUV->buffer_view->offset);
+  const float *pB = reinterpret_cast<const float *>(
+      Output.Binary.data() + pBackUV->buffer_view->offset);
+  assert(std::fabs(pF[0] - pB[0]) < 1e-6f);
+  assert(std::fabs(pF[1] - pB[1]) < 1e-6f);
+  cgltf_free(pData);
+}
+
 void test_a_distinct_back_tile_still_gets_real_geometry()
 {
   // One material cannot address two atlas tiles, so a surface whose
@@ -420,7 +465,9 @@ void test_a_distinct_back_tile_still_gets_real_geometry()
       FindAttribute(&pBack->primitives[0], cgltf_attribute_type_texcoord);
   const float *pUV = reinterpret_cast<const float *>(
       Output.Binary.data() + pTexCoord->buffer_view->offset);
-  assert(std::fabs(pUV[0] - 0.5f) < 1e-6f);
+  // Alternate backs are authored from the reverse viewpoint, so their local
+  // U is mirrored: local 0 becomes local 1 before the back tile transform.
+  assert(std::fabs(pUV[0] - 0.625f) < 1e-6f);
   assert(std::fabs(pUV[1] - 0.25f) < 1e-6f);
 
   // And its normal points the other way.
@@ -871,6 +918,7 @@ int main()
   test_the_axis_conversion_reaches_the_buffer();
   test_uvs_are_not_flipped_the_way_obj_flips_them();
   test_a_two_sided_surface_becomes_a_double_sided_material();
+  test_complete_reverse_geometry_doubles_every_quad();
   test_a_distinct_back_tile_still_gets_real_geometry();
   test_alpha_modes_follow_the_material_flags();
   test_flat_palette_colours_are_converted_to_linear();

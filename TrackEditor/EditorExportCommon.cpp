@@ -319,10 +319,11 @@ bool CEditorExportConventions::BuildObjects(
       return false;
     }
 
-    // A different back tile always needs its own geometry, because no format
-    // lets one material address two tiles. A merely two-sided surface needs it
-    // only where the format cannot say "draw both sides".
-    const bool bNeedsBackGeometry = HasDistinctReverseMaterial(Primitive)
+    // Complete-model exports deliberately double every quad. The selective
+    // path still needs geometry for an alternate material, or for a merely
+    // two-sided surface when the target cannot say "draw both sides".
+    const bool bNeedsBackGeometry = Grouping.bGenerateAllReverseSides
+        || HasDistinctReverseMaterial(Primitive)
         || (Grouping.bReverseSideAsGeometry && HasReverseSide(Primitive));
 
     tEdExportEntry Back = Front;
@@ -330,6 +331,7 @@ bool CEditorExportConventions::BuildObjects(
     if (bNeedsBackGeometry) {
       Back.uiMaterial = ReverseSideMaterial(Primitive);
       Back.bBack = true;
+      Back.bMirrorMaterialU = HasDistinctReverseMaterial(Primitive);
       (Grouping.bSeparateBackFaces ? pBack : pFront)->push_back(std::move(Back));
     }
   }
