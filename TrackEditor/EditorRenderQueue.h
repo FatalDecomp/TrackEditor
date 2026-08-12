@@ -88,6 +88,11 @@ struct tEdRenderRequest
   // pointer payload, so the worker never reads UI-owned storage.
   tEdOverlayState Overlay = {};
   bool bHasOverlay = false;
+  // Graphics settings are process-wide renderer state, but each command
+  // carries the revision it was queued against. The worker applies a changed
+  // revision before touching the scene and never reads UI-owned storage.
+  tEdGraphicsSettings GraphicsSettings = {};
+  uint64_t ullGraphicsSettingsRevision = 0;
   // Only set when the reference mesh actually changed: uploading it on every
   // camera nudge would copy the whole model through the queue each frame.
   tEdReferenceMeshPayload ReferenceMesh;

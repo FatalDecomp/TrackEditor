@@ -43,6 +43,8 @@ uint32_t g_uiReferenceMeshCount = 0;
 uint32_t g_uiReferenceVertexCount = 0;
 uint32_t g_uiReferenceIndexCount = 0;
 uint32_t g_uiReferenceFlags = 0;
+uint32_t g_uiGraphicsCount = 0;
+tEdGraphicsSettings g_LastGraphicsSettings = {};
 float g_fReferenceFirstX = 0.0f;
 float g_fReferenceScaleX = 0.0f;
 uint32_t g_uiGeometryEpoch = 0;
@@ -225,6 +227,18 @@ extern "C" eRollerEdResult ROLLER_ED_CALL RollerEd_SetCamera(
   return ROLLER_ED_RESULT_OK;
 }
 
+extern "C" eRollerEdResult ROLLER_ED_CALL RollerEd_SetGraphicsSettings(
+    const tEdGraphicsSettings *pSettings)
+{
+  RecordFacadeThread();
+  assert(pSettings);
+  assert(pSettings->uiStructSize == sizeof(*pSettings));
+  assert(pSettings->uiVersion == ROLLER_ED_GRAPHICS_SETTINGS_VERSION);
+  g_LastGraphicsSettings = *pSettings;
+  ++g_uiGraphicsCount;
+  return ROLLER_ED_RESULT_OK;
+}
+
 extern "C" eRollerEdResult ROLLER_ED_CALL RollerEd_SetReferenceMesh(
     const tEdReferenceMesh *pMesh)
 {
@@ -289,6 +303,18 @@ int main(int argc, char **argv)
   g_pUiThreadId = QThread::currentThreadId();
 
   CEditorRenderService Service("test-assets");
+  tEdGraphicsSettings Graphics = {};
+  Graphics.uiStructSize = sizeof(Graphics);
+  Graphics.uiVersion = ROLLER_ED_GRAPHICS_SETTINGS_VERSION;
+  Graphics.eRenderer = ROLLER_ED_RENDERER_SOFTWARE;
+  Graphics.eAntiAliasing = ROLLER_ED_ANTI_ALIASING_2X;
+  Graphics.eAnisotropy = ROLLER_ED_ANISOTROPY_8X;
+  Graphics.eTextureFilter = ROLLER_ED_TEXTURE_FILTER_BILINEAR;
+  Graphics.uiTrilinear = 1u;
+  Graphics.fDrawDistanceFraction = 0.75f;
+  Graphics.fLodBias = -0.5f;
+  Graphics.uiEmulateTransparentBorders = 0u;
+  Service.SetGraphicsSettings(Graphics);
   CDocumentFrameState Document(CEditorRenderIds::NextDocumentId());
   Service.RegisterDocument(Document.GetDocumentId());
 
@@ -318,6 +344,7 @@ int main(int argc, char **argv)
   Camera.fPosition[0] = 999.0f;
   Overlay.uiSurfaceClassMask = 0xffffu;
   Overlay.uiWireframeClassMask = 0xffffu;
+  Graphics.fDrawDistanceFraction = 0.1f;
 
   Service.Start();
   const tEdRenderResult GoodResult = WaitForResult(Service, ullGoodRequest);
@@ -332,6 +359,17 @@ int main(int argc, char **argv)
          == ROLLER_ED_OVERLAY_CLASS_BIT(ROLLER_ED_SURFACE_CLASS_ROOF));
   assert((g_uiOverlayFlags & ROLLER_ED_OVERLAY_SHOW_SURFACES) != 0);
   assert(g_uiOverlayCount == 1);
+  assert(g_uiGraphicsCount == 1);
+  assert(g_LastGraphicsSettings.eRenderer == ROLLER_ED_RENDERER_SOFTWARE);
+  assert(g_LastGraphicsSettings.eAntiAliasing
+         == ROLLER_ED_ANTI_ALIASING_2X);
+  assert(g_LastGraphicsSettings.eAnisotropy == ROLLER_ED_ANISOTROPY_8X);
+  assert(g_LastGraphicsSettings.eTextureFilter
+         == ROLLER_ED_TEXTURE_FILTER_BILINEAR);
+  assert(g_LastGraphicsSettings.uiTrilinear == 1u);
+  assert(g_LastGraphicsSettings.fDrawDistanceFraction == 0.75f);
+  assert(g_LastGraphicsSettings.fLodBias == -0.5f);
+  assert(g_LastGraphicsSettings.uiEmulateTransparentBorders == 0u);
   // E3A-S7: no mesh was supplied, so the worker never touched the facade's.
   assert(g_uiReferenceMeshCount == 0);
   assert(GoodResult.Tag.eResult == ROLLER_ED_RESULT_OK);

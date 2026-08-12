@@ -62,6 +62,7 @@ public:
     , m_bInitAttempted(false)
     , m_eInitResult(ROLLER_ED_RESULT_NOT_INITIALIZED)
     , m_ullActiveDocumentId(0)
+    , m_ullAppliedGraphicsSettingsRevision(0)
   {
   }
 
@@ -348,6 +349,21 @@ private:
       return Result;
     }
 
+    if (Request.ullGraphicsSettingsRevision != 0
+        && Request.ullGraphicsSettingsRevision
+            != m_ullAppliedGraphicsSettingsRevision) {
+      AssertWorkerThread("RollerEd_SetGraphicsSettings");
+      const eRollerEdResult eGraphicsResult =
+          RollerEd_SetGraphicsSettings(&Request.GraphicsSettings);
+      if (eGraphicsResult != ROLLER_ED_RESULT_OK) {
+        Result.bLoadFailed = bLoadCommand;
+        SetFacadeFailure(Result, eGraphicsResult);
+        return Result;
+      }
+      m_ullAppliedGraphicsSettingsRevision =
+          Request.ullGraphicsSettingsRevision;
+    }
+
     tEdGeometrySizes Sizes = {};
     if (Request.eKind == eEdRenderCommandKind::UNLOAD) {
       AssertWorkerThread("RollerEd_UnloadTrack for empty document");
@@ -554,13 +570,24 @@ private:
   eRollerEdResult m_eInitResult;
   std::string m_sInitError;
   uint64_t m_ullActiveDocumentId;
+  uint64_t m_ullAppliedGraphicsSettingsRevision;
 };
 
 CEditorRenderService::CEditorRenderService(const QString &sAssetRoot, QObject *pParent)
   : QObject(pParent)
   , m_pThread(new CEditorRenderThread(this, EncodePath(sAssetRoot)))
+  , m_ullGraphicsSettingsRevision(1)
 {
   Q_ASSERT(!sAssetRoot.isEmpty());
+  m_GraphicsSettings = {};
+  m_GraphicsSettings.uiStructSize = sizeof(m_GraphicsSettings);
+  m_GraphicsSettings.uiVersion = ROLLER_ED_GRAPHICS_SETTINGS_VERSION;
+  m_GraphicsSettings.eRenderer = ROLLER_ED_RENDERER_GPU;
+  m_GraphicsSettings.eAntiAliasing = ROLLER_ED_ANTI_ALIASING_OFF;
+  m_GraphicsSettings.eAnisotropy = ROLLER_ED_ANISOTROPY_16X;
+  m_GraphicsSettings.eTextureFilter = ROLLER_ED_TEXTURE_FILTER_NEAREST;
+  m_GraphicsSettings.fDrawDistanceFraction = 1.0f;
+  m_GraphicsSettings.uiEmulateTransparentBorders = 1u;
 }
 
 CEditorRenderService::~CEditorRenderService()
@@ -582,6 +609,16 @@ void CEditorRenderService::Stop()
   Q_ASSERT(QThread::currentThread() == thread());
   if (m_pThread->isRunning())
     m_pThread->StopAndWait();
+}
+
+void CEditorRenderService::SetGraphicsSettings(
+    const tEdGraphicsSettings &Settings)
+{
+  Q_ASSERT(QThread::currentThread() == thread());
+  m_GraphicsSettings = Settings;
+  if (m_ullGraphicsSettingsRevision == std::numeric_limits<uint64_t>::max())
+    std::terminate();
+  ++m_ullGraphicsSettingsRevision;
 }
 
 void CEditorRenderService::RegisterDocument(uint64_t ullDocumentId)
@@ -625,6 +662,8 @@ uint64_t CEditorRenderService::EnqueueLoadAndRender(
   Request.bHasCamera = true;
   Request.Overlay = Overlay;
   Request.bHasOverlay = true;
+  Request.GraphicsSettings = m_GraphicsSettings;
+  Request.ullGraphicsSettingsRevision = m_ullGraphicsSettingsRevision;
   Request.uiWidth = static_cast<uint32_t>(NormalizedSize.width());
   Request.uiHeight = static_cast<uint32_t>(NormalizedSize.height());
   Request.dDevicePixelRatio = dDevicePixelRatio;
@@ -656,6 +695,8 @@ uint64_t CEditorRenderService::EnqueueSerializedLoadAndRender(
   Request.bHasCamera = true;
   Request.Overlay = Overlay;
   Request.bHasOverlay = true;
+  Request.GraphicsSettings = m_GraphicsSettings;
+  Request.ullGraphicsSettingsRevision = m_ullGraphicsSettingsRevision;
   Request.uiWidth = static_cast<uint32_t>(NormalizedSize.width());
   Request.uiHeight = static_cast<uint32_t>(NormalizedSize.height());
   Request.dDevicePixelRatio = dDevicePixelRatio;
@@ -683,6 +724,8 @@ uint64_t CEditorRenderService::EnqueueRender(
   Request.Tag.uiExpectedGeometryEpoch = uiExpectedGeometryEpoch;
   Request.Tag.uiFlags = ROLLER_ED_REQUEST_HAS_EXPECTED_EPOCH;
   Request.eKind = eEdRenderCommandKind::RENDER_ONLY;
+  Request.GraphicsSettings = m_GraphicsSettings;
+  Request.ullGraphicsSettingsRevision = m_ullGraphicsSettingsRevision;
   Request.Camera = Camera;
   Request.bHasCamera = true;
   Request.Overlay = Overlay;
@@ -713,6 +756,8 @@ uint64_t CEditorRenderService::EnqueueUnload(
   Request.Tag.ullDocumentId = ullDocumentId;
   Request.Tag.ullDocumentRevision = ullDocumentRevision;
   Request.eKind = eEdRenderCommandKind::UNLOAD;
+  Request.GraphicsSettings = m_GraphicsSettings;
+  Request.ullGraphicsSettingsRevision = m_ullGraphicsSettingsRevision;
   const uint64_t ullRequestId = Request.Tag.ullRequestId;
   m_pThread->Enqueue(std::move(Request));
   return ullRequestId;

@@ -41,6 +41,7 @@ public:
 
   void Start();
   void Stop();
+  void SetGraphicsSettings(const tEdGraphicsSettings &Settings);
   void RegisterDocument(uint64_t ullDocumentId);
   void InvalidateDocument(uint64_t ullDocumentId);
 
@@ -93,6 +94,8 @@ private:
 
   CEditorRenderThread *m_pThread;
   std::unordered_set<uint64_t> m_RegisteredDocuments;
+  tEdGraphicsSettings m_GraphicsSettings;
+  uint64_t m_ullGraphicsSettingsRevision;
 };
 
 #endif

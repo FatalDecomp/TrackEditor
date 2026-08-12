@@ -62,6 +62,9 @@ set(trackeditor_sources
     GlobalTrackSettings.cpp
     GlobalTrackSettings.h
     GlobalTrackSettings.ui
+    GraphicsDialog.cpp
+    GraphicsDialog.h
+    GraphicsDialog.ui
     LogDialog.cpp
     LogDialog.h
     LogDialog.ui

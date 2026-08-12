@@ -30,6 +30,20 @@ struct tPreferences
 };
 //-------------------------------------------------------------------------------------------------
 
+struct tGraphicsPreferences
+{
+  tGraphicsPreferences();
+  int iDrawDistancePercent;
+  bool bHardwareRendering;
+  int iAntiAliasing;
+  int iAnisotropy;
+  int iTextureFilter;
+  bool bTrilinear;
+  double dLodBias;
+  bool bEmulateTransparentBorders;
+};
+//-------------------------------------------------------------------------------------------------
+
 class CMainWindow : public QMainWindow, private Ui::MainWindow
 {
   Q_OBJECT
@@ -49,10 +63,12 @@ public:
   float GetDesktopScale() { return m_fDesktopScale; };
   CTrack *GetCurrentTrack();
   CTrackPreview *GetCurrentPreview();
+  void ApplyGraphicsSettings();
 
   QString m_sLastTrackFilesFolder;
   CQtUserKeyMapper m_keyMapper;
   tPreferences m_preferences;
+  tGraphicsPreferences m_graphics;
 
 protected:
   void closeEvent(QCloseEvent *pEvent);
@@ -77,6 +93,7 @@ protected slots:
   void OnDeselect();
   void OnBacks();
   void OnPreferences();
+  void OnGraphics();
   void OnDebug();
   void OnAbout();
   void OnTabCloseRequested(int iIndex);

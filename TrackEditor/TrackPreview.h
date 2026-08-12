@@ -61,6 +61,7 @@ public:
   // dialog rather than the file.
   void UpdateReferenceModelWireframe(bool bWireframe);
   void Activate();
+  void RefreshGraphicsSettings();
   void MarkDocumentEdited();
   bool CanExport() const { return m_FrameState.CanExport(); }
 
