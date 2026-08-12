@@ -12,9 +12,10 @@
 //-------------------------------------------------------------------------------------------------
 
 CBackWidget::CBackWidget(QWidget *pParent, int iIndex, CTexture *pTexture, CPalette *pPal, int iBack)
+  // Declaration order, which is the order these actually initialize in.
   : QWidget(pParent)
-  , m_iBack(iBack)
   , m_iIndex(iIndex)
+  , m_iBack(iBack)
   , m_pTexture(pTexture)
   , m_pPalette(pPal)
 {

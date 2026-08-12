@@ -41,20 +41,13 @@ public:
 CTrackPreview::CTrackPreview(QWidget *pParent,
                              CEditorRenderService *pRenderService,
                              const QString &sTrackFile)
+  // Members initialize in declaration order regardless of what this list says,
+  // so the list follows the header rather than the other way round.
   : QWidget(pParent)
-  , m_uiShowModels(0)
-  , m_carModel(eWhipModel::CAR_XZIZIN)
-  , m_carAILine(eShapeSection::AILINE1)
-  , m_bMillionPlus(false)
-  , m_bAttachLast(false)
-  , m_iScale(1)
   , m_bUnsavedChanges(true)
-  , m_bAlreadySaved(false)
-  , m_sTrackFile(sTrackFile)
   , m_iSelFrom(0)
   , m_iSelTo(0)
   , m_bToChecked(false)
-  , m_sLastCarTex("")
   , m_sReferenceModelFile("")
   , m_dRefYaw(0.0)
   , m_dRefPitch(0.0)
@@ -63,6 +56,15 @@ CTrackPreview::CTrackPreview(QWidget *pParent,
   , m_iRefY(0)
   , m_iRefZ(0)
   , m_dRefScale(1.0)
+  , m_uiShowModels(0)
+  , m_carModel(eWhipModel::CAR_XZIZIN)
+  , m_carAILine(eShapeSection::AILINE1)
+  , m_bMillionPlus(false)
+  , m_bAttachLast(false)
+  , m_iScale(1)
+  , m_bAlreadySaved(false)
+  , m_sTrackFile(sTrackFile)
+  , m_sLastCarTex("")
   , m_pRenderService(pRenderService)
   , m_ullDocumentId(CEditorRenderIds::NextDocumentId())
   , m_FrameState(m_ullDocumentId)
@@ -1021,7 +1023,7 @@ bool CTrackPreview::SaveTrack_Internal(const QString &sFilename)
   file.resize(0);
   if (file.open(QIODevice::ReadWrite)) {
     QTextStream stream(&file);
-    for (int i = 0; i < pOutData->size(); ++i) {
+    for (int i = 0; (size_t)i < pOutData->size(); ++i) {
       stream << (char)((*pOutData)[i]);
     }
     file.close();

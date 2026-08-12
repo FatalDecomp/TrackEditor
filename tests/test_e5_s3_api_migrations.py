@@ -153,9 +153,19 @@ class MigratedApiTests(unittest.TestCase):
 
 
 class CiEnforcementTests(unittest.TestCase):
-    def test_windows_ci_builds_with_warnings_as_errors(self) -> None:
+    def test_every_platform_builds_with_warnings_as_errors(self) -> None:
+        # This shipped enforcing on Windows only, because Linux and macOS had
+        # never produced a warning list to read. The first real nightly gave
+        # one: the same two categories already fixed for MSVC -- member
+        # initializer order and int/size_t comparison -- at eleven sites. With
+        # those fixed, the AC's "all three desktop OSes" is finally enforced
+        # rather than asserted.
         workflow = WORKFLOW.read_text(encoding="utf-8")
-        self.assertIn("-DTRACKEDITOR_WARNINGS_AS_ERRORS=ON", workflow)
+        self.assertEqual(
+            3,
+            workflow.count("-DTRACKEDITOR_WARNINGS_AS_ERRORS=ON"),
+            "every matrix platform must enforce, not just the verified one",
+        )
 
 
 if __name__ == "__main__":

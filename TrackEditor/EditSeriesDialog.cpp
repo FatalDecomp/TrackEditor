@@ -17,7 +17,7 @@ CEditSeriesDialog::CEditSeriesDialog(QWidget *pParent)
 {
   setupUi(this);
 
-  for (int i = 0; i < chunkFieldsSize; ++i) {
+  for (int i = 0; (size_t)i < chunkFieldsSize; ++i) {
     cbField->addItem(chunkFields[i], i);
   }
 

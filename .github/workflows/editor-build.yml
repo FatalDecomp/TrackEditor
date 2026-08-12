@@ -48,10 +48,12 @@ jobs:
             os: ubuntu-22.04
             qt-arch: linux_gcc_64
             generator-args: '-G Ninja'
+            extra-configure-args: '-DTRACKEDITOR_WARNINGS_AS_ERRORS=ON'
           - name: macOS
             os: macos-15-intel
             qt-arch: clang_64
             generator-args: '-G Ninja'
+            extra-configure-args: '-DTRACKEDITOR_WARNINGS_AS_ERRORS=ON'
           - name: Windows
             os: windows-2022
             qt-arch: win64_msvc2022_64
@@ -60,10 +62,12 @@ jobs:
             # consume the UTF-16 TrackEditor.rc. Do not unpin this generator
             # without CI evidence.
             generator-args: '-G "Visual Studio 17 2022" -A x64'
-            # E5-S3. Windows is the platform whose /W4 output has been read end
-            # to end, so it is the one that enforces. Linux and macOS build at
-            # the same raised level and print their warnings; flip them to
-            # errors once a run has confirmed those logs are clean.
+            # E5-S3. All three enforce. Linux and macOS were held back until a
+            # real run produced their warning lists; those turned out to be the
+            # same two categories already fixed for MSVC -- member-initializer
+            # order and int/size_t comparisons -- at eleven sites, now fixed.
+            # roller-core is excluded from trackeditor_set_warnings, so the
+            # submodule's own decompiled-C warnings cannot block this.
             extra-configure-args: '-DTRACKEDITOR_WARNINGS_AS_ERRORS=ON'
     env:
       HOMEBREW_NO_BOTTLE_SOURCE_FALLBACK: '1'

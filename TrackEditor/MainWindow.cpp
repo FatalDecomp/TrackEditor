@@ -97,9 +97,10 @@ public:
 
 CMainWindow::CMainWindow(const QString &sAppPath, float fDesktopScale,
                          CEditorRenderService *pRenderService)
+  // Declaration order: m_sLastTrackFilesFolder is declared well above the rest.
   : QMainWindow(NULL)
-  , m_sAppPath(sAppPath)
   , m_sLastTrackFilesFolder("")
+  , m_sAppPath(sAppPath)
   , m_fDesktopScale(fDesktopScale)
   , m_iNewTrackNum(0)
   , m_pRenderService(pRenderService)
@@ -806,7 +807,7 @@ void CMainWindow::OnPaste()
       }
 
       ++iClipboardIdx;
-      if (iClipboardIdx >= p->m_clipBoard.size())
+      if ((size_t)iClipboardIdx >= p->m_clipBoard.size())
         iClipboardIdx = 0;
     }
   }
@@ -1066,7 +1067,7 @@ void CMainWindow::OnToChecked(bool bChecked)
 void CMainWindow::OnDeleteChunkClicked()
 {
   if (!GetCurrentTrack() || GetCurrentTrack()->m_chunkAy.empty()) return;
-  if (sbSelChunksFrom->value() > sbSelChunksTo->value() || sbSelChunksTo->value() > GetCurrentTrack()->m_chunkAy.size()) {
+  if (sbSelChunksFrom->value() > sbSelChunksTo->value() || (size_t)sbSelChunksTo->value() > GetCurrentTrack()->m_chunkAy.size()) {
     assert(0);
     return;
   }
@@ -1091,7 +1092,7 @@ void CMainWindow::OnAddChunkClicked()
 
   int iSelPos = sbSelChunksFrom->value();
   tGeometryChunk newChunk;
-  if (iSelPos < GetCurrentTrack()->m_chunkAy.size())
+  if ((size_t)iSelPos < GetCurrentTrack()->m_chunkAy.size())
     newChunk = GetCurrentTrack()->m_chunkAy[iSelPos];
   else
     newChunk.Default();
@@ -1362,7 +1363,7 @@ void CMainWindow::SaveSettings()
 bool CMainWindow::SaveChangesAndContinue()
 {
   bool bRet = true;
-  for (int i = 0; i < p->m_previewAy.size(); ++i)
+  for (int i = 0; (size_t)i < p->m_previewAy.size(); ++i)
     bRet &= p->m_previewAy[i]->SaveChangesAndContinue();
 
   UpdateWindow();

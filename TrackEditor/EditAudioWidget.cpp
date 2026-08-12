@@ -152,10 +152,10 @@ CEditAudioWidget::CEditAudioWidget(QWidget *pParent)
 
   setupUi(this);
 
-  for (int i = 0; i < p->audioAySize; ++i) {
+  for (int i = 0; (size_t)i < p->audioAySize; ++i) {
     cbBelow->addItem(p->audioAy[i], i);
   }
-  for (int i = 0; i < p->audioAySize; ++i) {
+  for (int i = 0; (size_t)i < p->audioAySize; ++i) {
     cbAbove->addItem(p->audioAy[i], i);
   }
 

@@ -101,7 +101,7 @@ static std::string g_transparencyAy[5] = {
   "Dark Tint",
   "Light Blue",
 };
-static int g_transparencyAyCount = 5;
+[[maybe_unused]] static int g_transparencyAyCount = 5;
 
 //-------------------------------------------------------------------------------------------------
 
