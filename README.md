@@ -1,6 +1,8 @@
 # Roller Track Editor
 Whiplash/Fatal Racing track editor, OBJ and glTF resource converter, and library for loading Whiplash assets.
 
+[![CI][ci-shd]][ci-url] [![LC][lc-shd]][lc-url] [![Download][dl-shd]][dl-url]
+
 ## Build
 
 Clone recursively so the pinned ROLLER editor core is available:
