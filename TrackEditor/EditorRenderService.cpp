@@ -455,6 +455,16 @@ private:
       return Result;
     }
 
+    if (Request.uiStuntTicks != 0) {
+      AssertWorkerThread("RollerEd_AdvanceStunts");
+      const eRollerEdResult eStuntResult =
+          RollerEd_AdvanceStunts(Request.uiStuntTicks);
+      if (eStuntResult != ROLLER_ED_RESULT_OK) {
+        SetFacadeFailure(Result, eStuntResult);
+        return Result;
+      }
+    }
+
     if (Request.bHasCamera) {
       AssertWorkerThread("RollerEd_SetCamera");
       const eRollerEdResult eCameraResult = RollerEd_SetCamera(&Request.Camera);
@@ -711,7 +721,8 @@ uint64_t CEditorRenderService::EnqueueRender(
     uint32_t uiExpectedGeometryEpoch, const QSize &DevicePixelSize,
     double dDevicePixelRatio, const tEdCameraState &Camera,
     const tEdOverlayState &Overlay,
-    const tEdReferenceMeshPayload *pReferenceMesh)
+    const tEdReferenceMeshPayload *pReferenceMesh,
+    uint32_t uiStuntTicks)
 {
   Q_ASSERT(QThread::currentThread() == thread());
   if (!IsDocumentRegistered(ullDocumentId))
@@ -731,6 +742,7 @@ uint64_t CEditorRenderService::EnqueueRender(
   Request.bHasCamera = true;
   Request.Overlay = Overlay;
   Request.bHasOverlay = true;
+  Request.uiStuntTicks = uiStuntTicks;
   // AD-16: copied here, so mutating the caller's arrays after enqueueing
   // cannot reach the worker.
   if (pReferenceMesh) {

@@ -28,7 +28,7 @@ The CMake build uses dynamic Qt 6.8 LTS and system/prebuilt SDL3 and SDL3_image 
 * Surface textures can be changed
 * Signs can be added, removed, repositioned, and edited
 * Audio triggers can be added, removed, and edited
-* Moving stunts can be added, removed, and edited
+* Moving stunts can be added, removed, edited, and animated in the preview
 * Track global settings such as texture files and lap data can be edited
 * Surface backface textures can be changed
 * Undo/Redo and Cut/Copy/Paste between tracks

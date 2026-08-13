@@ -205,6 +205,11 @@ if(BUILD_TESTING)
             COMMAND "${Python3_EXECUTABLE}"
                     "${CMAKE_CURRENT_SOURCE_DIR}/tests/test_graphics_settings.py"
                     -v)
+        add_test(
+            NAME trackeditor-animated-stunts-contract
+            COMMAND "${Python3_EXECUTABLE}"
+                    "${CMAKE_CURRENT_SOURCE_DIR}/tests/test_animated_stunts.py"
+                    -v)
     endif()
 
     if(TARGET TrackEditor)

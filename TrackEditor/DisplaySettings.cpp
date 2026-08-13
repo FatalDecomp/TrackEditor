@@ -78,6 +78,7 @@ CDisplaySettings::CDisplaySettings(QWidget *pParent)
   connect(ckSigns, &QCheckBox::toggled, this, &CDisplaySettings::UpdatePreviewSelection);
   connect(ckAudio, &QCheckBox::toggled, this, &CDisplaySettings::UpdatePreviewSelection);
   connect(ckStunts, &QCheckBox::toggled, this, &CDisplaySettings::UpdatePreviewSelection);
+  connect(ckAnimateStunts, &QCheckBox::toggled, this, &CDisplaySettings::UpdatePreviewSelection);
   connect(ckTestCar, &QCheckBox::toggled, this, &CDisplaySettings::UpdatePreviewSelection);
   connect(cbTestCarType, SIGNAL(currentIndexChanged(int)), this, SLOT(UpdatePreviewSelection()));
   connect(cbTestCarPos, SIGNAL(currentIndexChanged(int)), this, SLOT(UpdatePreviewSelection()));
@@ -191,6 +192,20 @@ void CDisplaySettings::SetDisplaySettings(uint32 uiShowModels, eWhipModel carMod
   BLOCK_SIG_AND_DO(ckMillionPlus, setChecked(bMillionPlus));
 
   UpdatePreviewSelection();
+}
+
+//-------------------------------------------------------------------------------------------------
+
+bool CDisplaySettings::GetAnimateStunts() const
+{
+  return ckAnimateStunts->isChecked();
+}
+
+//-------------------------------------------------------------------------------------------------
+
+void CDisplaySettings::SetAnimateStunts(bool bAnimate)
+{
+  BLOCK_SIG_AND_DO(ckAnimateStunts, setChecked(bAnimate));
 }
 
 //-------------------------------------------------------------------------------------------------

@@ -74,7 +74,8 @@ public:
                          double dDevicePixelRatio,
                          const tEdCameraState &Camera,
                          const tEdOverlayState &Overlay,
-                         const tEdReferenceMeshPayload *pReferenceMesh = nullptr);
+                         const tEdReferenceMeshPayload *pReferenceMesh = nullptr,
+                         uint32_t uiStuntTicks = 0);
 
   // E4-S1. Blocks the calling thread until the worker has copied the
   // extraction for the document that currently owns the worker scene.

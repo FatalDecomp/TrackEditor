@@ -93,6 +93,9 @@ struct tEdRenderRequest
   // revision before touching the scene and never reads UI-owned storage.
   tEdGraphicsSettings GraphicsSettings = {};
   uint64_t ullGraphicsSettingsRevision = 0;
+  // Fixed legacy game ticks to apply on the worker before this frame. Stunt
+  // geometry is runtime preview state and never mutates the document model.
+  uint32_t uiStuntTicks = 0;
   // Only set when the reference mesh actually changed: uploading it on every
   // camera nudge would copy the whole model through the queue each frame.
   tEdReferenceMeshPayload ReferenceMesh;

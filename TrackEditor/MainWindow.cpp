@@ -1106,6 +1106,8 @@ void CMainWindow::OnTabChanged(int iIndex)
   bool bMillionPlus;
   uint32 uiShowModels = p->m_pDisplaySettings->GetDisplaySettings(carModel, aiLine, bMillionPlus);
   p->m_previewAy[iIndex]->ShowModels(uiShowModels);
+  p->m_previewAy[iIndex]->SetAnimateStunts(
+      p->m_pDisplaySettings->GetAnimateStunts());
   p->m_previewAy[iIndex]->UpdateCar(carModel, aiLine, bMillionPlus);
   p->m_previewAy[iIndex]->AttachLast(p->m_pDisplaySettings->GetAttachLast());
   BLOCK_SIG_AND_DO(sbSelChunksFrom, setRange(0, (int)GetCurrentTrack()->m_chunkAy.size() - 1));
@@ -1228,6 +1230,8 @@ void CMainWindow::OnUpdatePreview()
   bool bMillionPlus;
   uint32 uiShowModels = p->m_pDisplaySettings->GetDisplaySettings(carModel, aiLine, bMillionPlus);
   GetCurrentPreview()->ShowModels(uiShowModels);
+  GetCurrentPreview()->SetAnimateStunts(
+      p->m_pDisplaySettings->GetAnimateStunts());
   GetCurrentPreview()->UpdateCar(carModel, aiLine, bMillionPlus);
   // E3A-S7. Reference-mesh wireframe is a property of the mesh in the facade
   // (ROLLER_ED_REFERENCE_WIREFRAME), not an overlay flag, so it does not go
@@ -1365,6 +1369,7 @@ void CMainWindow::LoadSettings()
   eShapeSection aiLine;
   bool bMillionPlus;
   uint32 uiShowModels = p->m_pDisplaySettings->GetDisplaySettings(carModel, aiLine, bMillionPlus);
+  bool bAnimateStunts = p->m_pDisplaySettings->GetAnimateStunts();
   bool bAttachLast = p->m_pDisplaySettings->GetAttachLast();
   int iCameraSpeed = (int)CEditorCameraController::GetMovementSpeed();
   //load display settings
@@ -1379,10 +1384,13 @@ void CMainWindow::LoadSettings()
   carModel = (eWhipModel)settings.value("car_model", (int)carModel).toInt();
   aiLine = (eShapeSection)settings.value("car_pos", (int)aiLine).toInt();
   bMillionPlus = settings.value("wrong_way", bMillionPlus).toBool();
+  bAnimateStunts = settings.value(
+      "animate_stunts", bAnimateStunts).toBool();
   bAttachLast = settings.value("attach_last", bAttachLast).toBool();
   iCameraSpeed = settings.value("camera_speed", iCameraSpeed).toInt();
   //apply display settings
   p->m_pDisplaySettings->SetDisplaySettings(uiShowModels, carModel, aiLine, bMillionPlus);
+  p->m_pDisplaySettings->SetAnimateStunts(bAnimateStunts);
   p->m_pDisplaySettings->SetAttachLast(bAttachLast);
   p->m_pDisplaySettings->SetCameraSpeed(iCameraSpeed);
 
@@ -1457,6 +1465,8 @@ void CMainWindow::SaveSettings()
   settings.setValue("show_edit_audio", p->m_pEditAudioDockWidget->isVisible());
   settings.setValue("show_edit_stunt", p->m_pEditStuntDockWidget->isVisible());
   settings.setValue("show_models", p->m_pDisplaySettings->GetDisplaySettings(carModel, aiLine, bMillionPlus));
+  settings.setValue("animate_stunts",
+                    p->m_pDisplaySettings->GetAnimateStunts());
   settings.setValue("car_model", (int)carModel);
   settings.setValue("car_pos", (int)aiLine);
   settings.setValue("wrong_way", bMillionPlus);

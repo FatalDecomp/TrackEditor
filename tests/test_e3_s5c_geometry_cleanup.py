@@ -124,7 +124,11 @@ class GeometryCleanupContractTests(unittest.TestCase):
             if path.suffix in {".h", ".cpp", ".ui"}
         )
         self.assertNotIn("ANIMATE_STUNTS", editor_text)
-        self.assertNotIn("ckAnimateStunts", editor_text)
+        # Animated preview returned through ROLLER's worker API; the removed
+        # path was the main-window timer calling CTrack::UpdateStunts and
+        # rebuilding TrackEditor's own derived geometry.
+        self.assertIn("ckAnimateStunts", editor_text)
+        self.assertNotIn("OnStuntTimer", editor_text)
 
     def test_glm_is_no_longer_vendored_or_used(self) -> None:
         # Was an exact allowlist of the ten WhipLib files still using glm.

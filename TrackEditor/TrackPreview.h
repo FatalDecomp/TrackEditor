@@ -32,8 +32,9 @@ public:
   void UpdateCameraPos(float fDeltaSeconds);
   bool LoadTrack(const QString &sFilename);
   void DeleteEnvirFloor();
-  void UpdateTrack(bool bUpdatingStunt = false);
+  void UpdateTrack();
   void ShowModels(uint32 uiShowModels);
+  void SetAnimateStunts(bool bAnimate);
   void UpdateCar(eWhipModel carModel, eShapeSection aiLine, bool bMillionPlus);
   void AttachLast(bool bAttachLast);
   void OpenReferenceModel();
@@ -118,6 +119,7 @@ private:
   void ScheduleCameraRender();
   void ArmCameraRenderTimer();
   void QueueCameraRender();
+  void QueueStuntTick();
   void OnRenderCompleted(const tEdRenderResult &Result);
   QSize DevicePixelSize() const;
 
@@ -127,6 +129,7 @@ private:
   eShapeSection m_carAILine;
   bool m_bMillionPlus;
   bool m_bAttachLast;
+  bool m_bAnimateStunts;
   int m_iScale;
   bool m_bAlreadySaved;
   QString m_sTrackFile;
@@ -143,6 +146,8 @@ private:
   QTimer *m_pResizeTimer;
   QTimer *m_pEditTimer;
   QTimer *m_pCameraRenderTimer;
+  QTimer *m_pStuntTimer;
+  uint32_t m_uiPendingStuntTicks;
   uint64_t m_ullCameraRequestId;
   bool m_bCameraRenderPending;
   bool m_bReloadPending;

@@ -52,6 +52,8 @@ uint32_t g_uiTrackGeneration = 0;
 uint32_t g_uiSceneState = ROLLER_ED_SCENE_EMPTY;
 std::atomic<uint32_t> g_uiInitCount(0);
 std::atomic<uint32_t> g_uiRenderCount(0);
+std::atomic<uint32_t> g_uiStuntTickCount(0);
+std::atomic<uint32_t> g_uiStuntTicksAtLastRender(0);
 std::atomic<uint32_t> g_uiFillCount(0);
 uint32_t g_uiRefusedFillEpoch = 0;
 
@@ -270,6 +272,14 @@ extern "C" eRollerEdResult ROLLER_ED_CALL RollerEd_SetOverlayState(
   return ROLLER_ED_RESULT_OK;
 }
 
+extern "C" eRollerEdResult ROLLER_ED_CALL RollerEd_AdvanceStunts(
+    uint32_t uiTicks)
+{
+  RecordFacadeThread();
+  g_uiStuntTickCount += uiTicks;
+  return ROLLER_ED_RESULT_OK;
+}
+
 extern "C" eRollerEdResult ROLLER_ED_CALL RollerEd_RenderFrame(
     uint8_t *pbyPixels, uint32_t uiBufferSize, uint32_t uiRowPitch,
     uint32_t uiWidth, uint32_t uiHeight, eRollerEdPixelFormat eFormat)
@@ -287,6 +297,7 @@ extern "C" eRollerEdResult ROLLER_ED_CALL RollerEd_RenderFrame(
       pPixel[3] = 255;
     }
   }
+  g_uiStuntTicksAtLastRender = g_uiStuntTickCount.load();
   ++g_uiRenderCount;
   return ROLLER_ED_RESULT_OK;
 }
@@ -425,6 +436,19 @@ int main(int argc, char **argv)
         WaitForResult(Service, ullPlainRequest);
     assert(PlainResult.Tag.eResult == ROLLER_ED_RESULT_OK);
     assert(g_uiReferenceMeshCount == 1);
+
+    // Stunt ticks are copied into the command and applied on the same worker
+    // immediately before the frame that presents them.
+    const uint64_t ullStuntRequest = Service.EnqueueRender(
+        Document.GetDocumentId(), Document.GetDocumentRevision(),
+        Document.GetInstalledGeometryEpoch(), QSize(4, 3), 1.0, Camera,
+        Overlay, nullptr, 3u);
+    Document.BeginRequest(ullStuntRequest);
+    const tEdRenderResult StuntResult =
+        WaitForResult(Service, ullStuntRequest);
+    assert(StuntResult.Tag.eResult == ROLLER_ED_RESULT_OK);
+    assert(g_uiStuntTickCount.load() == 3u);
+    assert(g_uiStuntTicksAtLastRender.load() == 3u);
   }
 
 

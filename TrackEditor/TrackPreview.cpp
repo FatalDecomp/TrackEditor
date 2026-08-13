@@ -61,6 +61,7 @@ CTrackPreview::CTrackPreview(QWidget *pParent,
   , m_carAILine(eShapeSection::AILINE1)
   , m_bMillionPlus(false)
   , m_bAttachLast(false)
+  , m_bAnimateStunts(false)
   , m_iScale(1)
   , m_bAlreadySaved(false)
   , m_sTrackFile(sTrackFile)
@@ -71,6 +72,8 @@ CTrackPreview::CTrackPreview(QWidget *pParent,
   , m_pResizeTimer(new QTimer(this))
   , m_pEditTimer(new QTimer(this))
   , m_pCameraRenderTimer(new QTimer(this))
+  , m_pStuntTimer(new QTimer(this))
+  , m_uiPendingStuntTicks(0)
   , m_ullCameraRequestId(0)
   , m_bCameraRenderPending(false)
   , m_bReloadPending(false)
@@ -96,6 +99,14 @@ CTrackPreview::CTrackPreview(QWidget *pParent,
   m_pCameraRenderTimer->setInterval(16);
   connect(m_pCameraRenderTimer, &QTimer::timeout,
           this, &CTrackPreview::QueueCameraRender);
+
+  // The legacy editor advanced moving stunts every 28 ms. Keep that cadence,
+  // but send ticks through the render queue so only ROLLER's worker-owned
+  // legacy scene is ever mutated.
+  m_pStuntTimer->setTimerType(Qt::PreciseTimer);
+  m_pStuntTimer->setInterval(28);
+  connect(m_pStuntTimer, &QTimer::timeout,
+          this, &CTrackPreview::QueueStuntTick);
 
   if (!sTrackFile.isEmpty()) {
     m_sDocumentAssetRoot = QFileInfo(sTrackFile).absolutePath();
@@ -172,9 +183,8 @@ void CTrackPreview::DeleteEnvirFloor()
 
 //-------------------------------------------------------------------------------------------------
 
-void CTrackPreview::UpdateTrack(bool bUpdatingStunt)
+void CTrackPreview::UpdateTrack()
 {
-  (void)bUpdatingStunt;
   update();
 }
 
@@ -191,6 +201,21 @@ void CTrackPreview::ShowModels(uint32 uiShowModels)
   // path the camera uses.
   ScheduleCameraRender();
   update();
+}
+
+//-------------------------------------------------------------------------------------------------
+
+void CTrackPreview::SetAnimateStunts(bool bAnimate)
+{
+  if (m_bAnimateStunts == bAnimate)
+    return;
+
+  m_bAnimateStunts = bAnimate;
+  m_uiPendingStuntTicks = 0;
+  if (m_bAnimateStunts)
+    m_pStuntTimer->start();
+  else
+    m_pStuntTimer->stop();
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -454,6 +479,10 @@ void CTrackPreview::QueueLoadAndRender()
   if (!m_pRenderService || m_sTrackFile.isEmpty())
     return;
 
+  // A load reconstructs ROLLER's stunt state from the document, so ticks
+  // accumulated for the previous installed scene must not cross the reload.
+  m_uiPendingStuntTicks = 0;
+
   if (p->m_track.m_chunkAy.empty()) {
     const uint64_t ullRequestId = m_pRenderService->EnqueueUnload(
         m_ullDocumentId, m_FrameState.GetDocumentRevision());
@@ -504,13 +533,17 @@ void CTrackPreview::QueueResizeRender()
     return;
 
   if (m_FrameState.GetDisplayState() == eEdFrameDisplayState::CURRENT) {
+    const uint32_t uiStuntTicks = m_uiPendingStuntTicks;
     const uint64_t ullRequestId = m_pRenderService->EnqueueRender(
         m_ullDocumentId, m_FrameState.GetDocumentRevision(),
         m_FrameState.GetInstalledGeometryEpoch(), DevicePixelSize(),
         devicePixelRatioF(), m_CameraController.GetCameraState(),
-        m_OverlaySettings.GetOverlayState(), TakePendingReferenceMesh());
-    if (ullRequestId != 0)
+        m_OverlaySettings.GetOverlayState(), TakePendingReferenceMesh(),
+        uiStuntTicks);
+    if (ullRequestId != 0) {
+      m_uiPendingStuntTicks = 0;
       m_FrameState.BeginRequest(ullRequestId);
+    }
   } else if (m_FrameState.GetDisplayState()
                  == eEdFrameDisplayState::PLACEHOLDER
              && m_FrameState.GetLatestRequestId() == 0) {
@@ -548,15 +581,39 @@ void CTrackPreview::QueueCameraRender()
     return;
   }
 
+  const uint32_t uiStuntTicks = m_uiPendingStuntTicks;
   const uint64_t ullRequestId = m_pRenderService->EnqueueRender(
       m_ullDocumentId, m_FrameState.GetDocumentRevision(),
       m_FrameState.GetInstalledGeometryEpoch(), DevicePixelSize(),
       devicePixelRatioF(), m_CameraController.GetCameraState(),
-      m_OverlaySettings.GetOverlayState(), TakePendingReferenceMesh());
+      m_OverlaySettings.GetOverlayState(), TakePendingReferenceMesh(),
+      uiStuntTicks);
   if (ullRequestId != 0) {
+    m_uiPendingStuntTicks = 0;
     m_bCameraRenderPending = false;
     m_ullCameraRequestId = ullRequestId;
     m_FrameState.BeginRequest(ullRequestId);
+  }
+}
+
+//-------------------------------------------------------------------------------------------------
+
+void CTrackPreview::QueueStuntTick()
+{
+  if (!m_bAnimateStunts || !isVisible() || m_bReloadPending
+      || m_FrameState.GetDisplayState() != eEdFrameDisplayState::CURRENT) {
+    return;
+  }
+
+  // If rendering falls briefly behind, catch up by applying several fixed
+  // ticks to the next frame. Cap the backlog so a stalled renderer cannot
+  // later monopolize the worker trying to replay minutes of animation.
+  if (m_uiPendingStuntTicks < 8u)
+    ++m_uiPendingStuntTicks;
+  m_bCameraRenderPending = true;
+  if (m_ullCameraRequestId == 0) {
+    m_pCameraRenderTimer->stop();
+    QueueCameraRender();
   }
 }
 
@@ -577,7 +634,12 @@ void CTrackPreview::OnRenderCompleted(const tEdRenderResult &Result)
 
   update();
   emit FrameStateChanged();
-  ArmCameraRenderTimer();
+  if (m_uiPendingStuntTicks != 0 && m_ullCameraRequestId == 0) {
+    m_pCameraRenderTimer->stop();
+    QueueCameraRender();
+  } else {
+    ArmCameraRenderTimer();
+  }
 }
 
 //-------------------------------------------------------------------------------------------------
