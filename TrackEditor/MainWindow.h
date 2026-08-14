@@ -55,6 +55,7 @@ public:
   ~CMainWindow();
 
   const QString &GetAppPath() { return m_sAppPath; };
+  const QString &GetFatdataFolder() const { return m_sFatdataFolder; };
   void LogMessage(const QString &sMsg);
   void SaveHistory(const QString &sDescription);
   void UpdateWindow(bool bUpdatingTextures = false);
@@ -78,6 +79,7 @@ protected slots:
   void OnLogMsg(QString sMsg);
   void OnNewTrack();
   void OnLoadTrack();
+  void OnSelectFatdata();
   void OnSaveTrack();
   void OnSaveTrackAs();
   void OnExportOBJ();
@@ -132,6 +134,7 @@ private:
   CMainWindowPrivate *p;
   QString m_sAppPath;
   QString m_sSettingsFile;
+  QString m_sFatdataFolder;
   float m_fDesktopScale;
   int m_iNewTrackNum;
   QString m_sHistoryDescription;

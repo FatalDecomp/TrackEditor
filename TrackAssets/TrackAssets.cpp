@@ -7,13 +7,23 @@
 
 namespace
 {
-std::string ResolveDocumentAsset(const std::string &sDocumentAssetRoot,
-                                 const std::string &sFilename)
+std::string ResolveAsset(const std::string &sDocumentAssetRoot,
+                         const std::string &sFallbackAssetRoot,
+                         const std::string &sFilename)
 {
   if (sDocumentAssetRoot.empty() || sFilename.empty())
     return std::string();
 
-  return (std::filesystem::path(sDocumentAssetRoot) / sFilename)
+  const std::filesystem::path DocumentPath =
+      (std::filesystem::path(sDocumentAssetRoot) / sFilename)
+          .lexically_normal();
+  /* A present document-local asset wins even when it is corrupt.  That keeps
+   * community-track mistakes visible instead of silently masking them with a
+   * same-named FATDATA asset. */
+  if (std::filesystem::exists(DocumentPath) || sFallbackAssetRoot.empty())
+    return DocumentPath.string();
+
+  return (std::filesystem::path(sFallbackAssetRoot) / sFilename)
       .lexically_normal().string();
 }
 }
@@ -39,14 +49,15 @@ void CTrackAssets::Clear()
 
 bool CTrackAssets::LoadFromDocument(const std::string &sDocumentAssetRoot,
                                     const std::string &sTextureFile,
-                                    const std::string &sBuildingFile)
+                                    const std::string &sBuildingFile,
+                                    const std::string &sFallbackAssetRoot)
 {
   const std::string sPalettePath =
-      ResolveDocumentAsset(sDocumentAssetRoot, "PALETTE.PAL");
+      ResolveAsset(sDocumentAssetRoot, sFallbackAssetRoot, "PALETTE.PAL");
   const std::string sTexturePath =
-      ResolveDocumentAsset(sDocumentAssetRoot, sTextureFile);
+      ResolveAsset(sDocumentAssetRoot, sFallbackAssetRoot, sTextureFile);
   const std::string sBuildingPath =
-      ResolveDocumentAsset(sDocumentAssetRoot, sBuildingFile);
+      ResolveAsset(sDocumentAssetRoot, sFallbackAssetRoot, sBuildingFile);
 
   if (sPalettePath.empty() || sTexturePath.empty() || sBuildingPath.empty())
     return false;

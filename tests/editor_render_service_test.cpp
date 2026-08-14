@@ -33,6 +33,7 @@ namespace
 std::string g_sError;
 std::string g_sLoadedTrackPath;
 std::string g_sLoadedAssetRoot;
+std::string g_sLoadedFallbackAssetRoot;
 std::string g_sLoadedTrackData;
 float g_fCameraX = 0.0f;
 uint32_t g_uiOverlaySurfaceClassMask = 0;
@@ -126,9 +127,18 @@ extern "C" eRollerEdResult ROLLER_ED_CALL RollerEd_Shutdown(void)
 extern "C" eRollerEdResult ROLLER_ED_CALL RollerEd_LoadTrackFile(
     const char *szTrackPath, const char *szDocumentAssetRoot)
 {
+  return RollerEd_LoadTrackFileEx(
+      szTrackPath, szDocumentAssetRoot, nullptr);
+}
+
+extern "C" eRollerEdResult ROLLER_ED_CALL RollerEd_LoadTrackFileEx(
+    const char *szTrackPath, const char *szDocumentAssetRoot,
+    const char *szFallbackAssetRoot)
+{
   RecordFacadeThread();
   g_sLoadedTrackPath = szTrackPath ? szTrackPath : "";
   g_sLoadedAssetRoot = szDocumentAssetRoot ? szDocumentAssetRoot : "";
+  g_sLoadedFallbackAssetRoot = szFallbackAssetRoot ? szFallbackAssetRoot : "";
   g_sLoadedTrackData.clear();
   QFile TrackFile(QString::fromLocal8Bit(g_sLoadedTrackPath.c_str()));
   if (TrackFile.open(QIODevice::ReadOnly)) {
@@ -392,7 +402,7 @@ int main(int argc, char **argv)
       ROLLER_ED_OVERLAY_CLASS_BIT(ROLLER_ED_SURFACE_CLASS_ROOF);
   const uint64_t ullGoodRequest = Service.EnqueueLoadAndRender(
       Document.GetDocumentId(), Document.GetDocumentRevision(), sTrackPath,
-      sAssetRoot, QSize(4, 3), 1.0, Camera, Overlay);
+      sAssetRoot, QSize(4, 3), 1.0, Camera, Overlay, "fatdata-assets");
   Document.BeginRequest(ullGoodRequest);
 
   // The queued command must not retain any caller-owned pointer payload.
@@ -407,6 +417,7 @@ int main(int argc, char **argv)
   const tEdRenderResult GoodResult = WaitForResult(Service, ullGoodRequest);
   assert(g_sLoadedTrackPath == "good.trk");
   assert(g_sLoadedAssetRoot == "document-assets");
+  assert(g_sLoadedFallbackAssetRoot == "fatdata-assets");
   assert(g_fCameraX == 123.0f);
   // AD-16: the overlay was deep-copied into the command, so mutating the
   // caller's copy after enqueueing cannot reach the worker.

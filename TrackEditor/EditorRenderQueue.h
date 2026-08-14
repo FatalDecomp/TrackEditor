@@ -81,6 +81,7 @@ struct tEdRenderRequest
   eEdRenderCommandKind eKind = eEdRenderCommandKind::RENDER_ONLY;
   std::string sTrackPath;
   std::string sDocumentAssetRoot;
+  std::string sFallbackAssetRoot;
   std::vector<uint8_t> SerializedTrackData;
   tEdCameraState Camera = {};
   bool bHasCamera = false;

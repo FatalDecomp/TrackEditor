@@ -159,7 +159,8 @@ bool CTrackPreview::LoadTrack(const QString &sFilename)
     p->m_track.m_assets.LoadFromDocument(
         p->m_track.m_sTrackFileFolder,
         p->m_track.m_sTextureFile,
-        p->m_track.m_sBuildingFile);
+        p->m_track.m_sBuildingFile,
+        g_pMainWindow->GetFatdataFolder().toStdString());
     if (!p->m_track.m_chunkAy.empty()) {
       m_CameraController.SetPosition(
           static_cast<float>(p->m_track.m_header.iHeaderUnk1) - 4000.0f,
@@ -264,7 +265,8 @@ void CTrackPreview::Undo()
     p->m_track.m_assets.LoadFromDocument(
         p->m_track.m_sTrackFileFolder,
         p->m_track.m_sTextureFile,
-        p->m_track.m_sBuildingFile);
+        p->m_track.m_sBuildingFile,
+        g_pMainWindow->GetFatdataFolder().toStdString());
     MarkDocumentEdited();
   }
 }
@@ -277,7 +279,8 @@ void CTrackPreview::Redo()
     p->m_track.m_assets.LoadFromDocument(
         p->m_track.m_sTrackFileFolder,
         p->m_track.m_sTextureFile,
-        p->m_track.m_sBuildingFile);
+        p->m_track.m_sBuildingFile,
+        g_pMainWindow->GetFatdataFolder().toStdString());
     MarkDocumentEdited();
   }
 }
@@ -518,10 +521,12 @@ void CTrackPreview::QueueLoadAndRender()
       TrackData.begin(), TrackData.end());
   const uint64_t ullRequestId =
       m_pRenderService->EnqueueSerializedLoadAndRender(
-          m_ullDocumentId, m_FrameState.GetDocumentRevision(),
-          SerializedTrackData, m_sDocumentAssetRoot, DevicePixelSize(),
+      m_ullDocumentId, m_FrameState.GetDocumentRevision(),
+          SerializedTrackData, m_sDocumentAssetRoot,
+          DevicePixelSize(),
           devicePixelRatioF(), m_CameraController.GetCameraState(),
-          m_OverlaySettings.GetOverlayState());
+          m_OverlaySettings.GetOverlayState(),
+          g_pMainWindow->GetFatdataFolder());
   if (ullRequestId != 0) {
     m_pCameraRenderTimer->stop();
     m_bCameraRenderPending = false;
@@ -693,6 +698,20 @@ void CTrackPreview::Activate()
 {
   m_pEditTimer->stop();
   QueueLoadAndRender();
+}
+
+// The selected FATDATA is process-wide editor configuration, not document
+// state. Refresh the CPU-side banks for every tab, and reload only the active
+// tab because ROLLER's worker owns one scene at a time.
+void CTrackPreview::UpdateFatdataFolder()
+{
+  p->m_track.m_assets.LoadFromDocument(
+      p->m_track.m_sTrackFileFolder,
+      p->m_track.m_sTextureFile,
+      p->m_track.m_sBuildingFile,
+      g_pMainWindow->GetFatdataFolder().toStdString());
+  if (isVisible())
+    QueueLoadAndRender();
 }
 
 //-------------------------------------------------------------------------------------------------

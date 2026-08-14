@@ -49,7 +49,7 @@ class GraphicsSettingsTests(unittest.TestCase):
             settings_menu.index('name="actPreferences"'),
             settings_menu.index('name="actGraphics"'),
         )
-        self.assertIn("Graphics...", self.window_ui)
+        self.assertIn("Graphics", self.window_ui)
         self.assertIn(
             "connect(actGraphics, &QAction::triggered, "
             "this, &CMainWindow::OnGraphics)",

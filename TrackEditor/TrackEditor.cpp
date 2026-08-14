@@ -6,7 +6,9 @@
 #include "qscreen.h"
 #include <qstring.h>
 #include "qdir.h"
+#include "qfileinfo.h"
 #include "qmessagebox.h"
+#include "qsettings.h"
 #include <QtCore>
 //-------------------------------------------------------------------------------------------------
 #if defined(_DEBUG) && defined(IS_WINDOWS)
@@ -36,7 +38,20 @@ int main(int argc, char* argv[])
     return 1;
   }
 
-  CEditorRenderService RenderService(sAppPath);
+  const QString sSettingsFile = QDir::toNativeSeparators(
+      sAppPath + "/TrackEditor.ini");
+  const QSettings Settings(sSettingsFile, QSettings::IniFormat);
+  QString sFatdataFolder = Settings.value("fatdata_folder").toString();
+  if (sFatdataFolder.isEmpty() && !Settings.contains("fatdata_folder")) {
+    const QString sLegacyTrackFolder =
+        Settings.value("track_folder").toString();
+    if (QFileInfo(sLegacyTrackFolder).fileName().compare(
+            "FATDATA", Qt::CaseInsensitive) == 0) {
+      sFatdataFolder = QDir::cleanPath(sLegacyTrackFolder);
+    }
+  }
+  CEditorRenderService RenderService(
+      sFatdataFolder.isEmpty() ? sAppPath : sFatdataFolder);
   RenderService.Start();
   // Qt 6 removed QDesktopWidget; the primary screen carries the same logical
   // DPI QApplication::desktop() reported. Qt 6 also always enables high-DPI

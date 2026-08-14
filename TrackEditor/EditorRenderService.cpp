@@ -458,8 +458,10 @@ private:
 
     if (bLoadCommand) {
       AssertWorkerThread("RollerEd_LoadTrackFile");
-      const eRollerEdResult eLoadResult = RollerEd_LoadTrackFile(
-          sTrackPath.c_str(), Request.sDocumentAssetRoot.c_str());
+      const eRollerEdResult eLoadResult = RollerEd_LoadTrackFileEx(
+          sTrackPath.c_str(), Request.sDocumentAssetRoot.c_str(),
+          Request.sFallbackAssetRoot.empty()
+              ? nullptr : Request.sFallbackAssetRoot.c_str());
       if (eLoadResult != ROLLER_ED_RESULT_OK) {
         Result.Tag.eResult = eLoadResult;
         Result.bLoadFailed = true;
@@ -699,7 +701,8 @@ uint64_t CEditorRenderService::EnqueueLoadAndRender(
     uint64_t ullDocumentId, uint64_t ullDocumentRevision,
     const QString &sTrackPath, const QString &sDocumentAssetRoot,
     const QSize &DevicePixelSize, double dDevicePixelRatio,
-    const tEdCameraState &Camera, const tEdOverlayState &Overlay)
+    const tEdCameraState &Camera, const tEdOverlayState &Overlay,
+    const QString &sFallbackAssetRoot)
 {
   Q_ASSERT(QThread::currentThread() == thread());
   if (!IsDocumentRegistered(ullDocumentId) || sTrackPath.isEmpty())
@@ -713,6 +716,7 @@ uint64_t CEditorRenderService::EnqueueLoadAndRender(
   Request.eKind = eEdRenderCommandKind::LOAD_AND_RENDER;
   Request.sTrackPath = EncodePath(sTrackPath);
   Request.sDocumentAssetRoot = EncodePath(sDocumentAssetRoot);
+  Request.sFallbackAssetRoot = EncodePath(sFallbackAssetRoot);
   Request.Camera = Camera;
   Request.bHasCamera = true;
   Request.Overlay = Overlay;
@@ -732,7 +736,7 @@ uint64_t CEditorRenderService::EnqueueSerializedLoadAndRender(
     const std::vector<uint8_t> &SerializedTrackData,
     const QString &sDocumentAssetRoot, const QSize &DevicePixelSize,
     double dDevicePixelRatio, const tEdCameraState &Camera,
-    const tEdOverlayState &Overlay)
+    const tEdOverlayState &Overlay, const QString &sFallbackAssetRoot)
 {
   Q_ASSERT(QThread::currentThread() == thread());
   if (!IsDocumentRegistered(ullDocumentId))
@@ -745,6 +749,7 @@ uint64_t CEditorRenderService::EnqueueSerializedLoadAndRender(
   Request.Tag.ullDocumentRevision = ullDocumentRevision;
   Request.eKind = eEdRenderCommandKind::LOAD_SERIALIZED_AND_RENDER;
   Request.sDocumentAssetRoot = EncodePath(sDocumentAssetRoot);
+  Request.sFallbackAssetRoot = EncodePath(sFallbackAssetRoot);
   Request.SerializedTrackData = SerializedTrackData;
   Request.Camera = Camera;
   Request.bHasCamera = true;

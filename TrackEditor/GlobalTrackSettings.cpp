@@ -2,7 +2,8 @@
 #include "Track.h"
 #include "MainWindow.h"
 #include "QtHelpers.h"
-#include "qdiriterator.h"
+#include "editor_track_loader.h"
+#include "qdir.h"
 #include "qfileinfo.h"
 //-------------------------------------------------------------------------------------------------
 #if defined(_DEBUG) && defined(IS_WINDOWS)
@@ -47,14 +48,20 @@ CGlobalTrackSettings::CGlobalTrackSettings(QWidget *pParent)
   p = new CGlobalTrackSettingsPrivate;
   setupUi(this);
 
+  const int iMaxAssetNameLength =
+      static_cast<int>(ED_TRACK_ASSET_NAME_CAPACITY - 1u);
+  leTex->setMaxLength(iMaxAssetNameLength);
+  leBld->setMaxLength(iMaxAssetNameLength);
+  lblNoTex->setVisible(false);
+
   connect(g_pMainWindow, &CMainWindow::UpdateWindowSig, this, &CGlobalTrackSettings::OnUpdateWindow);
 
   connect(pbApplyInfo, &QPushButton::clicked, this, &CGlobalTrackSettings::OnApplyInfoClicked);
   connect(pbRevertInfo, &QPushButton::clicked, this, &CGlobalTrackSettings::OnCancelInfoClicked);
 
   connect(leFloorDepth, &QLineEdit::textChanged, this, &CGlobalTrackSettings::UpdateInfoEditMode);
-  connect(cbTex, SIGNAL(currentIndexChanged(int)), this, SLOT(UpdateInfoEditMode()));
-  connect(cbBld, SIGNAL(currentIndexChanged(int)), this, SLOT(UpdateInfoEditMode()));
+  connect(leTex, &QLineEdit::textChanged, this, &CGlobalTrackSettings::UpdateInfoEditMode);
+  connect(leBld, &QLineEdit::textChanged, this, &CGlobalTrackSettings::UpdateInfoEditMode);
   connect(leTrackNum, &QLineEdit::textChanged, this, &CGlobalTrackSettings::UpdateInfoEditMode);
   connect(leImpossibleLaps, &QLineEdit::textChanged, this, &CGlobalTrackSettings::UpdateInfoEditMode);
   connect(leHardLaps, &QLineEdit::textChanged, this, &CGlobalTrackSettings::UpdateInfoEditMode);
@@ -105,14 +112,16 @@ void CGlobalTrackSettings::OnApplyInfoClicked()
   g_pMainWindow->GetCurrentTrack()->m_raceInfo.dTrackMapSize = leMapSize->text().toDouble();
   g_pMainWindow->GetCurrentTrack()->m_raceInfo.iTrackMapFidelity = leMapFidelity->text().toInt();
   g_pMainWindow->GetCurrentTrack()->m_raceInfo.dPreviewSize = lePreviewSize->text().toDouble();
-  g_pMainWindow->GetCurrentTrack()->m_sTextureFile = cbTex->currentText().toLatin1().constData();
-  g_pMainWindow->GetCurrentTrack()->m_sBuildingFile = cbBld->currentText().toLatin1().constData();
+  g_pMainWindow->GetCurrentTrack()->m_sTextureFile = leTex->text().toLatin1().constData();
+  g_pMainWindow->GetCurrentTrack()->m_sBuildingFile = leBld->text().toLatin1().constData();
   g_pMainWindow->GetCurrentTrack()->m_header.iFloorDepth = leFloorDepth->text().toInt();
 
   g_pMainWindow->SaveHistory("Applied global track settings");
   CTrack *pTrack = g_pMainWindow->GetCurrentTrack();
   pTrack->m_assets.LoadFromDocument(
-      pTrack->m_sTrackFileFolder, pTrack->m_sTextureFile, pTrack->m_sBuildingFile);
+      pTrack->m_sTrackFileFolder, pTrack->m_sTextureFile,
+      pTrack->m_sBuildingFile,
+      g_pMainWindow->GetFatdataFolder().toStdString());
   g_pMainWindow->UpdateWindow(true);
 }
 
@@ -129,8 +138,8 @@ void CGlobalTrackSettings::UpdateInfoEditMode()
 {
   bool bEditMode = false;
   if (leFloorDepth->text().compare(p->sFloorDepth) != 0
-      || cbTex->currentText().compare(p->sTex) != 0
-      || cbBld->currentText().compare(p->sBld) != 0
+      || leTex->text().compare(p->sTex) != 0
+      || leBld->text().compare(p->sBld) != 0
       || leTrackNum->text().compare(p->sTrackNumber) != 0
       || leImpossibleLaps->text().compare(p->sImpossibleLaps) != 0
       || leHardLaps->text().compare(p->sHardLaps) != 0
@@ -172,10 +181,10 @@ void CGlobalTrackSettings::UpdateInfoSelection()
 
 void CGlobalTrackSettings::RevertInfo()
 {
-  UpdateTextures();
+  UpdateAssetStatus();
   BLOCK_SIG_AND_DO(leFloorDepth, setText(p->sFloorDepth));
-  BLOCK_SIG_AND_DO(cbTex, setCurrentIndex(cbTex->findText(p->sTex)));
-  BLOCK_SIG_AND_DO(cbBld, setCurrentIndex(cbBld->findText(p->sBld)));
+  BLOCK_SIG_AND_DO(leTex, setText(p->sTex));
+  BLOCK_SIG_AND_DO(leBld, setText(p->sBld));
   BLOCK_SIG_AND_DO(leTrackNum, setText(p->sTrackNumber));
   BLOCK_SIG_AND_DO(leImpossibleLaps, setText(p->sImpossibleLaps));
   BLOCK_SIG_AND_DO(leHardLaps, setText(p->sHardLaps));
@@ -193,25 +202,21 @@ void CGlobalTrackSettings::RevertInfo()
 
 //-------------------------------------------------------------------------------------------------
 
-void CGlobalTrackSettings::UpdateTextures()
+void CGlobalTrackSettings::UpdateAssetStatus()
 {
-  cbBld->clear();
-  cbTex->clear();
-  QDirIterator it(g_pMainWindow->GetCurrentTrack()->m_sTrackFileFolder.c_str(), QStringList() << "*.DRH", QDir::Files);
-  while (it.hasNext()) {
-    QString sNext = it.next();
-    int iPos = sNext.lastIndexOf('\\');
-    if (iPos < 0)
-      iPos = sNext.lastIndexOf('/');
-    sNext = sNext.right(sNext.size() - iPos - 1);
-    cbBld->addItem(sNext, sNext);
-    cbTex->addItem(sNext, sNext);
-  }
-  QFileInfo palFile(QString(g_pMainWindow->GetCurrentTrack()->m_sTrackFileFolder.c_str())
-                    + QDir::separator() + "PALETTE.PAL");
+  const QString sDocumentAssetRoot =
+      QString::fromStdString(g_pMainWindow->GetCurrentTrack()->m_sTrackFileFolder);
+  const QString sFatdataAssetRoot = g_pMainWindow->GetFatdataFolder();
+  const QFileInfo DocumentPalette(
+      QDir(sDocumentAssetRoot).filePath("PALETTE.PAL"));
+  const QFileInfo FatdataPalette(
+      sFatdataAssetRoot.isEmpty()
+          ? QString()
+          : QDir(sFatdataAssetRoot).filePath("PALETTE.PAL"));
 
-  lblNoTex->setVisible(cbTex->count() == 0);
-  lblPalNotFound->setVisible(!palFile.exists());
+  lblNoTex->setVisible(false);
+  lblPalNotFound->setVisible(
+      !DocumentPalette.exists() && !FatdataPalette.exists());
 }
 
 //-------------------------------------------------------------------------------------------------

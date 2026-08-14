@@ -5,6 +5,7 @@
 #include "qmessagebox.h"
 #include "qfiledialog.h"
 #include "qdir.h"
+#include "qfileinfo.h"
 #include "qsettings.h"
 #include "qscreen.h"
 #include "Track.h"
@@ -120,6 +121,7 @@ CMainWindow::CMainWindow(const QString &sAppPath, float fDesktopScale,
   : QMainWindow(NULL)
   , m_sLastTrackFilesFolder("")
   , m_sAppPath(sAppPath)
+  , m_sFatdataFolder("")
   , m_fDesktopScale(fDesktopScale)
   , m_iNewTrackNum(0)
   , m_pRenderService(pRenderService)
@@ -227,6 +229,8 @@ CMainWindow::CMainWindow(const QString &sAppPath, float fDesktopScale,
   connect(this, &CMainWindow::LogMsgSig, this, &CMainWindow::OnLogMsg, Qt::QueuedConnection);
   connect(actNew, &QAction::triggered, this, &CMainWindow::OnNewTrack);
   connect(actLoad, &QAction::triggered, this, &CMainWindow::OnLoadTrack);
+  connect(pbFatdata, &QPushButton::clicked,
+          this, &CMainWindow::OnSelectFatdata);
   connect(actSave, &QAction::triggered, this, &CMainWindow::OnSaveTrack);
   connect(actSaveAs, &QAction::triggered, this, &CMainWindow::OnSaveTrackAs);
   connect(actExportOBJ, &QAction::triggered, this, &CMainWindow::OnExportOBJ);
@@ -346,7 +350,8 @@ void CMainWindow::OnNewTrack()
     pPreview->GetTrack()->m_assets.LoadFromDocument(
         pPreview->GetTrack()->m_sTrackFileFolder,
         pPreview->GetTrack()->m_sTextureFile,
-        pPreview->GetTrack()->m_sBuildingFile);
+        pPreview->GetTrack()->m_sBuildingFile,
+        m_sFatdataFolder.toStdString());
     pPreview->SaveHistory("New track created", false);
     m_sLastTrackFilesFolder = dlg.GetFilename().left(dlg.GetFilename().lastIndexOf(QDir::separator()));
     //add to array and create preview window
@@ -387,6 +392,25 @@ void CMainWindow::OnLoadTrack()
     twViewer->addTab(pPreview, pPreview->GetTitle(false));
     twViewer->setCurrentIndex((int)p->m_previewAy.size() - 1);
   }
+}
+
+//-------------------------------------------------------------------------------------------------
+
+void CMainWindow::OnSelectFatdata()
+{
+  const QString sStartFolder = m_sFatdataFolder.isEmpty()
+      ? m_sLastTrackFilesFolder : m_sFatdataFolder;
+  const QString sSelectedFolder = QDir::toNativeSeparators(
+      QFileDialog::getExistingDirectory(
+          this, "Select FATDATA Folder", sStartFolder,
+          QFileDialog::ShowDirsOnly | QFileDialog::DontResolveSymlinks));
+  if (sSelectedFolder.isEmpty())
+    return;
+
+  m_sFatdataFolder = QDir::cleanPath(sSelectedFolder);
+  lblFatdata->setText("FATDATA: " + m_sFatdataFolder);
+  for (CTrackPreview *pPreview : p->m_previewAy)
+    pPreview->UpdateFatdataFolder();
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -1304,6 +1328,17 @@ void CMainWindow::LoadSettings()
 {
   QSettings settings(m_sSettingsFile, QSettings::IniFormat);
   m_sLastTrackFilesFolder = settings.value("track_folder", m_sLastTrackFilesFolder).toString();
+  m_sFatdataFolder = settings.value("fatdata_folder", m_sFatdataFolder).toString();
+  if (m_sFatdataFolder.isEmpty() && !settings.contains("fatdata_folder")) {
+    const QString sLegacyTrackFolder =
+        settings.value("track_folder").toString();
+    if (QFileInfo(sLegacyTrackFolder).fileName().compare(
+            "FATDATA", Qt::CaseInsensitive) == 0) {
+      m_sFatdataFolder = QDir::cleanPath(sLegacyTrackFolder);
+    }
+  }
+  lblFatdata->setText(m_sFatdataFolder.isEmpty()
+      ? "Select FATDATA folder" : "FATDATA: " + m_sFatdataFolder);
 
   //window geometry
   if (settings.contains("window_geometry") && settings.contains("window_state")) {
@@ -1475,6 +1510,7 @@ void CMainWindow::SaveSettings()
 {
   QSettings settings(m_sSettingsFile, QSettings::IniFormat);
   settings.setValue("track_folder", m_sLastTrackFilesFolder);
+  settings.setValue("fatdata_folder", m_sFatdataFolder);
 
   eWhipModel carModel;
   eShapeSection aiLine;

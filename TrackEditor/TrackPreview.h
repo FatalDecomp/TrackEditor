@@ -63,6 +63,7 @@ public:
   // dialog rather than the file.
   void UpdateReferenceModelWireframe(bool bWireframe);
   void Activate();
+  void UpdateFatdataFolder();
   void RefreshGraphicsSettings();
   void MarkDocumentEdited();
   bool ViewFromTower(int iChunkId);

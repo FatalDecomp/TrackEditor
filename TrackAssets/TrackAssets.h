@@ -20,7 +20,8 @@ public:
   void Clear();
   bool LoadFromDocument(const std::string &sDocumentAssetRoot,
                         const std::string &sTextureFile,
-                        const std::string &sBuildingFile);
+                        const std::string &sBuildingFile,
+                        const std::string &sFallbackAssetRoot = {});
   bool ExportTextures(const std::string &sMainTexturePng,
                       const std::string &sSignTexturePng) const;
   bool IsLoaded() const;

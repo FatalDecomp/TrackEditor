@@ -52,7 +52,8 @@ public:
                                 const QSize &DevicePixelSize,
                                 double dDevicePixelRatio,
                                 const tEdCameraState &Camera,
-                                const tEdOverlayState &Overlay);
+                                const tEdOverlayState &Overlay,
+                                const QString &sFallbackAssetRoot = QString());
   uint64_t EnqueueSerializedLoadAndRender(
       uint64_t ullDocumentId,
       uint64_t ullDocumentRevision,
@@ -61,7 +62,8 @@ public:
       const QSize &DevicePixelSize,
       double dDevicePixelRatio,
       const tEdCameraState &Camera,
-      const tEdOverlayState &Overlay);
+      const tEdOverlayState &Overlay,
+      const QString &sFallbackAssetRoot = QString());
   uint64_t EnqueueUnload(uint64_t ullDocumentId,
                          uint64_t ullDocumentRevision);
   // pReferenceMesh is null on every frame the mesh did not change (E3A-S7).
