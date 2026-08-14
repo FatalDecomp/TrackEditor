@@ -53,7 +53,17 @@ class DockIntegrationTests(unittest.TestCase):
         window = read(EDITOR / "MainWindow.cpp")
         self.assertIn('settings.value(\n        "show_edit_tower"', window)
         self.assertIn('settings.setValue("show_edit_tower"', window)
-        self.assertIn("restoreDockWidget(p->m_pEditTowerDockWidget)", window)
+
+        # Every dock needs a valid default placement before restoreState().
+        # restoreState() then moves existing docks into their saved positions;
+        # restoreDockWidget() must not be used to reinsert them afterward.
+        tower_default = window.index(
+            "addDockWidget(Qt::RightDockWidgetArea, "
+            "p->m_pEditTowerDockWidget)"
+        )
+        saved_layout = window.index("restoreState(state)")
+        self.assertLess(tower_default, saved_layout)
+        self.assertNotIn("restoreDockWidget(", window)
 
         # The compatibility gate intentionally remains on the old keys: a
         # profile written before E7-S5 must retain all of its existing layout.

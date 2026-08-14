@@ -14,6 +14,7 @@
 #include <algorithm>
 #include <cstring>
 #include <deque>
+#include <exception>
 #include <limits>
 #include <string>
 #include <unordered_set>
@@ -96,20 +97,58 @@ public:
     std::vector<tEdRenderRequest> Dropped;
     {
       QMutexLocker Locker(&m_Mutex);
-      if (m_bStopping)
-        return;
-      m_bStopping = true;
-      TakeMatchingRequests(Dropped,
-                           [](const tEdRenderRequest &) { return true; });
-      m_WorkAvailable.wakeOne();
+      if (!m_bStopping) {
+        m_bStopping = true;
+        TakeMatchingRequests(Dropped,
+                             [](const tEdRenderRequest &) { return true; });
+        m_WorkAvailable.wakeOne();
+      }
     }
     FailDroppedRequests(Dropped, "the render worker stopped before its "
                                  "geometry could be extracted");
+    // An unexpected-exception path sets m_bStopping itself. It may still be
+    // unwinding facade resources, so stopping must always join rather than
+    // returning early and allowing a live QThread to be deleted.
     wait();
   }
 
 protected:
   void run() override
+  {
+    tEdRenderRequest ActiveRequest;
+    bool bHasActiveRequest = false;
+    try {
+      RunRequests(ActiveRequest, bHasActiveRequest);
+    } catch (const std::exception &Exception) {
+      HandleUnexpectedFailure(
+          bHasActiveRequest ? &ActiveRequest : nullptr,
+          std::string("the render worker caught an unexpected exception: ")
+              + Exception.what());
+    } catch (...) {
+      HandleUnexpectedFailure(
+          bHasActiveRequest ? &ActiveRequest : nullptr,
+          "the render worker caught an unknown exception");
+    }
+
+    if (m_bInitAttempted) {
+      try {
+        AssertWorkerThread("RollerEd_Shutdown");
+        RollerEd_Shutdown();
+      } catch (const std::exception &Exception) {
+        HandleUnexpectedFailure(
+            nullptr,
+            std::string("the render worker shutdown caught an unexpected "
+                        "exception: ") + Exception.what());
+      } catch (...) {
+        HandleUnexpectedFailure(
+            nullptr, "the render worker shutdown caught an unknown exception");
+      }
+    }
+  }
+
+private:
+  void RunRequests(tEdRenderRequest &ActiveRequest,
+                   bool &bHasActiveRequest)
   {
     AssertWorkerThread("RollerEd_Init");
     tRollerEdInitInfo InitInfo = {};
@@ -124,48 +163,91 @@ protected:
       m_sInitError = CopyFacadeError();
 
     for (;;) {
-      tEdRenderRequest Request;
       {
         QMutexLocker Locker(&m_Mutex);
         while (!m_bStopping && m_Requests.empty())
           m_WorkAvailable.wait(&m_Mutex);
         if (m_bStopping)
           break;
-        Request = std::move(m_Requests.front());
+        ActiveRequest = std::move(m_Requests.front());
         m_Requests.pop_front();
-        if (m_InvalidDocuments.count(Request.Tag.ullDocumentId) != 0) {
+        bHasActiveRequest = true;
+        if (m_InvalidDocuments.count(
+                ActiveRequest.Tag.ullDocumentId) != 0) {
           Locker.unlock();
-          CompleteExtraction(Request.Extraction, ROLLER_ED_RESULT_STALE,
-                             "the document was closed before its geometry "
-                             "could be extracted",
-                             nullptr);
+          CompleteExtraction(
+              ActiveRequest.Extraction, ROLLER_ED_RESULT_STALE,
+              "the document was closed before its geometry could be "
+              "extracted",
+              nullptr);
+          bHasActiveRequest = false;
           continue;
         }
       }
 
       // Extraction produces no frame, so it never reaches the frame-delivery
       // path: it publishes into its own slot and wakes the blocked caller.
-      if (Request.eKind == eEdRenderCommandKind::EXTRACT_GEOMETRY) {
-        ProcessExtractGeometry(Request);
+      if (ActiveRequest.eKind
+          == eEdRenderCommandKind::EXTRACT_GEOMETRY) {
+        ProcessExtractGeometry(ActiveRequest);
+        bHasActiveRequest = false;
         continue;
       }
 
-      tEdRenderResult Result = ProcessRequest(Request);
+      tEdRenderResult Result = ProcessRequest(ActiveRequest);
       {
         QMutexLocker Locker(&m_Mutex);
-        if (m_InvalidDocuments.count(Request.Tag.ullDocumentId) != 0)
+        if (m_InvalidDocuments.count(
+                ActiveRequest.Tag.ullDocumentId) != 0) {
+          bHasActiveRequest = false;
           continue;
+        }
       }
       PostResult(std::move(Result));
-    }
-
-    if (m_bInitAttempted) {
-      AssertWorkerThread("RollerEd_Shutdown");
-      RollerEd_Shutdown();
+      bHasActiveRequest = false;
     }
   }
 
-private:
+  void FailUnexpectedRequest(tEdRenderRequest &Request,
+                             const std::string &sReason)
+  {
+    if (Request.eKind == eEdRenderCommandKind::EXTRACT_GEOMETRY) {
+      CompleteExtraction(Request.Extraction, ROLLER_ED_RESULT_INTERNAL_ERROR,
+                         sReason, nullptr);
+      return;
+    }
+
+    tEdRenderResult Result;
+    Result.Tag.ullRequestId = Request.Tag.ullRequestId;
+    Result.Tag.ullDocumentId = Request.Tag.ullDocumentId;
+    Result.Tag.ullDocumentRevision = Request.Tag.ullDocumentRevision;
+    Result.Tag.eResult = ROLLER_ED_RESULT_INTERNAL_ERROR;
+    Result.bLoadFailed =
+        Request.eKind != eEdRenderCommandKind::RENDER_ONLY;
+    Result.sErrorText = sReason;
+    PostResult(std::move(Result));
+  }
+
+  void HandleUnexpectedFailure(tEdRenderRequest *pActiveRequest,
+                               const std::string &sReason)
+  {
+    std::vector<tEdRenderRequest> Dropped;
+    {
+      QMutexLocker Locker(&m_Mutex);
+      m_bStopping = true;
+      TakeMatchingRequests(Dropped,
+                           [](const tEdRenderRequest &) { return true; });
+      m_WorkAvailable.wakeOne();
+    }
+
+    m_eInitResult = ROLLER_ED_RESULT_INTERNAL_ERROR;
+    m_sInitError = sReason;
+    if (pActiveRequest)
+      FailUnexpectedRequest(*pActiveRequest, sReason);
+    for (size_t i = 0; i < Dropped.size(); ++i)
+      FailUnexpectedRequest(Dropped[i], sReason);
+  }
+
   // Callers hold m_Mutex. Moves out every request the predicate selects so the
   // caller can complete their extraction slots without holding the lock.
   template <typename TPredicate>
@@ -727,7 +809,8 @@ uint64_t CEditorRenderService::EnqueueLoadAndRender(
   Request.uiHeight = static_cast<uint32_t>(NormalizedSize.height());
   Request.dDevicePixelRatio = dDevicePixelRatio;
   const uint64_t ullRequestId = Request.Tag.ullRequestId;
-  m_pThread->Enqueue(std::move(Request));
+  if (!m_pThread->Enqueue(std::move(Request)))
+    return 0;
   return ullRequestId;
 }
 
@@ -761,7 +844,8 @@ uint64_t CEditorRenderService::EnqueueSerializedLoadAndRender(
   Request.uiHeight = static_cast<uint32_t>(NormalizedSize.height());
   Request.dDevicePixelRatio = dDevicePixelRatio;
   const uint64_t ullRequestId = Request.Tag.ullRequestId;
-  m_pThread->Enqueue(std::move(Request));
+  if (!m_pThread->Enqueue(std::move(Request)))
+    return 0;
   return ullRequestId;
 }
 
@@ -802,7 +886,8 @@ uint64_t CEditorRenderService::EnqueueRender(
   Request.uiHeight = static_cast<uint32_t>(NormalizedSize.height());
   Request.dDevicePixelRatio = dDevicePixelRatio;
   const uint64_t ullRequestId = Request.Tag.ullRequestId;
-  m_pThread->Enqueue(std::move(Request));
+  if (!m_pThread->Enqueue(std::move(Request)))
+    return 0;
   return ullRequestId;
 }
 
@@ -821,7 +906,8 @@ uint64_t CEditorRenderService::EnqueueUnload(
   Request.GraphicsSettings = m_GraphicsSettings;
   Request.ullGraphicsSettingsRevision = m_ullGraphicsSettingsRevision;
   const uint64_t ullRequestId = Request.Tag.ullRequestId;
-  m_pThread->Enqueue(std::move(Request));
+  if (!m_pThread->Enqueue(std::move(Request)))
+    return 0;
   return ullRequestId;
 }
 

@@ -35,6 +35,7 @@
 #include "EditorCameraController.h"
 #include "qtimer.h"
 #include "MathHelpers.h"
+#include <atomic>
 #if defined (IS_WINDOWS)
   #include <Windows.h>
 #endif
@@ -43,13 +44,20 @@
   #define new new(_CLIENT_BLOCK, __FILE__, __LINE__)
 #endif
 //-------------------------------------------------------------------------------------------------
+namespace
+{
+std::atomic<CMainWindow *> g_pLoggingMainWindow(nullptr);
+}
 CMainWindow *g_pMainWindow = NULL;
 //-------------------------------------------------------------------------------------------------
 
 static void LogMessageCbStatic(const char *szMsg, int iLen)
 {
   (void)(iLen);
-  g_pMainWindow->LogMessage(szMsg);
+  CMainWindow *pMainWindow =
+      g_pLoggingMainWindow.load(std::memory_order_acquire);
+  if (pMainWindow)
+    pMainWindow->LogMessage(szMsg);
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -127,8 +135,9 @@ CMainWindow::CMainWindow(const QString &sAppPath, float fDesktopScale,
   , m_pRenderService(pRenderService)
 {
   //init
-  Logging::SetWhipLibLoggingCallback(LogMessageCbStatic);
   p = new CMainWindowPrivate(this);
+  // Legacy UI helpers use this only on the main thread while constructing
+  // child widgets. Background logging uses the separate atomic receiver.
   g_pMainWindow = this;
   m_sSettingsFile = m_sAppPath + "/TrackEditor.ini";
   m_sSettingsFile = QDir::toNativeSeparators(m_sSettingsFile);
@@ -188,6 +197,19 @@ CMainWindow::CMainWindow(const QString &sAppPath, float fDesktopScale,
       Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea);
   p->m_pEditTowerDockWidget->setWidget(
       new CEditTowerWidget(p->m_pEditTowerDockWidget));
+
+  // Establish one valid default layout before applying any serialized state.
+  // QMainWindow::restoreState() moves these existing docks into their saved
+  // positions; no dock should be inserted into the layout a second time.
+  addDockWidget(Qt::LeftDockWidgetArea, p->m_pDebugDataDockWidget);
+  addDockWidget(Qt::RightDockWidgetArea, p->m_pGlobalSettingsDockWidget);
+  addDockWidget(Qt::RightDockWidgetArea, p->m_pEditSeriesDockWidget);
+  addDockWidget(Qt::RightDockWidgetArea, p->m_pDisplaySettingsDockWidget);
+  addDockWidget(Qt::LeftDockWidgetArea, p->m_pEditGeometryDockWidget);
+  addDockWidget(Qt::RightDockWidgetArea, p->m_pEditSignDockWidget);
+  addDockWidget(Qt::RightDockWidgetArea, p->m_pEditAudioDockWidget);
+  addDockWidget(Qt::RightDockWidgetArea, p->m_pEditStuntDockWidget);
+  addDockWidget(Qt::RightDockWidgetArea, p->m_pEditTowerDockWidget);
 
   //setup view menu
   menuView->addAction(p->m_pEditGeometryDockWidget->toggleViewAction());
@@ -269,12 +291,26 @@ CMainWindow::CMainWindow(const QString &sAppPath, float fDesktopScale,
 
   //open window
   LoadSettings();
+
+  // Publish only a fully constructed receiver, then install the callback.
+  // Logging can originate off the UI thread, including during renderer
+  // startup, which now begins after this constructor returns.
+  g_pLoggingMainWindow.store(this, std::memory_order_release);
+  Logging::SetWhipLibLoggingCallback(LogMessageCbStatic);
 }
 
 //-------------------------------------------------------------------------------------------------
 
 CMainWindow::~CMainWindow()
 {
+  // The render worker is joined before the window is deleted. Disconnect the
+  // remaining synchronous producers before withdrawing the receiver.
+  Logging::SetWhipLibLoggingCallback(nullptr);
+  CMainWindow *pExpected = this;
+  g_pLoggingMainWindow.compare_exchange_strong(
+      pExpected, nullptr, std::memory_order_acq_rel);
+  if (g_pMainWindow == this)
+    g_pMainWindow = NULL;
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -1389,29 +1425,8 @@ void CMainWindow::LoadSettings()
     p->m_pEditSignDockWidget->setVisible(bShowEditSign);
     p->m_pEditAudioDockWidget->setVisible(bShowEditAudio);
     p->m_pEditStuntDockWidget->setVisible(bShowEditStunt);
-    restoreDockWidget(p->m_pDebugDataDockWidget);
-    restoreDockWidget(p->m_pGlobalSettingsDockWidget);
-    restoreDockWidget(p->m_pEditSeriesDockWidget);
-    restoreDockWidget(p->m_pDisplaySettingsDockWidget);
-    restoreDockWidget(p->m_pEditGeometryDockWidget);
-    restoreDockWidget(p->m_pEditSignDockWidget);
-    restoreDockWidget(p->m_pEditAudioDockWidget);
-    restoreDockWidget(p->m_pEditStuntDockWidget);
-    // Existing window_state values predate this dock. Give it a stable home
-    // when restoreState has no saved entry, without resetting other docks.
-    if (!restoreDockWidget(p->m_pEditTowerDockWidget))
-      addDockWidget(Qt::RightDockWidgetArea, p->m_pEditTowerDockWidget);
     p->m_pEditTowerDockWidget->setVisible(bShowEditTower);
   } else {
-    addDockWidget(Qt::LeftDockWidgetArea, p->m_pDebugDataDockWidget);
-    addDockWidget(Qt::RightDockWidgetArea, p->m_pGlobalSettingsDockWidget);
-    addDockWidget(Qt::RightDockWidgetArea, p->m_pEditSeriesDockWidget);
-    addDockWidget(Qt::RightDockWidgetArea, p->m_pDisplaySettingsDockWidget);
-    addDockWidget(Qt::LeftDockWidgetArea, p->m_pEditGeometryDockWidget);
-    addDockWidget(Qt::RightDockWidgetArea, p->m_pEditSignDockWidget);
-    addDockWidget(Qt::RightDockWidgetArea, p->m_pEditAudioDockWidget);
-    addDockWidget(Qt::RightDockWidgetArea, p->m_pEditStuntDockWidget);
-    addDockWidget(Qt::RightDockWidgetArea, p->m_pEditTowerDockWidget);
     p->m_pDebugDataDockWidget->setVisible(false);
     p->m_pGlobalSettingsDockWidget->setVisible(false);
     p->m_pEditSeriesDockWidget->setVisible(false);

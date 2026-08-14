@@ -37,14 +37,38 @@ class E3S1RenderWorkerContractTests(unittest.TestCase):
     def test_main_thread_lifecycle_brackets_worker_lifecycle(self) -> None:
         source = (EDITOR / "TrackEditor.cpp").read_text(encoding="utf-8")
         bootstrap = source.index("RollerEd_Bootstrap")
+        window = source.index("new CMainWindow")
         start = source.index("RenderService.Start")
         event_loop = source.index("app.exec")
         stop = source.index("RenderService.Stop")
+        delete_window = source.index("delete pMainWin")
         teardown = source.index("RollerEd_Teardown")
-        self.assertLess(bootstrap, start)
+        self.assertLess(bootstrap, window)
+        self.assertLess(window, start)
         self.assertLess(start, event_loop)
         self.assertLess(event_loop, stop)
+        self.assertLess(stop, delete_window)
         self.assertLess(stop, teardown)
+
+    def test_startup_callbacks_and_worker_exceptions_are_guarded(self) -> None:
+        main_window = (EDITOR / "MainWindow.cpp").read_text(encoding="utf-8")
+        receiver = main_window.index("g_pLoggingMainWindow.store")
+        callback = main_window.index("SetWhipLibLoggingCallback(LogMessageCbStatic)")
+        self.assertLess(receiver, callback)
+        self.assertIn("if (pMainWindow)", main_window)
+        self.assertIn("SetWhipLibLoggingCallback(nullptr)", main_window)
+        uncommented_main_window = without_comments(main_window)
+        self.assertNotIn("restoreDockWidget(", uncommented_main_window)
+        first_default_dock = uncommented_main_window.index("addDockWidget(")
+        restore_state = uncommented_main_window.index("restoreState(state)")
+        self.assertLess(first_default_dock, restore_state)
+
+        worker = (EDITOR / "EditorRenderService.cpp").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn("catch (const std::exception &Exception)", worker)
+        self.assertIn("HandleUnexpectedFailure", worker)
+        self.assertIn("ROLLER_ED_RESULT_INTERNAL_ERROR", worker)
 
     def test_rendering_facade_calls_are_confined_to_worker(self) -> None:
         allowed = {"EditorRenderService.cpp", "TrackEditor.cpp"}

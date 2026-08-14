@@ -13,6 +13,7 @@
 #include <cstdint>
 #include <cstring>
 #include <iostream>
+#include <stdexcept>
 #include <string>
 #include <vector>
 
@@ -58,6 +59,9 @@ std::atomic<uint32_t> g_uiStuntTicksAtLastRender(0);
 std::atomic<uint32_t> g_uiFillCount(0);
 std::atomic<uint32_t> g_uiTowerCountQueryCount(0);
 std::atomic<uint32_t> g_uiTowerQueryCount(0);
+std::atomic<bool> g_bThrowOnNextRender(false);
+std::atomic<bool> g_bSlowShutdown(false);
+std::atomic<bool> g_bShutdownEntered(false);
 uint32_t g_uiRefusedFillEpoch = 0;
 
 // E4-S1. The stubbed extraction is one quad, which is enough to prove the
@@ -121,6 +125,10 @@ extern "C" eRollerEdResult ROLLER_ED_CALL RollerEd_Init(
 extern "C" eRollerEdResult ROLLER_ED_CALL RollerEd_Shutdown(void)
 {
   RecordFacadeThread();
+  if (g_bSlowShutdown.load()) {
+    g_bShutdownEntered.store(true);
+    QThread::msleep(500);
+  }
   return ROLLER_ED_RESULT_OK;
 }
 
@@ -335,11 +343,19 @@ extern "C" eRollerEdResult ROLLER_ED_CALL RollerEd_AdvanceStunts(
   return ROLLER_ED_RESULT_OK;
 }
 
+#if defined(_MSC_VER)
+#pragma warning(push)
+// This stub deliberately violates the C facade's normal no-throw behavior to
+// exercise the C++ worker boundary that protects the host process.
+#pragma warning(disable : 4297)
+#endif
 extern "C" eRollerEdResult ROLLER_ED_CALL RollerEd_RenderFrame(
     uint8_t *pbyPixels, uint32_t uiBufferSize, uint32_t uiRowPitch,
     uint32_t uiWidth, uint32_t uiHeight, eRollerEdPixelFormat eFormat)
 {
   RecordFacadeThread();
+  if (g_bThrowOnNextRender.exchange(false))
+    throw std::runtime_error("injected render failure");
   assert(pbyPixels);
   assert(eFormat == ROLLER_ED_PIXEL_RGBA8);
   assert(uiBufferSize >= uiRowPitch * uiHeight);
@@ -356,6 +372,9 @@ extern "C" eRollerEdResult ROLLER_ED_CALL RollerEd_RenderFrame(
   ++g_uiRenderCount;
   return ROLLER_ED_RESULT_OK;
 }
+#if defined(_MSC_VER)
+#pragma warning(pop)
+#endif
 
 extern "C" const char *ROLLER_ED_CALL RollerEd_GetLastError(void)
 {
@@ -705,6 +724,54 @@ int main(int argc, char **argv)
     assert(eLateResult != ROLLER_ED_RESULT_OK);
     assert(!sLateError.empty());
     assert(LateSnapshot.Primitives.empty());
+  }
+
+  // An exception escaping a facade callback must become an ordinary failed
+  // result, reject later work, and still join shutdown before QThread is
+  // destroyed. This is the startup/runtime fail-safe for third-party code
+  // reached by the worker boundary.
+  {
+    CEditorRenderService FailingService("test-assets");
+    CDocumentFrameState FailingDocument(
+        CEditorRenderIds::NextDocumentId());
+    FailingService.RegisterDocument(FailingDocument.GetDocumentId());
+
+    g_bThrowOnNextRender.store(true);
+    g_bSlowShutdown.store(true);
+    g_bShutdownEntered.store(false);
+    const uint64_t ullFailingRequest =
+        FailingService.EnqueueLoadAndRender(
+            FailingDocument.GetDocumentId(),
+            FailingDocument.GetDocumentRevision(), "throws.trk",
+            "document-assets", QSize(4, 3), 1.0, Camera, Overlay);
+    assert(ullFailingRequest != 0);
+    FailingService.Start();
+
+    const tEdRenderResult ExceptionResult =
+        WaitForResult(FailingService, ullFailingRequest);
+    assert(ExceptionResult.Tag.eResult
+           == ROLLER_ED_RESULT_INTERNAL_ERROR);
+    assert(ExceptionResult.bLoadFailed);
+    assert(ExceptionResult.sErrorText.find("injected render failure")
+           != std::string::npos);
+
+    QElapsedTimer ShutdownEntryTimeout;
+    ShutdownEntryTimeout.start();
+    while (!g_bShutdownEntered.load()
+           && ShutdownEntryTimeout.elapsed() < 1000) {
+      QThread::msleep(1);
+    }
+    assert(g_bShutdownEntered.load());
+
+    QElapsedTimer StopTimer;
+    StopTimer.start();
+    FailingService.Stop();
+    assert(StopTimer.elapsed() >= 100);
+    assert(FailingService.EnqueueRender(
+               FailingDocument.GetDocumentId(),
+               FailingDocument.GetDocumentRevision(), 0, QSize(4, 3), 1.0,
+               Camera, Overlay) == 0);
+    g_bSlowShutdown.store(false);
   }
 
   std::cout << "E3-S1/S2 editor render service tests passed\n";

@@ -52,7 +52,6 @@ int main(int argc, char* argv[])
   }
   CEditorRenderService RenderService(
       sFatdataFolder.isEmpty() ? sAppPath : sFatdataFolder);
-  RenderService.Start();
   // Qt 6 removed QDesktopWidget; the primary screen carries the same logical
   // DPI QApplication::desktop() reported. Qt 6 also always enables high-DPI
   // scaling, so this is 96 on a scaled display and the scale comes out at 100:
@@ -60,6 +59,10 @@ int main(int argc, char* argv[])
   // pixel ratio itself, which is the same apparent size Qt 5 produced.
   float fScale = QGuiApplication::primaryScreen()->logicalDotsPerInchX() / 96.0 * 100.0;
   CMainWindow *pMainWin = new CMainWindow(sAppPath, fScale, &RenderService);
+  // Finish constructing and showing every Qt widget before the ROLLER worker
+  // starts. In particular, do not overlap cold Qt/D3D window initialization
+  // with SDL/render-facade initialization on a fresh process.
+  RenderService.Start();
 
   int iRetCode = 0;
   const int iBatchArg = app.arguments().indexOf("--batch-export-test");
@@ -92,10 +95,12 @@ int main(int argc, char* argv[])
     iRetCode = app.exec();
   }
 
+  // Join the only background producer before destroying the UI objects and
+  // their queued logging/result receivers.
+  RenderService.Stop();
   delete pMainWin;
   pMainWin = NULL;
 
-  RenderService.Stop();
   const eRollerEdResult eTeardownResult = RollerEd_Teardown();
   if (iRetCode == 0 && eTeardownResult != ROLLER_ED_RESULT_OK)
     iRetCode = 1;
