@@ -645,6 +645,9 @@ void CTrackPreview::OnRenderCompleted(const tEdRenderResult &Result)
     return;
   }
 
+  if (Result.bHasTowerSnapshot)
+    m_Towers = Result.Towers;
+
   m_bReloadPending = Result.Tag.eResult != ROLLER_ED_RESULT_OK;
 
   update();
@@ -655,6 +658,33 @@ void CTrackPreview::OnRenderCompleted(const tEdRenderResult &Result)
   } else {
     ArmCameraRenderTimer();
   }
+}
+
+//-------------------------------------------------------------------------------------------------
+
+bool CTrackPreview::ViewFromTower(int iChunkId)
+{
+  for (const tEdTowerInfo &Tower : m_Towers) {
+    if (Tower.uiChunkId != static_cast<uint32_t>(iChunkId))
+      continue;
+
+    float fYawDegrees = 0.0f;
+    float fPitchDegrees = 0.0f;
+    if (!CEditorCameraController::CalculateLookAtOrientation(
+            Tower.fWorldPosition, Tower.fAnchorPosition,
+            fYawDegrees, fPitchDegrees)) {
+      return false;
+    }
+
+    m_CameraController.SetPosition(
+        Tower.fWorldPosition[0], Tower.fWorldPosition[1],
+        Tower.fWorldPosition[2]);
+    m_CameraController.SetOrientation(fYawDegrees, fPitchDegrees);
+    m_CameraController.ResetMouseTracking();
+    ScheduleCameraRender();
+    return true;
+  }
+  return false;
 }
 
 //-------------------------------------------------------------------------------------------------

@@ -29,6 +29,10 @@ public:
   void SetPosition(float fX, float fY, float fZ);
   void SetOrientation(float fYawDegrees, float fPitchDegrees);
   void ResetMouseTracking();
+  static bool CalculateLookAtOrientation(const float fPosition[3],
+                                         const float fTarget[3],
+                                         float &fYawDegreesOut,
+                                         float &fPitchDegreesOut);
   static void SetMovementSpeed(float fMovementSpeed);
   static float GetMovementSpeed() { return s_fMovementSpeed; }
 

@@ -253,6 +253,46 @@ private:
     return true;
   }
 
+  // E7-S6. Tower placement belongs to the committed ROLLER scene, so copy it
+  // out beside the load on this worker. The UI receives only owned structs
+  // and never calls the facade itself (AD-4e).
+  bool QueryTowers(tEdRenderResult &Result)
+  {
+    uint32_t uiTowerCount = 0;
+    AssertWorkerThread("RollerEd_QueryTowerCount");
+    eRollerEdResult eResult = RollerEd_QueryTowerCount(&uiTowerCount);
+    if (eResult != ROLLER_ED_RESULT_OK) {
+      Result.bLoadFailed = true;
+      SetFacadeFailure(Result, eResult);
+      return false;
+    }
+
+    constexpr uint32_t MAX_TOWER_COUNT = 32u;
+    if (uiTowerCount > MAX_TOWER_COUNT) {
+      Result.Tag.eResult = ROLLER_ED_RESULT_INVALID_ARGUMENT;
+      Result.bLoadFailed = true;
+      Result.sErrorText = "the core published more than 32 towers";
+      return false;
+    }
+
+    Result.Towers.resize(uiTowerCount);
+    for (uint32_t uiIndex = 0; uiIndex < uiTowerCount; ++uiIndex) {
+      tEdTowerInfo &Info = Result.Towers[uiIndex];
+      Info = {};
+      Info.uiStructSize = sizeof(Info);
+      Info.uiVersion = ROLLER_ED_TOWER_INFO_VERSION;
+      AssertWorkerThread("RollerEd_QueryTower");
+      eResult = RollerEd_QueryTower(uiIndex, &Info);
+      if (eResult != ROLLER_ED_RESULT_OK) {
+        Result.Towers.clear();
+        Result.bLoadFailed = true;
+        SetFacadeFailure(Result, eResult);
+        return false;
+      }
+    }
+    return true;
+  }
+
   // E4-S1. Query then fill, both on the worker, both against the epoch the
   // query reported. RollerEd_FillGeometry refuses in a fixed order and writes
   // nothing on refusal, so a failed extraction leaves the snapshot untouched.
@@ -342,6 +382,7 @@ private:
 
     const bool bLoadCommand = Request.eKind
         != eEdRenderCommandKind::RENDER_ONLY;
+    Result.bHasTowerSnapshot = bLoadCommand;
     if (m_eInitResult != ROLLER_ED_RESULT_OK) {
       Result.Tag.eResult = m_eInitResult;
       Result.bLoadFailed = bLoadCommand;
@@ -454,6 +495,9 @@ private:
       Result.sErrorText = "render request has no ready scene";
       return Result;
     }
+
+    if (bLoadCommand && !QueryTowers(Result))
+      return Result;
 
     if (Request.uiStuntTicks != 0) {
       AssertWorkerThread("RollerEd_AdvanceStunts");

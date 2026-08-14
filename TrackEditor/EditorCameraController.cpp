@@ -124,6 +124,31 @@ void CEditorCameraController::ResetMouseTracking()
   m_bHasPreviousMousePosition = false;
 }
 
+bool CEditorCameraController::CalculateLookAtOrientation(
+    const float fPosition[3], const float fTarget[3],
+    float &fYawDegreesOut, float &fPitchDegreesOut)
+{
+  if (!fPosition || !fTarget)
+    return false;
+  for (int i = 0; i < 3; ++i) {
+    if (!std::isfinite(fPosition[i]) || !std::isfinite(fTarget[i]))
+      return false;
+  }
+
+  const float fDeltaX = fTarget[0] - fPosition[0];
+  const float fDeltaY = fTarget[1] - fPosition[1];
+  const float fDeltaZ = fTarget[2] - fPosition[2];
+  const float fHorizontalDistance = std::hypot(fDeltaX, fDeltaY);
+  if (fHorizontalDistance == 0.0f && fDeltaZ == 0.0f)
+    return false;
+
+  constexpr float RADIANS_TO_DEGREES = 180.0f / PI;
+  fYawDegreesOut = std::atan2(fDeltaY, fDeltaX) * RADIANS_TO_DEGREES;
+  fPitchDegreesOut = std::atan2(fDeltaZ, fHorizontalDistance)
+      * RADIANS_TO_DEGREES;
+  return true;
+}
+
 void CEditorCameraController::SetMovementSpeed(float fMovementSpeed)
 {
   if (std::isfinite(fMovementSpeed) && fMovementSpeed > 0.0f)

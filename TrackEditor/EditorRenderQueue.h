@@ -114,6 +114,11 @@ struct tEdRenderResult
   uint32_t uiRenderedGeometryEpoch = 0;
   bool bLoadFailed = false;
   bool bSceneEmpty = false;
+  // E7-S6. LOAD results replace the document's committed tower table. A
+  // render-only result leaves it alone, so camera motion cannot accidentally
+  // discard the positions obtained by the worker during the last load.
+  std::vector<tEdTowerInfo> Towers;
+  bool bHasTowerSnapshot = false;
   QImage Image;
   std::string sErrorText;
 };

@@ -16,6 +16,7 @@ public:
 protected slots:
   void UpdateGeometrySelection(int iFrom, int iTo);
   void TowerClicked();
+  void ViewFromTowerClicked();
   void ModeChanged(int iIndex);
   void ZoomChanged(int iIndex);
   void HOffsetChanged(int iValue);

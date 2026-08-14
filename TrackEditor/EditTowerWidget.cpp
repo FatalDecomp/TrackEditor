@@ -4,6 +4,7 @@
 #include "MainWindow.h"
 #include "QtHelpers.h"
 #include "Track.h"
+#include "TrackPreview.h"
 
 #include <QIntValidator>
 #include <limits>
@@ -44,6 +45,8 @@ CEditTowerWidget::CEditTowerWidget(QWidget *pParent)
           this, &CEditTowerWidget::UpdateGeometrySelection);
   connect(pbTower, &QPushButton::clicked,
           this, &CEditTowerWidget::TowerClicked);
+  connect(pbViewFromTower, &QPushButton::clicked,
+          this, &CEditTowerWidget::ViewFromTowerClicked);
   connect(cbMode, SIGNAL(currentIndexChanged(int)),
           this, SLOT(ModeChanged(int)));
   connect(cbZoom, SIGNAL(currentIndexChanged(int)),
@@ -105,6 +108,7 @@ void CEditTowerWidget::UpdateGeometrySelection(int iFrom, int iTo)
       && iTowerCount < CEditorTowerModel::TOWER_LIMIT;
   pbTower->setText(bHasTower ? "Delete Tower" : "Add Tower");
   pbTower->setEnabled(bHasTower || bCanAdd);
+  pbViewFromTower->setEnabled(bHasTower);
 
   cbMode->setEnabled(bHasTower);
   cbZoom->setEnabled(bHasTower);
@@ -176,6 +180,23 @@ void CEditTowerWidget::TowerClicked()
       ? CEditorTowerModel::DeleteTowers(pTrack->m_chunkAy, iFrom, iTo)
       : CEditorTowerModel::AddTowers(pTrack->m_chunkAy, iFrom, iTo);
   CommitEdit(iChanged, bDelete ? "Removed tower" : "Added tower");
+}
+
+//-------------------------------------------------------------------------------------------------
+
+void CEditTowerWidget::ViewFromTowerClicked()
+{
+  CTrack *pTrack = nullptr;
+  int iFrom = 0;
+  int iTo = 0;
+  if (!GetSelection(pTrack, iFrom, iTo)
+      || !CEditorTowerModel::IsTower(pTrack->m_chunkAy[iFrom].iSignType)) {
+    return;
+  }
+
+  CTrackPreview *pPreview = g_pMainWindow->GetCurrentPreview();
+  if (pPreview)
+    pPreview->ViewFromTower(iFrom);
 }
 
 //-------------------------------------------------------------------------------------------------

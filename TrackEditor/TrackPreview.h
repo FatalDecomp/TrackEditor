@@ -65,6 +65,7 @@ public:
   void Activate();
   void RefreshGraphicsSettings();
   void MarkDocumentEdited();
+  bool ViewFromTower(int iChunkId);
   bool CanExport() const { return m_FrameState.CanExport(); }
 
   bool m_bUnsavedChanges;
@@ -141,6 +142,7 @@ private:
   uint64_t m_ullDocumentId;
   CDocumentFrameState m_FrameState;
   CEditorCameraController m_CameraController;
+  std::vector<tEdTowerInfo> m_Towers;
   CEditorOverlaySettings m_OverlaySettings;
   CEditorReferenceMesh m_ReferenceMesh;
   tEdReferenceMeshPayload m_PendingReferenceMesh;

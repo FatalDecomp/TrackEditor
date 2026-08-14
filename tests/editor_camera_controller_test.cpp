@@ -4,6 +4,7 @@
 #include <cmath>
 #include <cstdlib>
 #include <iostream>
+#include <limits>
 
 #ifdef assert
 #undef assert
@@ -118,6 +119,50 @@ void TestMovementFollowsYawAndPitch()
   assert(NearlyEqual(Camera.GetCameraState().fPitchDegrees, -5.0f));
 }
 
+void TestLookAtOrientationUsesEditorDegrees()
+{
+  const float Position[3] = { 1.0f, 2.0f, 3.0f };
+  float fYaw = -999.0f;
+  float fPitch = -999.0f;
+
+  const float AlongX[3] = { 5.0f, 2.0f, 3.0f };
+  assert(CEditorCameraController::CalculateLookAtOrientation(
+      Position, AlongX, fYaw, fPitch));
+  assert(NearlyEqual(fYaw, 0.0f));
+  assert(NearlyEqual(fPitch, 0.0f));
+
+  const float AlongY[3] = { 1.0f, 7.0f, 3.0f };
+  assert(CEditorCameraController::CalculateLookAtOrientation(
+      Position, AlongY, fYaw, fPitch));
+  assert(NearlyEqual(fYaw, 90.0f));
+  assert(NearlyEqual(fPitch, 0.0f));
+
+  const float DiagonalUp[3] = { 4.0f, 6.0f, 8.0f };
+  assert(CEditorCameraController::CalculateLookAtOrientation(
+      Position, DiagonalUp, fYaw, fPitch));
+  assert(NearlyEqual(fYaw, 53.1301f));
+  assert(NearlyEqual(fPitch, 45.0f));
+
+  const float Vertical[3] = { 1.0f, 2.0f, 13.0f };
+  assert(CEditorCameraController::CalculateLookAtOrientation(
+      Position, Vertical, fYaw, fPitch));
+  assert(NearlyEqual(fYaw, 0.0f));
+  assert(NearlyEqual(fPitch, 90.0f));
+
+  fYaw = 17.0f;
+  fPitch = 23.0f;
+  assert(!CEditorCameraController::CalculateLookAtOrientation(
+      Position, Position, fYaw, fPitch));
+  assert(NearlyEqual(fYaw, 17.0f));
+  assert(NearlyEqual(fPitch, 23.0f));
+
+  const float Invalid[3] = {
+    std::numeric_limits<float>::quiet_NaN(), 2.0f, 3.0f
+  };
+  assert(!CEditorCameraController::CalculateLookAtOrientation(
+      Position, Invalid, fYaw, fPitch));
+}
+
 }
 
 int main()
@@ -125,6 +170,7 @@ int main()
   TestFacadeStateAndWorldAxisMovement();
   TestMouseLookSensitivityAndClickGate();
   TestMovementFollowsYawAndPitch();
+  TestLookAtOrientationUsesEditorDegrees();
   CEditorCameraController::SetMovementSpeed(
       CEditorCameraController::DEFAULT_MOVEMENT_SPEED);
   std::cout << "E3-S3 editor camera input tests passed\n";

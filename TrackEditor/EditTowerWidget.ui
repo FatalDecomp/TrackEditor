@@ -62,40 +62,50 @@
         </widget>
        </item>
        <item row="1" column="0" colspan="2">
+        <widget class="QPushButton" name="pbViewFromTower">
+         <property name="enabled">
+          <bool>false</bool>
+         </property>
+         <property name="text">
+          <string>View from tower</string>
+         </property>
+        </widget>
+       </item>
+       <item row="2" column="0" colspan="2">
         <widget class="QLabel" name="lblSignDisabled">
          <property name="text">
           <string>Sign exists on this chunk</string>
          </property>
         </widget>
        </item>
-       <item row="2" column="0">
+       <item row="3" column="0">
         <widget class="QLabel" name="lblMode">
          <property name="text">
           <string>Camera Mode</string>
          </property>
         </widget>
        </item>
-       <item row="2" column="1">
+       <item row="3" column="1">
         <widget class="QComboBox" name="cbMode"/>
        </item>
-       <item row="3" column="0">
+       <item row="4" column="0">
         <widget class="QLabel" name="lblZoom">
          <property name="text">
           <string>Zoom</string>
          </property>
         </widget>
        </item>
-       <item row="3" column="1">
+       <item row="4" column="1">
         <widget class="QComboBox" name="cbZoom"/>
        </item>
-       <item row="4" column="0">
+       <item row="5" column="0">
         <widget class="QLabel" name="lblHOffset">
          <property name="text">
           <string>Horizontal Offset</string>
          </property>
         </widget>
        </item>
-       <item row="4" column="1">
+       <item row="5" column="1">
         <widget class="QSpinBox" name="sbHOffset">
          <property name="minimum">
           <number>-65535</number>
@@ -105,14 +115,14 @@
          </property>
         </widget>
        </item>
-       <item row="5" column="0">
+       <item row="6" column="0">
         <widget class="QLabel" name="lblVOffset">
          <property name="text">
           <string>Vertical Offset</string>
          </property>
         </widget>
        </item>
-       <item row="5" column="1">
+       <item row="6" column="1">
         <widget class="QSpinBox" name="sbVOffset">
          <property name="minimum">
           <number>-65535</number>
@@ -122,7 +132,7 @@
          </property>
         </widget>
        </item>
-       <item row="6" column="0" colspan="2">
+       <item row="7" column="0" colspan="2">
         <widget class="QLabel" name="lblOffsetScale">
          <property name="text">
           <string>Offsets use x32 track units at runtime.</string>
@@ -132,17 +142,17 @@
          </property>
         </widget>
        </item>
-       <item row="7" column="0">
+       <item row="8" column="0">
         <widget class="QLabel" name="lblRawType">
          <property name="text">
           <string>Raw iSignType</string>
          </property>
         </widget>
        </item>
-       <item row="7" column="1">
+       <item row="8" column="1">
         <widget class="QLineEdit" name="leRawType"/>
        </item>
-       <item row="8" column="0" colspan="2">
+       <item row="9" column="0" colspan="2">
         <widget class="QLabel" name="lblRawPreserved">
          <property name="text">
           <string>Non-canonical value preserved until Mode or Zoom changes.</string>
@@ -152,7 +162,7 @@
          </property>
         </widget>
        </item>
-       <item row="9" column="0" colspan="2">
+       <item row="10" column="0" colspan="2">
         <spacer name="verticalSpacer">
          <property name="orientation">
           <enum>Qt::Vertical</enum>
