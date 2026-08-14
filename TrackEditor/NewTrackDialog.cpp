@@ -2,14 +2,34 @@
 #include "NewTrackDialog.h"
 #include "qdir.h"
 #include "qfiledialog.h"
-#include "qdiriterator.h"
 #include "qfileinfo.h"
 #include "qmessagebox.h"
 #include "MainWindow.h"
+#include "editor_track_loader.h"
 //-------------------------------------------------------------------------------------------------
 #if defined(_DEBUG) && defined(IS_WINDOWS)
   #define new new(_CLIENT_BLOCK, __FILE__, __LINE__)
 #endif
+//-------------------------------------------------------------------------------------------------
+namespace
+{
+bool HasDrhFile(const QString &sRoot)
+{
+  if (sRoot.isEmpty())
+    return false;
+
+  return !QDir(sRoot).entryList(
+      QStringList() << "*.DRH", QDir::Files).isEmpty();
+}
+
+bool HasFileInRoot(const QString &sRoot, const QString &sFilename)
+{
+  if (sRoot.isEmpty() || sFilename.isEmpty())
+    return false;
+
+  return QFileInfo(QDir(sRoot).filePath(sFilename)).isFile();
+}
+}
 //-------------------------------------------------------------------------------------------------
 
 CNewTrackDialog::CNewTrackDialog(QWidget *pParent, int iNewTrackNum)
@@ -19,6 +39,12 @@ CNewTrackDialog::CNewTrackDialog(QWidget *pParent, int iNewTrackNum)
 
   leDir->setText(g_pMainWindow->m_sLastTrackFilesFolder);
   leName->setText("NEWTRACK" + QString::number(iNewTrackNum));
+  leTex->setText("TRACK1.DRH");
+  leBld->setText("BUILDING.DRH");
+  const int iMaxAssetNameLength =
+      static_cast<int>(ED_TRACK_ASSET_NAME_CAPACITY - 1u);
+  leTex->setMaxLength(iMaxAssetNameLength);
+  leBld->setMaxLength(iMaxAssetNameLength);
 
   connect(pbBrowse, &QPushButton::clicked, this, &CNewTrackDialog::BrowseClicked);
   connect(pbOk, &QPushButton::clicked, this, &CNewTrackDialog::OkClicked);
@@ -44,14 +70,14 @@ QString CNewTrackDialog::GetFilename()
 
 QString CNewTrackDialog::GetTex()
 {
-  return cbTex->currentText();
+  return leTex->text();
 }
 
 //-------------------------------------------------------------------------------------------------
 
 QString CNewTrackDialog::GetBld()
 {
-  return cbBld->currentText();
+  return leBld->text();
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -79,26 +105,19 @@ void CNewTrackDialog::OkClicked()
 
 void CNewTrackDialog::UpdateDialog()
 {
-  cbBld->clear();
-  cbTex->clear();
-  QDirIterator it(leDir->text(), QStringList() << "*.DRH", QDir::Files);
-  while (it.hasNext()) {
-    QString sNext = it.next();
-    int iPos = sNext.lastIndexOf('\\');
-    if (iPos < 0)
-      iPos = sNext.lastIndexOf('/');
-    sNext = sNext.right(sNext.size() - iPos - 1);
-    cbBld->addItem(sNext);
-    cbTex->addItem(sNext);
-    if (sNext.compare("BUILDING.DRH", Qt::CaseInsensitive) == 0)
-      cbBld->setCurrentIndex(cbBld->count() - 1);
-    else if (sNext.compare("TRACK1.DRH", Qt::CaseInsensitive) == 0)
-      cbTex->setCurrentIndex(cbTex->count() - 1);
-  }
-  QFileInfo palFile(leDir->text() + QDir::separator() + "PALETTE.PAL");
+  const QString sTrackFolder = leDir->text();
+  const QString sFatdataFolder = g_pMainWindow->GetFatdataFolder();
+  const bool bHasDrh = HasDrhFile(sTrackFolder)
+      || HasDrhFile(sFatdataFolder);
+  const bool bHasPalette = HasFileInRoot(sTrackFolder, "PALETTE.PAL")
+      || HasFileInRoot(sFatdataFolder, "PALETTE.PAL");
 
-  lblNoTex->setVisible(cbTex->count() == 0);
-  lblPalNotFound->setVisible(!palFile.exists());
+  lblNoTex->setText(
+      "No *.DRH files found in the track directory or FATDATA!");
+  lblNoTex->setVisible(!bHasDrh);
+  lblPalNotFound->setText(
+      "PALETTE.PAL not found in the track directory or FATDATA!");
+  lblPalNotFound->setVisible(!bHasPalette);
 }
 
 //-------------------------------------------------------------------------------------------------
