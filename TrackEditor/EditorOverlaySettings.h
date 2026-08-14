@@ -7,7 +7,7 @@
 #include <cstdint>
 
 //-------------------------------------------------------------------------------------------------
-// Translates the editor's own SHOW_* display bitmask into the facade's
+// Translates the editor's own persisted SHOW_* display words into the facade's
 // tEdOverlayState (E3A-S2).
 //
 // The two do not correspond one to one on purpose. The legacy mask names a
@@ -28,6 +28,9 @@ public:
 
   // uiShowModels is the editor's DisplaySettings.h SHOW_* bitmask.
   void SetShowModels(uint32_t uiShowModels);
+  // uiShowFeatures is the extensible show_features word. It is intentionally
+  // separate because every bit in the legacy show_models word is allocated.
+  void SetShowFeatures(uint32_t uiShowFeatures);
   // iSelFrom/iSelTo are CTrackPreview's selection bounds; a negative bound
   // means nothing is selected. The car also stands on iSelFrom, which is
   // where the legacy editor drew it, so no separate call sets its chunk.
@@ -36,6 +39,7 @@ public:
   void SetTestCar(eWhipModel carModel, eShapeSection aiLine, bool bMillionPlus);
 
   uint32_t GetShowModels() const { return m_uiShowModels; }
+  uint32_t GetShowFeatures() const { return m_uiShowFeatures; }
   const tEdOverlayState &GetOverlayState() const { return m_Overlay; }
 
   // ROLLER's own CAR_DESIGN_* index for an editor model, and the 0-based AI
@@ -52,6 +56,7 @@ private:
   void Rebuild();
 
   uint32_t m_uiShowModels;
+  uint32_t m_uiShowFeatures;
   // Until the window pushes its display settings, the preview shows what it
   // has always shown: every surface class solid, no wireframe. Deriving that
   // from a zero mask instead would blank the track for the first frames.

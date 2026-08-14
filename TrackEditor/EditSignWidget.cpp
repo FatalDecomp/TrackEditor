@@ -5,6 +5,7 @@
 #include "MainWindow.h"
 #include "QtHelpers.h"
 #include "EditSurfaceDialog.h"
+#include "EditorSignModel.h"
 #include "SignType.h"
 //-------------------------------------------------------------------------------------------------
 #if defined(_DEBUG) && defined(IS_WINDOWS)
@@ -22,6 +23,8 @@ CEditSignWidget::CEditSignWidget(QWidget *pParent)
   }
   lblUnk->hide();
   leUnk->hide();
+  lblTowerDisabled->setStyleSheet("QLabel { color : red; }");
+  lblTowerDisabled->hide();
 
   connect(g_pMainWindow, &CMainWindow::UpdateGeometrySelectionSig, this, &CEditSignWidget::UpdateGeometrySelection);
 
@@ -44,183 +47,210 @@ CEditSignWidget::~CEditSignWidget()
 
 //-------------------------------------------------------------------------------------------------
 
+bool CEditSignWidget::GetSelection(CTrack *&pTrackOut,
+                                   int &iFromOut, int &iToOut) const
+{
+  pTrackOut = g_pMainWindow->GetCurrentTrack();
+  iFromOut = g_pMainWindow->GetSelFrom();
+  iToOut = g_pMainWindow->GetSelTo();
+  return pTrackOut && iFromOut >= 0 && iToOut >= iFromOut
+      && iToOut < static_cast<int>(pTrackOut->m_chunkAy.size());
+}
+
+//-------------------------------------------------------------------------------------------------
+
+void CEditSignWidget::CommitEdit(int iEdited, const QString &sDescription)
+{
+  if (iEdited == 0)
+    return;
+  g_pMainWindow->SaveHistory(sDescription);
+  g_pMainWindow->UpdateWindow();
+}
+
+//-------------------------------------------------------------------------------------------------
+
 void CEditSignWidget::UpdateGeometrySelection(int iFrom, int iTo)
 {
   (void)(iTo);
-  if (!g_pMainWindow->GetCurrentTrack() || iFrom >= (int)g_pMainWindow->GetCurrentTrack()->m_chunkAy.size())
+  CTrack *pTrack = g_pMainWindow->GetCurrentTrack();
+  if (!pTrack || iFrom < 0
+      || iFrom >= static_cast<int>(pTrack->m_chunkAy.size()))
     return;
-  
-  BLOCK_SIG_AND_DO(dsbYaw    , setValue(g_pMainWindow->GetCurrentTrack()->m_chunkAy[iFrom].dSignYaw));
-  BLOCK_SIG_AND_DO(dsbPitch  , setValue(g_pMainWindow->GetCurrentTrack()->m_chunkAy[iFrom].dSignPitch));
-  BLOCK_SIG_AND_DO(dsbRoll   , setValue(g_pMainWindow->GetCurrentTrack()->m_chunkAy[iFrom].dSignRoll));
-  BLOCK_SIG_AND_DO(sbHOffset , setValue(g_pMainWindow->GetCurrentTrack()->m_chunkAy[iFrom].iSignHorizOffset));
-  BLOCK_SIG_AND_DO(sbVOffset , setValue(g_pMainWindow->GetCurrentTrack()->m_chunkAy[iFrom].iSignVertOffset));
-  BLOCK_SIG_AND_DO(cbType    , setCurrentIndex(cbType->findData(g_pMainWindow->GetCurrentTrack()->m_chunkAy[iFrom].iSignType)));
-  BLOCK_SIG_AND_DO(leUnk     , setText(QString::number(g_pMainWindow->GetCurrentTrack()->m_chunkAy[iFrom].iSignType)));
 
-  bool bChunkHasSign = g_pMainWindow->GetCurrentTrack()->m_chunkAy[iFrom].iSignType != -1;
-  bool bCanHaveTexture = g_pMainWindow->GetCurrentTrack()->m_chunkAy[iFrom].iSignType < g_signAyCount
-    && g_signAy[g_pMainWindow->GetCurrentTrack()->m_chunkAy[iFrom].iSignType].bCanHaveTexture;
-  bool bBillboarded = g_signAy[g_pMainWindow->GetCurrentTrack()->m_chunkAy[iFrom].iSignType].bBillboarded;
-  dsbYaw    ->setEnabled(bChunkHasSign && !bBillboarded);
-  dsbPitch  ->setEnabled(bChunkHasSign);
-  dsbRoll   ->setEnabled(bChunkHasSign);
-  sbHOffset ->setEnabled(bChunkHasSign);
-  sbVOffset ->setEnabled(bChunkHasSign);
-  cbType    ->setEnabled(bChunkHasSign);
-  pbEdit    ->setEnabled(bChunkHasSign && bCanHaveTexture);
-  lblYaw    ->setEnabled(bChunkHasSign);
-  lblPitch  ->setEnabled(bChunkHasSign);
-  lblRoll   ->setEnabled(bChunkHasSign);
+  const tGeometryChunk &Chunk = pTrack->m_chunkAy[iFrom];
+  const int iSignType = Chunk.iSignType;
+  const bool bHasTower = CEditorSignModel::IsTower(iSignType);
+  // Preserve the legacy treatment of non-tower raw values; E7-S7 only splits
+  // the >= 256 tower namespace away from the sign controls.
+  const bool bChunkHasSign = iSignType != -1 && !bHasTower;
+  const bool bKnownSign = CEditorSignModel::IsKnownSignIndex(
+      iSignType, g_signAyCount);
+  const bool bCanHaveTexture = bKnownSign
+      && g_signAy[iSignType].bCanHaveTexture;
+  // E7-S7 regression: the table may only be indexed after both bounds have
+  // been established. Tower values and the empty -1 value never reach it.
+  const bool bBillboarded = iSignType >= 0
+      && iSignType < g_signAyCount
+      && g_signAy[iSignType].bBillboarded;
+
+  BLOCK_SIG_AND_DO(dsbYaw, setValue(Chunk.dSignYaw));
+  BLOCK_SIG_AND_DO(dsbPitch, setValue(Chunk.dSignPitch));
+  BLOCK_SIG_AND_DO(dsbRoll, setValue(Chunk.dSignRoll));
+  BLOCK_SIG_AND_DO(sbHOffset, setValue(Chunk.iSignHorizOffset));
+  BLOCK_SIG_AND_DO(sbVOffset, setValue(Chunk.iSignVertOffset));
+  // Keep the last actual sign selected while a tower owns this shared field.
+  // In particular, findData(>= 256) must not replace cbType with index -1.
+  if (!bHasTower) {
+    BLOCK_SIG_AND_DO(cbType, setCurrentIndex(cbType->findData(iSignType)));
+    BLOCK_SIG_AND_DO(leUnk, setText(QString::number(iSignType)));
+  }
+
+  dsbYaw->setEnabled(bChunkHasSign && !bBillboarded);
+  dsbPitch->setEnabled(bChunkHasSign);
+  dsbRoll->setEnabled(bChunkHasSign);
+  sbHOffset->setEnabled(bChunkHasSign);
+  sbVOffset->setEnabled(bChunkHasSign);
+  cbType->setEnabled(bChunkHasSign);
+  leUnk->setEnabled(bChunkHasSign);
+  pbEdit->setEnabled(bChunkHasSign && bCanHaveTexture);
+  pbSign->setEnabled(!bHasTower);
+  lblTex->setEnabled(bChunkHasSign);
+  lblYaw->setEnabled(bChunkHasSign);
+  lblPitch->setEnabled(bChunkHasSign);
+  lblRoll->setEnabled(bChunkHasSign);
   lblHOffset->setEnabled(bChunkHasSign);
   lblVOffset->setEnabled(bChunkHasSign);
-  lblType   ->setEnabled(bChunkHasSign);
-  pbSign    ->setText(bChunkHasSign ? "Delete Sign" : "Add Sign");
+  lblType->setEnabled(bChunkHasSign);
+  pbSign->setText(bChunkHasSign ? "Delete Sign" : "Add Sign");
 
-  bool bUnk = g_pMainWindow->GetCurrentTrack()->m_chunkAy[iFrom].iSignType > 255;
+  lblTowerDisabled->setVisible(bHasTower);
+  lblTowerDisabled->setEnabled(true);
+  const bool bUnk = bChunkHasSign && iSignType > 255;
   leUnk->setVisible(bUnk);
   lblUnk->setVisible(bUnk);
-  
-  QtHelpers::UpdateTextures(lblTex, NULL, g_pMainWindow->GetCurrentTrack()->m_assets.GetSignTexture(), g_pMainWindow->GetCurrentTrack()->m_assets.GetPalette(), g_pMainWindow->GetCurrentTrack()->m_chunkAy[iFrom].iSignTexture);
+
+  QtHelpers::UpdateTextures(lblTex, NULL, pTrack->m_assets.GetSignTexture(),
+                            pTrack->m_assets.GetPalette(), Chunk.iSignTexture);
 }
 
 //-------------------------------------------------------------------------------------------------
 
 void CEditSignWidget::YawChanged(double dVal)
 {
-  int iFrom = g_pMainWindow->GetSelFrom();
-  int iTo = g_pMainWindow->GetSelTo();
-
-  if (!g_pMainWindow->GetCurrentTrack()
-      || iFrom >= (int)g_pMainWindow->GetCurrentTrack()->m_chunkAy.size()
-      || iTo >= (int)g_pMainWindow->GetCurrentTrack()->m_chunkAy.size())
+  CTrack *pTrack = nullptr;
+  int iFrom = 0;
+  int iTo = 0;
+  if (!GetSelection(pTrack, iFrom, iTo))
     return;
-
-  for (int i = iFrom; i <= iTo; ++i) {
-    g_pMainWindow->GetCurrentTrack()->m_chunkAy[i].dSignYaw = dVal;
-  }
-
-  g_pMainWindow->SaveHistory("Changed sign yaw");
-  g_pMainWindow->UpdateWindow();
+  CommitEdit(CEditorSignModel::ApplyToRange(
+      pTrack->m_chunkAy, iFrom, iTo,
+      [dVal](tGeometryChunk &Chunk) { Chunk.dSignYaw = dVal; }),
+      "Changed sign yaw");
 }
 
 //-------------------------------------------------------------------------------------------------
 
 void CEditSignWidget::PitchChanged(double dVal)
 {
-  int iFrom = g_pMainWindow->GetSelFrom();
-  int iTo = g_pMainWindow->GetSelTo();
-
-  if (!g_pMainWindow->GetCurrentTrack()
-      || iFrom >= (int)g_pMainWindow->GetCurrentTrack()->m_chunkAy.size()
-      || iTo >= (int)g_pMainWindow->GetCurrentTrack()->m_chunkAy.size())
+  CTrack *pTrack = nullptr;
+  int iFrom = 0;
+  int iTo = 0;
+  if (!GetSelection(pTrack, iFrom, iTo))
     return;
-
-  for (int i = iFrom; i <= iTo; ++i) {
-    g_pMainWindow->GetCurrentTrack()->m_chunkAy[i].dSignPitch = dVal;
-  }
-
-  g_pMainWindow->SaveHistory("Changed sign pitch");
-  g_pMainWindow->UpdateWindow();
+  CommitEdit(CEditorSignModel::ApplyToRange(
+      pTrack->m_chunkAy, iFrom, iTo,
+      [dVal](tGeometryChunk &Chunk) { Chunk.dSignPitch = dVal; }),
+      "Changed sign pitch");
 }
 
 //-------------------------------------------------------------------------------------------------
 
 void CEditSignWidget::RollChanged(double dVal)
 {
-  int iFrom = g_pMainWindow->GetSelFrom();
-  int iTo = g_pMainWindow->GetSelTo();
-
-  if (!g_pMainWindow->GetCurrentTrack()
-      || iFrom >= (int)g_pMainWindow->GetCurrentTrack()->m_chunkAy.size()
-      || iTo >= (int)g_pMainWindow->GetCurrentTrack()->m_chunkAy.size())
+  CTrack *pTrack = nullptr;
+  int iFrom = 0;
+  int iTo = 0;
+  if (!GetSelection(pTrack, iFrom, iTo))
     return;
-
-  for (int i = iFrom; i <= iTo; ++i) {
-    g_pMainWindow->GetCurrentTrack()->m_chunkAy[i].dSignRoll = dVal;
-  }
-
-  g_pMainWindow->SaveHistory("Changed sign roll");
-  g_pMainWindow->UpdateWindow();
+  CommitEdit(CEditorSignModel::ApplyToRange(
+      pTrack->m_chunkAy, iFrom, iTo,
+      [dVal](tGeometryChunk &Chunk) { Chunk.dSignRoll = dVal; }),
+      "Changed sign roll");
 }
 
 //-------------------------------------------------------------------------------------------------
 
 void CEditSignWidget::HOffsetChanged(int iVal)
 {
-  int iFrom = g_pMainWindow->GetSelFrom();
-  int iTo = g_pMainWindow->GetSelTo();
-
-  if (!g_pMainWindow->GetCurrentTrack()
-      || iFrom >= (int)g_pMainWindow->GetCurrentTrack()->m_chunkAy.size()
-      || iTo >= (int)g_pMainWindow->GetCurrentTrack()->m_chunkAy.size())
+  CTrack *pTrack = nullptr;
+  int iFrom = 0;
+  int iTo = 0;
+  if (!GetSelection(pTrack, iFrom, iTo))
     return;
-
-  for (int i = iFrom; i <= iTo; ++i) {
-    g_pMainWindow->GetCurrentTrack()->m_chunkAy[i].iSignHorizOffset = iVal;
-  }
-
-  g_pMainWindow->SaveHistory("Changed sign horiz offset");
-  g_pMainWindow->UpdateWindow();
+  CommitEdit(CEditorSignModel::ApplyToRange(
+      pTrack->m_chunkAy, iFrom, iTo,
+      [iVal](tGeometryChunk &Chunk) { Chunk.iSignHorizOffset = iVal; }),
+      "Changed sign horiz offset");
 }
 
 //-------------------------------------------------------------------------------------------------
 
 void CEditSignWidget::VOffsetChanged(int iVal)
 {
-  int iFrom = g_pMainWindow->GetSelFrom();
-  int iTo = g_pMainWindow->GetSelTo();
-
-  if (!g_pMainWindow->GetCurrentTrack()
-      || iFrom >= (int)g_pMainWindow->GetCurrentTrack()->m_chunkAy.size()
-      || iTo >= (int)g_pMainWindow->GetCurrentTrack()->m_chunkAy.size())
+  CTrack *pTrack = nullptr;
+  int iFrom = 0;
+  int iTo = 0;
+  if (!GetSelection(pTrack, iFrom, iTo))
     return;
-
-  for (int i = iFrom; i <= iTo; ++i) {
-    g_pMainWindow->GetCurrentTrack()->m_chunkAy[i].iSignVertOffset = iVal;
-  }
-
-  g_pMainWindow->SaveHistory("Changed sign vert offset");
-  g_pMainWindow->UpdateWindow();
+  CommitEdit(CEditorSignModel::ApplyToRange(
+      pTrack->m_chunkAy, iFrom, iTo,
+      [iVal](tGeometryChunk &Chunk) { Chunk.iSignVertOffset = iVal; }),
+      "Changed sign vert offset");
 }
 
 //-------------------------------------------------------------------------------------------------
 
 void CEditSignWidget::TypeChanged(int iIndex)
 {
-  int iFrom = g_pMainWindow->GetSelFrom();
-  int iTo = g_pMainWindow->GetSelTo();
-
-  if (!g_pMainWindow->GetCurrentTrack()
-      || iFrom >= (int)g_pMainWindow->GetCurrentTrack()->m_chunkAy.size()
-      || iTo >= (int)g_pMainWindow->GetCurrentTrack()->m_chunkAy.size())
+  CTrack *pTrack = nullptr;
+  int iFrom = 0;
+  int iTo = 0;
+  if (iIndex < 0 || !GetSelection(pTrack, iFrom, iTo))
+    return;
+  if (CEditorSignModel::IsTower(pTrack->m_chunkAy[iFrom].iSignType))
     return;
 
-  for (int i = iFrom; i <= iTo; ++i) {
-    g_pMainWindow->GetCurrentTrack()->m_chunkAy[i].iSignType = cbType->itemData(iIndex).toInt();
-    if (cbType->itemData(iIndex).toInt() < g_signAyCount
-        && !g_signAy[cbType->itemData(iIndex).toInt()].bCanHaveTexture) {
-      g_pMainWindow->GetCurrentTrack()->m_chunkAy[iFrom].iSignTexture = -1;
-    } else {
-      g_pMainWindow->GetCurrentTrack()->m_chunkAy[i].iSignTexture = SURFACE_FLAG_APPLY_TEXTURE;
-    }
-  }
-
-  g_pMainWindow->SaveHistory("Changed sign type");
-  g_pMainWindow->UpdateWindow();
+  const int iSignType = cbType->itemData(iIndex).toInt();
+  if (!CEditorSignModel::IsSign(iSignType))
+    return;
+  const bool bCanHaveTexture =
+      CEditorSignModel::IsKnownSignIndex(iSignType, g_signAyCount)
+      && g_signAy[iSignType].bCanHaveTexture;
+  const int iEdited = CEditorSignModel::ApplyToRange(
+      pTrack->m_chunkAy, iFrom, iTo,
+      [iSignType, bCanHaveTexture](tGeometryChunk &Chunk) {
+        Chunk.iSignType = iSignType;
+        if (bCanHaveTexture)
+          Chunk.iSignTexture = SURFACE_FLAG_APPLY_TEXTURE;
+      });
+  // Preserve the old non-textured-type behavior: only the displayed chunk's
+  // texture field was cleared, while textured types initialized the range.
+  if (iEdited != 0 && !bCanHaveTexture)
+    pTrack->m_chunkAy[iFrom].iSignTexture = -1;
+  CommitEdit(iEdited, "Changed sign type");
 }
 
 //-------------------------------------------------------------------------------------------------
 
 void CEditSignWidget::EditClicked()
 {
-  int iFrom = g_pMainWindow->GetSelFrom();
-  int iTo = g_pMainWindow->GetSelTo();
-
-  if (!g_pMainWindow->GetCurrentTrack()
-      || iFrom >= (int)g_pMainWindow->GetCurrentTrack()->m_chunkAy.size()
-      || iTo >= (int)g_pMainWindow->GetCurrentTrack()->m_chunkAy.size())
+  CTrack *pTrack = nullptr;
+  int iFrom = 0;
+  int iTo = 0;
+  if (!GetSelection(pTrack, iFrom, iTo)
+      || CEditorSignModel::IsTower(pTrack->m_chunkAy[iFrom].iSignType)) {
     return;
+  }
 
   CEditSurfaceDialog dlg(this, eSurfaceField::SURFACE_SIGN);
   dlg.exec();
@@ -233,44 +263,43 @@ void CEditSignWidget::EditClicked()
 
 void CEditSignWidget::SignClicked()
 {
-  int iFrom = g_pMainWindow->GetSelFrom();
-  int iTo = g_pMainWindow->GetSelTo();
-
-  if (!g_pMainWindow->GetCurrentTrack()
-      || iFrom >= (int)g_pMainWindow->GetCurrentTrack()->m_chunkAy.size()
-      || iTo >= (int)g_pMainWindow->GetCurrentTrack()->m_chunkAy.size())
+  CTrack *pTrack = nullptr;
+  int iFrom = 0;
+  int iTo = 0;
+  if (!GetSelection(pTrack, iFrom, iTo)
+      || CEditorSignModel::IsTower(pTrack->m_chunkAy[iFrom].iSignType)) {
     return;
-
-  bool bHasSign = g_pMainWindow->GetCurrentTrack()->m_chunkAy[iFrom].iSignType != -1;
-  for (int i = iFrom; i <= iTo; ++i) {
-    g_pMainWindow->GetCurrentTrack()->m_chunkAy[i].iSignType = bHasSign ? -1 : 9; //default sign type of balloon
-    if (!bHasSign) {
-      g_pMainWindow->GetCurrentTrack()->m_chunkAy[i].iSignTexture = SURFACE_FLAG_APPLY_TEXTURE;
-    }
   }
 
-  g_pMainWindow->SaveHistory(bHasSign ? "Removed sign" : "Added sign");
-  g_pMainWindow->UpdateWindow();
+  const bool bHasSign = pTrack->m_chunkAy[iFrom].iSignType != -1;
+  CommitEdit(CEditorSignModel::ApplyToRange(
+      pTrack->m_chunkAy, iFrom, iTo,
+      [bHasSign](tGeometryChunk &Chunk) {
+        Chunk.iSignType = bHasSign ? -1 : 9; // Balloon is the default sign.
+        if (!bHasSign)
+          Chunk.iSignTexture = SURFACE_FLAG_APPLY_TEXTURE;
+      }), bHasSign ? "Removed sign" : "Added sign");
 }
 
 //-------------------------------------------------------------------------------------------------
 
 void CEditSignWidget::UnkChanged(const QString &sText)
 {
-  int iFrom = g_pMainWindow->GetSelFrom();
-  int iTo = g_pMainWindow->GetSelTo();
-
-  if (!g_pMainWindow->GetCurrentTrack()
-      || iFrom >= (int)g_pMainWindow->GetCurrentTrack()->m_chunkAy.size()
-      || iTo >= (int)g_pMainWindow->GetCurrentTrack()->m_chunkAy.size())
+  bool bOk = false;
+  const int iSignType = sText.toInt(&bOk);
+  if (!bOk || !CEditorSignModel::IsSign(iSignType))
     return;
 
-  for (int i = iFrom; i <= iTo; ++i) {
-    g_pMainWindow->GetCurrentTrack()->m_chunkAy[i].iSignType = sText.toInt();
-  }
-
-  g_pMainWindow->SaveHistory("Changed unk sign value");
-  g_pMainWindow->UpdateWindow();
+  CTrack *pTrack = nullptr;
+  int iFrom = 0;
+  int iTo = 0;
+  if (!GetSelection(pTrack, iFrom, iTo))
+    return;
+  CommitEdit(CEditorSignModel::ApplyToRange(
+      pTrack->m_chunkAy, iFrom, iTo,
+      [iSignType](tGeometryChunk &Chunk) {
+        Chunk.iSignType = iSignType;
+      }), "Changed unk sign value");
 }
 
 //-------------------------------------------------------------------------------------------------

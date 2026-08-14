@@ -23,6 +23,7 @@
 #include "EditSignWidget.h"
 #include "EditAudioWidget.h"
 #include "EditStuntWidget.h"
+#include "EditTowerWidget.h"
 #include "qtextstream.h"
 #include "QtHelpers.h"
 #include "Logging.h"
@@ -104,6 +105,7 @@ public:
   QDockWidget *m_pEditSignDockWidget;
   QDockWidget *m_pEditAudioDockWidget;
   QDockWidget *m_pEditStuntDockWidget;
+  QDockWidget *m_pEditTowerDockWidget;
   CDisplaySettings *m_pDisplaySettings;
   QAction *m_pDebugAction;
   std::vector<CTrackPreview *> m_previewAy;
@@ -178,11 +180,19 @@ CMainWindow::CMainWindow(const QString &sAppPath, float fDesktopScale,
   p->m_pEditStuntDockWidget->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea);
   p->m_pEditStuntDockWidget->setWidget(new CEditStuntWidget(p->m_pEditStuntDockWidget));
 
+  p->m_pEditTowerDockWidget = new QDockWidget("Edit Towers", this);
+  p->m_pEditTowerDockWidget->setObjectName("EditTowers");
+  p->m_pEditTowerDockWidget->setAllowedAreas(
+      Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea);
+  p->m_pEditTowerDockWidget->setWidget(
+      new CEditTowerWidget(p->m_pEditTowerDockWidget));
+
   //setup view menu
   menuView->addAction(p->m_pEditGeometryDockWidget->toggleViewAction());
   menuView->addAction(p->m_pEditSignDockWidget->toggleViewAction());
   menuView->addAction(p->m_pEditAudioDockWidget->toggleViewAction());
   menuView->addAction(p->m_pEditStuntDockWidget->toggleViewAction());
+  menuView->addAction(p->m_pEditTowerDockWidget->toggleViewAction());
   menuView->addAction(p->m_pEditSeriesDockWidget->toggleViewAction());
   menuView->addAction(p->m_pGlobalSettingsDockWidget->toggleViewAction());
   menuView->addAction(p->m_pDisplaySettingsDockWidget->toggleViewAction());
@@ -1106,6 +1116,8 @@ void CMainWindow::OnTabChanged(int iIndex)
   bool bMillionPlus;
   uint32 uiShowModels = p->m_pDisplaySettings->GetDisplaySettings(carModel, aiLine, bMillionPlus);
   p->m_previewAy[iIndex]->ShowModels(uiShowModels);
+  p->m_previewAy[iIndex]->ShowFeatures(
+      p->m_pDisplaySettings->GetFeatureSettings());
   p->m_previewAy[iIndex]->SetAnimateStunts(
       p->m_pDisplaySettings->GetAnimateStunts());
   p->m_previewAy[iIndex]->UpdateCar(carModel, aiLine, bMillionPlus);
@@ -1230,6 +1242,8 @@ void CMainWindow::OnUpdatePreview()
   bool bMillionPlus;
   uint32 uiShowModels = p->m_pDisplaySettings->GetDisplaySettings(carModel, aiLine, bMillionPlus);
   GetCurrentPreview()->ShowModels(uiShowModels);
+  GetCurrentPreview()->ShowFeatures(
+      p->m_pDisplaySettings->GetFeatureSettings());
   GetCurrentPreview()->SetAnimateStunts(
       p->m_pDisplaySettings->GetAnimateStunts());
   GetCurrentPreview()->UpdateCar(carModel, aiLine, bMillionPlus);
@@ -1321,6 +1335,7 @@ void CMainWindow::LoadSettings()
     bool bShowEditSign = false;
     bool bShowEditAudio = false;
     bool bShowEditStunt = false;
+    bool bShowEditTower = false;
     bShowDebugData = settings.value("show_debug_data", bShowDebugData).toBool();
     bShowGlobalSettings = settings.value("show_global_settings", bShowGlobalSettings).toBool();
     bShowEditSeries = settings.value("show_edit_series", bShowEditSeries).toBool();
@@ -1329,6 +1344,8 @@ void CMainWindow::LoadSettings()
     bShowEditSign = settings.value("show_edit_sign", bShowEditSign).toBool();
     bShowEditAudio = settings.value("show_edit_audio", bShowEditAudio).toBool();
     bShowEditStunt = settings.value("show_edit_stunt", bShowEditStunt).toBool();
+    bShowEditTower = settings.value(
+        "show_edit_tower", bShowEditTower).toBool();
     p->m_pDebugDataDockWidget->setVisible(bShowDebugData);
     p->m_pGlobalSettingsDockWidget->setVisible(bShowGlobalSettings);
     p->m_pEditSeriesDockWidget->setVisible(bShowEditSeries);
@@ -1345,6 +1362,11 @@ void CMainWindow::LoadSettings()
     restoreDockWidget(p->m_pEditSignDockWidget);
     restoreDockWidget(p->m_pEditAudioDockWidget);
     restoreDockWidget(p->m_pEditStuntDockWidget);
+    // Existing window_state values predate this dock. Give it a stable home
+    // when restoreState has no saved entry, without resetting other docks.
+    if (!restoreDockWidget(p->m_pEditTowerDockWidget))
+      addDockWidget(Qt::RightDockWidgetArea, p->m_pEditTowerDockWidget);
+    p->m_pEditTowerDockWidget->setVisible(bShowEditTower);
   } else {
     addDockWidget(Qt::LeftDockWidgetArea, p->m_pDebugDataDockWidget);
     addDockWidget(Qt::RightDockWidgetArea, p->m_pGlobalSettingsDockWidget);
@@ -1354,6 +1376,7 @@ void CMainWindow::LoadSettings()
     addDockWidget(Qt::RightDockWidgetArea, p->m_pEditSignDockWidget);
     addDockWidget(Qt::RightDockWidgetArea, p->m_pEditAudioDockWidget);
     addDockWidget(Qt::RightDockWidgetArea, p->m_pEditStuntDockWidget);
+    addDockWidget(Qt::RightDockWidgetArea, p->m_pEditTowerDockWidget);
     p->m_pDebugDataDockWidget->setVisible(false);
     p->m_pGlobalSettingsDockWidget->setVisible(false);
     p->m_pEditSeriesDockWidget->setVisible(false);
@@ -1362,6 +1385,7 @@ void CMainWindow::LoadSettings()
     p->m_pEditSignDockWidget->setVisible(false);
     p->m_pEditAudioDockWidget->setVisible(false);
     p->m_pEditStuntDockWidget->setVisible(false);
+    p->m_pEditTowerDockWidget->setVisible(false);
   }
 
   //get default display settings
@@ -1369,11 +1393,14 @@ void CMainWindow::LoadSettings()
   eShapeSection aiLine;
   bool bMillionPlus;
   uint32 uiShowModels = p->m_pDisplaySettings->GetDisplaySettings(carModel, aiLine, bMillionPlus);
+  uint32 uiShowFeatures = p->m_pDisplaySettings->GetFeatureSettings();
   bool bAnimateStunts = p->m_pDisplaySettings->GetAnimateStunts();
   bool bAttachLast = p->m_pDisplaySettings->GetAttachLast();
   int iCameraSpeed = (int)CEditorCameraController::GetMovementSpeed();
   //load display settings
   uiShowModels = settings.value("show_models", uiShowModels).toUInt();
+  uiShowFeatures = settings.value(
+      "show_features", SHOW_FEATURE_TOWERS).toUInt();
   //E3A-S4 added the centre line after show_models was first written, so an
   //existing profile has its bit clear for no reason the user chose. Switch it
   //on once and remember having done so, then a later deliberate untick sticks.
@@ -1389,6 +1416,7 @@ void CMainWindow::LoadSettings()
   bAttachLast = settings.value("attach_last", bAttachLast).toBool();
   iCameraSpeed = settings.value("camera_speed", iCameraSpeed).toInt();
   //apply display settings
+  p->m_pDisplaySettings->SetFeatureSettings(uiShowFeatures);
   p->m_pDisplaySettings->SetDisplaySettings(uiShowModels, carModel, aiLine, bMillionPlus);
   p->m_pDisplaySettings->SetAnimateStunts(bAnimateStunts);
   p->m_pDisplaySettings->SetAttachLast(bAttachLast);
@@ -1464,7 +1492,10 @@ void CMainWindow::SaveSettings()
   settings.setValue("show_edit_sign", p->m_pEditSignDockWidget->isVisible());
   settings.setValue("show_edit_audio", p->m_pEditAudioDockWidget->isVisible());
   settings.setValue("show_edit_stunt", p->m_pEditStuntDockWidget->isVisible());
+  settings.setValue("show_edit_tower", p->m_pEditTowerDockWidget->isVisible());
   settings.setValue("show_models", p->m_pDisplaySettings->GetDisplaySettings(carModel, aiLine, bMillionPlus));
+  settings.setValue("show_features",
+                    p->m_pDisplaySettings->GetFeatureSettings());
   settings.setValue("animate_stunts",
                     p->m_pDisplaySettings->GetAnimateStunts());
   settings.setValue("car_model", (int)carModel);

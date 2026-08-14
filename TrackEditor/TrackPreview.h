@@ -34,6 +34,7 @@ public:
   void DeleteEnvirFloor();
   void UpdateTrack();
   void ShowModels(uint32 uiShowModels);
+  void ShowFeatures(uint32 uiShowFeatures);
   void SetAnimateStunts(bool bAnimate);
   void UpdateCar(eWhipModel carModel, eShapeSection aiLine, bool bMillionPlus);
   void AttachLast(bool bAttachLast);
@@ -64,6 +65,7 @@ public:
   void Activate();
   void RefreshGraphicsSettings();
   void MarkDocumentEdited();
+  bool ViewFromTower(int iChunkId);
   bool CanExport() const { return m_FrameState.CanExport(); }
 
   bool m_bUnsavedChanges;
@@ -125,6 +127,7 @@ private:
 
   CTrackPreviewPrivate *p;
   uint32 m_uiShowModels;
+  uint32 m_uiShowFeatures;
   eWhipModel m_carModel;
   eShapeSection m_carAILine;
   bool m_bMillionPlus;
@@ -139,6 +142,7 @@ private:
   uint64_t m_ullDocumentId;
   CDocumentFrameState m_FrameState;
   CEditorCameraController m_CameraController;
+  std::vector<tEdTowerInfo> m_Towers;
   CEditorOverlaySettings m_OverlaySettings;
   CEditorReferenceMesh m_ReferenceMesh;
   tEdReferenceMeshPayload m_PendingReferenceMesh;

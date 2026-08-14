@@ -55,6 +55,8 @@ std::atomic<uint32_t> g_uiRenderCount(0);
 std::atomic<uint32_t> g_uiStuntTickCount(0);
 std::atomic<uint32_t> g_uiStuntTicksAtLastRender(0);
 std::atomic<uint32_t> g_uiFillCount(0);
+std::atomic<uint32_t> g_uiTowerCountQueryCount(0);
+std::atomic<uint32_t> g_uiTowerQueryCount(0);
 uint32_t g_uiRefusedFillEpoch = 0;
 
 // E4-S1. The stubbed extraction is one quad, which is enough to prove the
@@ -172,6 +174,49 @@ extern "C" eRollerEdResult ROLLER_ED_CALL RollerEd_QueryGeometrySizes(
   pSizesOut->uiPrimitiveStride = sizeof(tEdPrimitive);
   pSizesOut->uiMaterialStride = sizeof(tEdMaterial);
   g_sError = "a later facade call replaced the error buffer";
+  return ROLLER_ED_RESULT_OK;
+}
+
+extern "C" eRollerEdResult ROLLER_ED_CALL RollerEd_QueryTowerCount(
+    uint32_t *puiCountOut)
+{
+  RecordFacadeThread();
+  assert(puiCountOut);
+  ++g_uiTowerCountQueryCount;
+  if (g_uiSceneState != ROLLER_ED_SCENE_READY) {
+    g_sError = "no scene";
+    return ROLLER_ED_RESULT_NO_SCENE;
+  }
+  *puiCountOut = 2u;
+  return ROLLER_ED_RESULT_OK;
+}
+
+extern "C" eRollerEdResult ROLLER_ED_CALL RollerEd_QueryTower(
+    uint32_t uiTowerIndex, tEdTowerInfo *pInfoOut)
+{
+  RecordFacadeThread();
+  assert(pInfoOut);
+  assert(pInfoOut->uiStructSize == sizeof(*pInfoOut));
+  assert(pInfoOut->uiVersion == ROLLER_ED_TOWER_INFO_VERSION);
+  ++g_uiTowerQueryCount;
+  if (g_uiSceneState != ROLLER_ED_SCENE_READY) {
+    g_sError = "no scene";
+    return ROLLER_ED_RESULT_NO_SCENE;
+  }
+  if (uiTowerIndex >= 2u) {
+    g_sError = "tower index out of range";
+    return ROLLER_ED_RESULT_INVALID_ARGUMENT;
+  }
+
+  const float fTowerIndex = static_cast<float>(uiTowerIndex);
+  pInfoOut->uiChunkId = uiTowerIndex == 0u ? 7u : 11u;
+  pInfoOut->fWorldPosition[0] = 1000.0f
+      + static_cast<float>(g_uiGeometryEpoch) + 10.0f * fTowerIndex;
+  pInfoOut->fWorldPosition[1] = 20.0f + fTowerIndex;
+  pInfoOut->fWorldPosition[2] = 30.0f + fTowerIndex;
+  pInfoOut->fAnchorPosition[0] = 40.0f + fTowerIndex;
+  pInfoOut->fAnchorPosition[1] = 50.0f + fTowerIndex;
+  pInfoOut->fAnchorPosition[2] = 60.0f + fTowerIndex;
   return ROLLER_ED_RESULT_OK;
 }
 
@@ -390,6 +435,15 @@ int main(int argc, char **argv)
   assert(GoodResult.Tag.uiActualGeometryEpoch == 1);
   assert(GoodResult.uiRenderedGeometryEpoch == 1);
   assert(GoodResult.Image.size() == QSize(4, 3));
+  assert(GoodResult.bHasTowerSnapshot);
+  assert(GoodResult.Towers.size() == 2u);
+  assert(GoodResult.Towers[0].uiStructSize == sizeof(tEdTowerInfo));
+  assert(GoodResult.Towers[0].uiVersion == ROLLER_ED_TOWER_INFO_VERSION);
+  assert(GoodResult.Towers[0].uiChunkId == 7u);
+  assert(GoodResult.Towers[0].fWorldPosition[0] == 1001.0f);
+  assert(GoodResult.Towers[0].fAnchorPosition[2] == 60.0f);
+  assert(g_uiTowerCountQueryCount.load() == 1u);
+  assert(g_uiTowerQueryCount.load() == 2u);
   assert(Document.ApplyResult(GoodResult));
   assert(Document.CanExport());
 
@@ -419,6 +473,8 @@ int main(int argc, char **argv)
     const tEdRenderResult MeshResult =
         WaitForResult(Service, ullMeshRequest);
     assert(MeshResult.Tag.eResult == ROLLER_ED_RESULT_OK);
+    assert(!MeshResult.bHasTowerSnapshot);
+    assert(MeshResult.Towers.empty());
     assert(g_uiReferenceMeshCount == 1);
     assert(g_uiReferenceVertexCount == 3);
     assert(g_uiReferenceIndexCount == 3);
@@ -435,6 +491,8 @@ int main(int argc, char **argv)
     const tEdRenderResult PlainResult =
         WaitForResult(Service, ullPlainRequest);
     assert(PlainResult.Tag.eResult == ROLLER_ED_RESULT_OK);
+    assert(!PlainResult.bHasTowerSnapshot);
+    assert(PlainResult.Towers.empty());
     assert(g_uiReferenceMeshCount == 1);
 
     // Stunt ticks are copied into the command and applied on the same worker
@@ -447,6 +505,9 @@ int main(int argc, char **argv)
     const tEdRenderResult StuntResult =
         WaitForResult(Service, ullStuntRequest);
     assert(StuntResult.Tag.eResult == ROLLER_ED_RESULT_OK);
+    assert(!StuntResult.bHasTowerSnapshot);
+    assert(g_uiTowerCountQueryCount.load() == 1u);
+    assert(g_uiTowerQueryCount.load() == 2u);
     assert(g_uiStuntTickCount.load() == 3u);
     assert(g_uiStuntTicksAtLastRender.load() == 3u);
   }
@@ -466,6 +527,10 @@ int main(int argc, char **argv)
   assert(g_sLoadedAssetRoot == "original-document-assets");
   assert(!QFile::exists(sEditedTemporaryTrack));
   assert(EditedResult.Tag.eResult == ROLLER_ED_RESULT_OK);
+  assert(EditedResult.bHasTowerSnapshot);
+  assert(EditedResult.Towers.size() == 2u);
+  assert(EditedResult.Towers[0].fWorldPosition[0]
+         != GoodResult.Towers[0].fWorldPosition[0]);
   assert(Document.ApplyResult(EditedResult));
   assert(Document.CanExport());
 
@@ -479,6 +544,8 @@ int main(int argc, char **argv)
   const QString sFailedTemporaryTrack =
       QString::fromLocal8Bit(g_sLoadedTrackPath.c_str());
   assert(FailedResult.Tag.eResult == ROLLER_ED_RESULT_LOAD_FAILED);
+  assert(FailedResult.bHasTowerSnapshot);
+  assert(FailedResult.Towers.empty());
   assert(FailedResult.sErrorText == "copied load error");
   assert(g_sError == "a later facade call replaced the error buffer");
   assert(!QFile::exists(sFailedTemporaryTrack));
@@ -532,6 +599,8 @@ int main(int argc, char **argv)
       WaitForResult(Service, ullEmptyTabBRequest);
   assert(EmptyTabBResult.Tag.eResult == ROLLER_ED_RESULT_OK);
   assert(EmptyTabBResult.bSceneEmpty);
+  assert(EmptyTabBResult.bHasTowerSnapshot);
+  assert(EmptyTabBResult.Towers.empty());
   assert(g_uiSceneState == ROLLER_ED_SCENE_EMPTY);
   assert(TabB.ApplyResult(EmptyTabBResult));
   assert(TabB.GetDisplayState() == eEdFrameDisplayState::PLACEHOLDER);

@@ -42,5 +42,10 @@
 #define SHOW_CENTER_LINE           0x20000000
 #define SHOW_REF_MODEL             0x40000000
 #define SHOW_REF_WIRE_MODEL        0x80000000
+
+// The original show_models word is full. New display features are persisted
+// in a separate QSettings word named "show_features". These values are part
+// of the saved editor profile too, so do not renumber or reuse them.
+#define SHOW_FEATURE_TOWERS        0x00000001
 //-------------------------------------------------------------------------------------------------
 #endif
