@@ -143,9 +143,16 @@ void CDebugChunkData::UpdateTextures(QLineEdit *pLineEdit, QLabel *pTex1, QLabel
       pixmap.convertFromImage(QtHelpers::GetQImageFromTile(g_pMainWindow->GetCurrentTrack()->m_assets.GetMainTexture()->m_pTileAy[iIndex]));
       pTex1->setPixmap(pixmap);
 
-      if (uiSignedBitVal & SURFACE_FLAG_TEXTURE_PAIR && iIndex > 0) {
-        pixmap.convertFromImage(QtHelpers::GetQImageFromTile(g_pMainWindow->GetCurrentTrack()->m_assets.GetMainTexture()->m_pTileAy[iIndex + 1]));
-        pTex2->setPixmap(pixmap);
+      if (uiSignedBitVal & SURFACE_FLAG_TEXTURE_PAIR) {
+        const QImage PairRight = QtHelpers::GetQImageFromPairRightTile(
+            *g_pMainWindow->GetCurrentTrack()->m_assets.GetMainTexture(),
+            iIndex);
+        if (!PairRight.isNull()) {
+          pixmap.convertFromImage(PairRight);
+          pTex2->setPixmap(pixmap);
+        } else {
+          pTex2->setPixmap(QPixmap());
+        }
       } else {
         pTex2->setPixmap(QPixmap());
       }

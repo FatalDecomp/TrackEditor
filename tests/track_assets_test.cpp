@@ -217,6 +217,72 @@ void TestCanonicalExportAtlas()
   Require(ReadPngDimension(mainPng, 20)
           == static_cast<std::uint32_t>(TILE_HEIGHT * 2));
 }
+
+void TestRendererPairRightTile()
+{
+  CTemporaryAssetDirectory directory;
+
+  std::vector<std::uint8_t> palette(PALETTE_SIZE * 3, 0);
+  for (int i = 0; i < 64; ++i)
+    palette[static_cast<size_t>(i) * 3] = static_cast<std::uint8_t>(i);
+  WriteBytes(directory.Path() / "PALETTE.PAL", palette);
+
+  const int iContentTiles = 6;
+  const size_t iTileBytes = static_cast<size_t>(TILE_WIDTH * TILE_HEIGHT);
+  std::vector<std::uint8_t> texture(iTileBytes * iContentTiles, 0);
+  for (int i = 0; i < iContentTiles; ++i) {
+    for (int y = 0; y < TILE_HEIGHT; ++y) {
+      const std::uint8_t byRowMarker =
+          static_cast<std::uint8_t>(i * 10 + y);
+      std::fill(texture.begin() + static_cast<size_t>(i) * iTileBytes
+                    + static_cast<size_t>(y) * TILE_WIDTH,
+                texture.begin() + static_cast<size_t>(i) * iTileBytes
+                    + static_cast<size_t>(y + 1) * TILE_WIDTH,
+                byRowMarker);
+    }
+  }
+  WriteBytes(directory.Path() / "MAIN.DRH", texture);
+  WriteBytes(directory.Path() / "SIGNS.DRH",
+             MangleAsLiterals(std::vector<std::uint8_t>(iTileBytes, 1)));
+
+  CTrackAssets assets;
+  Require(assets.LoadFromDocument(directory.Path().string(), "MAIN.DRH",
+                                  "SIGNS.DRH"));
+  const CTexture *pTexture = assets.GetMainTexture();
+  Require(pTexture != nullptr);
+
+  // A normal pair takes its right half directly from the next logical tile.
+  tTile PairRight = {};
+  Require(pTexture->GeneratePairRightTile(1, PairRight));
+  for (int y = 0; y < TILE_HEIGHT; ++y) {
+    Require(PairRight.data[0][y].r
+            == pTexture->m_pTileAy[2].data[0][y].r);
+  }
+
+  // Tile 3 ends the first four-wide atlas row. ROLLER does not jump to all of
+  // tile 4: its flat 128-pixel read wraps to tile 0 one scanline down, then
+  // reaches tile 4 only for the final output scanline.
+  Require(pTexture->GeneratePairRightTile(3, PairRight));
+  for (int y = 0; y < TILE_HEIGHT - 1; ++y) {
+    Require(PairRight.data[0][y].r
+            == pTexture->m_pTileAy[0].data[0][y + 1].r);
+    Require(PairRight.data[TILE_WIDTH - 1][y].r
+            == pTexture->m_pTileAy[0].data[TILE_WIDTH - 1][y + 1].r);
+  }
+  Require(PairRight.data[0][TILE_HEIGHT - 1].r
+          == pTexture->m_pTileAy[4].data[0][0].r);
+  Require(PairRight.data[TILE_WIDTH - 1][TILE_HEIGHT - 1].r
+          == pTexture->m_pTileAy[4].data[TILE_WIDTH - 1][0].r);
+
+  // The renderer builds no pair for the final content tile, and invalid
+  // requests leave the caller's output untouched.
+  const tTextureColor Sentinel{1, 2, 3, 4};
+  PairRight.data[0][0] = Sentinel;
+  Require(!pTexture->GeneratePairRightTile(-1, PairRight));
+  Require(PairRight.data[0][0].r == Sentinel.r);
+  Require(!pTexture->GeneratePairRightTile(iContentTiles - 1, PairRight));
+  Require(PairRight.data[0][0].r == Sentinel.r);
+}
 }
 
 int main()
@@ -281,5 +347,6 @@ int main()
   Require(!assets.ExportTextures(mainPng.string(), signPng.string()));
 
   TestCanonicalExportAtlas();
+  TestRendererPairRightTile();
   return 0;
 }

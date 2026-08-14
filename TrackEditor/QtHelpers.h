@@ -26,6 +26,9 @@ namespace QtHelpers
   extern void UpdateSignButtonDisplay(QPushButton *pPushButton, QCheckBox *pCheckbox, QLineEdit *pLineEdit, CTexture *pTex);
   extern void UpdateTextures(QLabel *pLblTex1, QLabel *pLblTex2, CTexture *pTex, CPalette *pPal, int iSurface);
   extern QImage GetQImageFromTile(const tTile &tile, bool bScale = false);
+  extern QImage GetQImageFromPairRightTile(const CTexture &texture,
+                                           int iTileIndex,
+                                           bool bScale = false);
   extern QImage GetQImageFromColor(const tPaletteColor &color, bool bScale = false);
 };
 

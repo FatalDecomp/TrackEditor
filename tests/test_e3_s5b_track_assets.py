@@ -106,6 +106,34 @@ class TrackAssetsContractTests(unittest.TestCase):
         self.assertIn("ExportTextures", assets_header)
         self.assertIn("m_assets.ExportTextures", preview_source)
 
+    def test_paired_texture_previews_follow_the_flat_atlas_read(self) -> None:
+        texture_header = (TRACK_ASSETS / "Texture.h").read_text(encoding="utf-8")
+        texture_source = (TRACK_ASSETS / "Texture.cpp").read_text(encoding="utf-8")
+        native_test = (ROOT / "tests" / "track_assets_test.cpp").read_text(
+            encoding="utf-8"
+        )
+
+        self.assertIn("GeneratePairRightTile", texture_header)
+        self.assertIn("iFirstTileInRow", texture_source)
+        self.assertIn("TestRendererPairRightTile", native_test)
+
+        # These are the three surface-preview paths: the main chunk-data
+        # panel, its Edit Surface dialog, and the raw Edit Chunk Data widget.
+        # None may go back to treating a pair as two independent logical
+        # tiles, because last-column pairs wrap within the atlas scanline.
+        for filename in (
+            "QtHelpers.cpp",
+            "EditSurfaceDialog.cpp",
+            "DebugChunkData.cpp",
+        ):
+            source = (EDITOR / filename).read_text(encoding="utf-8")
+            self.assertIn("GetQImageFromPairRightTile", source, filename)
+            self.assertNotRegex(
+                source,
+                r"m_pTileAy\s*\[\s*iIndex\s*\+\s*1\s*\]",
+                filename,
+            )
+
 
 if __name__ == "__main__":
     unittest.main()

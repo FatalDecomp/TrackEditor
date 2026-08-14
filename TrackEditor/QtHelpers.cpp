@@ -71,10 +71,13 @@ void QtHelpers::UpdateTextures(QLabel *pLblTex1, QLabel *pLblTex2, CTexture *pTe
         if (pLblTex1)
           pLblTex1->setPixmap(pixmap);
 
-        if (uiSignedBitVal & SURFACE_FLAG_TEXTURE_PAIR && iIndex > 0) {
-          pixmap.convertFromImage(QtHelpers::GetQImageFromTile(pTex->m_pTileAy[iIndex + 1], true));
-          if (pLblTex2)
+        if (uiSignedBitVal & SURFACE_FLAG_TEXTURE_PAIR) {
+          const QImage PairRight =
+              QtHelpers::GetQImageFromPairRightTile(*pTex, iIndex, true);
+          if (pLblTex2 && !PairRight.isNull()) {
+            pixmap.convertFromImage(PairRight);
             pLblTex2->setPixmap(pixmap);
+          }
         }
       }
     } else if (uiSignedBitVal & SURFACE_FLAG_TRANSPARENT) {
@@ -107,6 +110,17 @@ QImage QtHelpers::GetQImageFromTile(const tTile &tile, bool bScale)
                         (int)(TILE_HEIGHT * g_pMainWindow->GetDesktopScale() / 200.0));
   else
     return image;
+}
+
+//-------------------------------------------------------------------------------------------------
+
+QImage QtHelpers::GetQImageFromPairRightTile(const CTexture &texture,
+                                             int iTileIndex, bool bScale)
+{
+  tTile PairRight;
+  if (!texture.GeneratePairRightTile(iTileIndex, PairRight))
+    return QImage();
+  return GetQImageFromTile(PairRight, bScale);
 }
 
 //-------------------------------------------------------------------------------------------------

@@ -670,10 +670,16 @@ void CEditSurfaceDialog::UpdateDialog()
       pixmap.convertFromImage(QtHelpers::GetQImageFromTile(GetTexture()->m_pTileAy[iIndex]));
       pbTexture1->setIcon(pixmap);
 
-      if (uiValue & SURFACE_FLAG_TEXTURE_PAIR && iIndex > 0) {
-        QPixmap pixmap2;
-        pixmap2.convertFromImage(QtHelpers::GetQImageFromTile(GetTexture()->m_pTileAy[iIndex + 1]));
-        lblTexture2->setPixmap(pixmap2);
+      if (uiValue & SURFACE_FLAG_TEXTURE_PAIR) {
+        const QImage PairRight =
+            QtHelpers::GetQImageFromPairRightTile(*GetTexture(), iIndex);
+        if (!PairRight.isNull()) {
+          QPixmap pixmap2;
+          pixmap2.convertFromImage(PairRight);
+          lblTexture2->setPixmap(pixmap2);
+        } else {
+          lblTexture2->setPixmap(QPixmap());
+        }
       } else {
         lblTexture2->setPixmap(QPixmap());
       }

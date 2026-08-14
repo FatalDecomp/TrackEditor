@@ -84,6 +84,13 @@ public:
   std::uint8_t *GenerateExportAtlas(int &iWidth, int &iHeight,
                                     int &iSize) const;
 
+  // Builds the right half of the pair exactly as ROLLER's flat 256-pixel
+  // atlas read sees it. Usually this is tile N + 1. When N is in the last
+  // atlas column, though, the read wraps within each scanline, so it is the
+  // first tile of N's row shifted by one scanline, followed by the first
+  // scanline of tile N + 1. Returns false when N has no renderable pair.
+  bool GeneratePairRightTile(int iTileIndex, tTile &TileOut) const;
+
   bool ExportToPngFile(const std::string &sFilename) const;
   int GetNumTiles() const;
   int GetAtlasTileCount() const { return m_iNumTiles; }

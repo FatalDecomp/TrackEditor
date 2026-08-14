@@ -198,6 +198,36 @@ std::uint8_t *CTexture::GenerateExportAtlas(int &iWidth, int &iHeight,
 
 //-------------------------------------------------------------------------------------------------
 
+bool CTexture::GeneratePairRightTile(int iTileIndex, tTile &TileOut) const
+{
+  const int iTiles = GetNumTiles();
+  if (!m_pTileAy || iTileIndex < 0 || iTileIndex >= iTiles - 1)
+    return false;
+
+  const int iTilesPerRow = GetExportTilesPerRow();
+  if (iTileIndex % iTilesPerRow != iTilesPerRow - 1) {
+    TileOut = m_pTileAy[iTileIndex + 1];
+    return true;
+  }
+
+  // ROLLER's wall sampler starts from tile N's pointer and reads a 128-pixel
+  // row through a 256-pixel-wide atlas. At the last column, the right half of
+  // output row Y therefore begins at column zero of atlas row Y + 1. For the
+  // first 63 scanlines that is the first tile in N's own tile row, shifted by
+  // one scanline; the final scanline crosses into the following tile row.
+  const int iFirstTileInRow = iTileIndex - (iTileIndex % iTilesPerRow);
+  for (int y = 0; y < TILE_HEIGHT - 1; ++y) {
+    for (int x = 0; x < TILE_WIDTH; ++x)
+      TileOut.data[x][y] = m_pTileAy[iFirstTileInRow].data[x][y + 1];
+  }
+  for (int x = 0; x < TILE_WIDTH; ++x)
+    TileOut.data[x][TILE_HEIGHT - 1] = m_pTileAy[iTileIndex + 1].data[x][0];
+
+  return true;
+}
+
+//-------------------------------------------------------------------------------------------------
+
 bool CTexture::ExportToPngFile(const std::string &sFilename) const
 {
   if (!IsLoaded() || sFilename.empty())
