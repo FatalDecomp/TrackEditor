@@ -29,6 +29,9 @@ set(trackeditor_sources
     EditStuntWidget.cpp
     EditStuntWidget.h
     EditStuntWidget.ui
+    EditTowerWidget.cpp
+    EditTowerWidget.h
+    EditTowerWidget.ui
     EditSurfaceDialog.cpp
     EditSurfaceDialog.h
     EditSurfaceDialog.ui
@@ -52,6 +55,8 @@ set(trackeditor_sources
     EditorOverlaySettings.h
     EditorReferenceMesh.cpp
     EditorReferenceMesh.h
+    EditorTowerModel.cpp
+    EditorTowerModel.h
     EditorRenderQueue.cpp
     EditorRenderQueue.h
     EditorRenderService.cpp

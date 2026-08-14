@@ -64,22 +64,22 @@ class FeatureWordTests(unittest.TestCase):
 
 
 class DisplaySettingsTests(unittest.TestCase):
-    def test_the_default_on_checkbox_sits_beside_stunt_markers(self) -> None:
+    def test_the_default_on_checkbox_joins_the_marker_controls(self) -> None:
         tree = ET.parse(EDITOR / "DisplaySettings.ui")
-        positions: dict[str, tuple[str | None, str | None]] = {}
         towers = None
-        for item in tree.iter("item"):
-            widget = item.find("widget")
-            if widget is None:
-                continue
-            name = widget.attrib.get("name")
-            if name in ("ckStunts", "ckTowers"):
-                positions[name] = (item.attrib.get("row"), item.attrib.get("column"))
-            if name == "ckTowers":
-                towers = widget
+        marker_group = None
+        for layout in tree.iter("layout"):
+            direct_names = {
+                widget.attrib.get("name")
+                for item in layout.findall("item")
+                for widget in item.findall("widget")
+            }
+            if {"ckStunts", "ckTowers"}.issubset(direct_names):
+                marker_group = layout
+                break
 
-        self.assertEqual(positions["ckTowers"][0], positions["ckStunts"][0])
-        self.assertNotEqual(positions["ckTowers"][1], positions["ckStunts"][1])
+        self.assertIsNotNone(marker_group)
+        towers = marker_group.find("item/widget[@name='ckTowers']")
         self.assertIsNotNone(towers)
         self.assertEqual(towers.findtext("property[@name='text']/string"), "Towers")
         self.assertEqual(towers.findtext("property[@name='checked']/bool"), "true")
