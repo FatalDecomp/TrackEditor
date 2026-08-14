@@ -64,6 +64,16 @@
          </property>
         </widget>
        </item>
+       <item row="0" column="1" colspan="2">
+        <widget class="QLabel" name="lblTowerDisabled">
+         <property name="text">
+          <string>Tower exists on this chunk</string>
+         </property>
+         <property name="alignment">
+          <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+         </property>
+        </widget>
+       </item>
        <item row="3" column="0">
         <widget class="QLabel" name="lblHOffset">
          <property name="text">

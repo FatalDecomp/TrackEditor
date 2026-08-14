@@ -65,6 +65,18 @@ if(BUILD_TESTING)
     add_test(NAME trackeditor-e7-s5-tower-model
              COMMAND trackeditor-e7-s5-tower-model-test)
 
+    add_executable(trackeditor-e7-s7-sign-model-test
+        tests/editor_sign_model_test.cpp
+        TrackEditor/EditorSignModel.cpp
+        TrackEditor/EditorSignModel.h)
+    target_compile_features(trackeditor-e7-s7-sign-model-test PRIVATE cxx_std_17)
+    target_include_directories(trackeditor-e7-s7-sign-model-test PRIVATE
+        "${CMAKE_CURRENT_SOURCE_DIR}/TrackEditor")
+    target_link_libraries(trackeditor-e7-s7-sign-model-test PRIVATE
+        TrackEditor::track-model)
+    add_test(NAME trackeditor-e7-s7-sign-model
+             COMMAND trackeditor-e7-s7-sign-model-test)
+
     find_package(Python3 COMPONENTS Interpreter QUIET)
     if(Python3_Interpreter_FOUND)
         add_test(
@@ -226,6 +238,11 @@ if(BUILD_TESTING)
             NAME trackeditor-e7-s6-view-from-tower-contract
             COMMAND "${Python3_EXECUTABLE}"
                     "${CMAKE_CURRENT_SOURCE_DIR}/tests/test_e7_s6_view_from_tower.py"
+                    -v)
+        add_test(
+            NAME trackeditor-e7-s7-sign-tower-lockout-contract
+            COMMAND "${Python3_EXECUTABLE}"
+                    "${CMAKE_CURRENT_SOURCE_DIR}/tests/test_e7_s7_sign_tower_lockout.py"
                     -v)
         add_test(
             NAME trackeditor-graphics-settings-contract
@@ -418,6 +435,7 @@ if(BUILD_TESTING)
             trackeditor-e3-s5a-track-model-test
             trackeditor-e3-s5b-track-assets-test
             trackeditor-e7-s5-tower-model-test
+            trackeditor-e7-s7-sign-model-test
             trackeditor-e3-s1-frame-delivery-test
             trackeditor-e3-s1-render-service-test
             trackeditor-e3a-s2-overlay-settings-test

@@ -55,6 +55,8 @@ set(trackeditor_sources
     EditorOverlaySettings.h
     EditorReferenceMesh.cpp
     EditorReferenceMesh.h
+    EditorSignModel.cpp
+    EditorSignModel.h
     EditorTowerModel.cpp
     EditorTowerModel.h
     EditorRenderQueue.cpp

@@ -1,5 +1,6 @@
 #include "TrackEditor.h"
 #include "EditSurfaceDialog.h"
+#include "EditorSignModel.h"
 #include "Texture.h"
 #include "Palette.h"
 #include "TilePicker.h"
@@ -537,6 +538,7 @@ void CEditSurfaceDialog::UpdateValueHelper(uint32 uiFlag, bool bChecked)
 int &CEditSurfaceDialog::GetValue(int i)
 {
   if (!g_pMainWindow->GetCurrentTrack()
+      || i < 0
       || i >= (int)g_pMainWindow->GetCurrentTrack()->m_chunkAy.size())
     return (int&)m_uiSignedBitValue;
 
@@ -553,7 +555,15 @@ int &CEditSurfaceDialog::GetValue(int i)
     case eSurfaceField::SURFACE_RLOWALL:   return g_pMainWindow->GetCurrentTrack()->m_chunkAy[i].iRLOuterWallType;       break;
     case eSurfaceField::SURFACE_RUOWALL:   return g_pMainWindow->GetCurrentTrack()->m_chunkAy[i].iRUOuterWallType;       break;
     case eSurfaceField::SURFACE_ENVFLOOR:  return g_pMainWindow->GetCurrentTrack()->m_chunkAy[i].iEnvironmentFloorType;  break;
-    case eSurfaceField::SURFACE_SIGN:      return g_pMainWindow->GetCurrentTrack()->m_chunkAy[i].iSignTexture;           break;
+    case eSurfaceField::SURFACE_SIGN:
+      // The texture editor is opened by EditSignWidget and also writes a
+      // range. Route tower entries to scratch storage so those shared sign
+      // columns remain byte-identical in a mixed selection. E7-S7.
+      if (CEditorSignModel::IsTower(
+              g_pMainWindow->GetCurrentTrack()->m_chunkAy[i].iSignType)) {
+        return (int&)m_uiSignedBitValue;
+      }
+      return g_pMainWindow->GetCurrentTrack()->m_chunkAy[i].iSignTexture;
     default: return g_pMainWindow->GetCurrentTrack()->m_chunkAy[i].iEnvironmentFloorType;
   }
 }

@@ -4,6 +4,7 @@
 #include "ui_EditSignWidget.h"
 //-------------------------------------------------------------------------------------------------
 class CEditSignWidgetPrivate;
+class CTrack;
 //-------------------------------------------------------------------------------------------------
 
 class CEditSignWidget : public QWidget, private Ui::EditSignWidget
@@ -25,6 +26,10 @@ protected slots:
   void EditClicked();
   void SignClicked();
   void UnkChanged(const QString &sText);
+
+private:
+  bool GetSelection(CTrack *&pTrackOut, int &iFromOut, int &iToOut) const;
+  void CommitEdit(int iEdited, const QString &sDescription);
 };
 
 //-------------------------------------------------------------------------------------------------
