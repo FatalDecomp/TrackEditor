@@ -52,7 +52,7 @@ const tSurfaceClassToggle g_aToggles[] = {
 //-------------------------------------------------------------------------------------------------
 struct tFeatureToggle
 {
-  uint32_t uiShowModelsBit;
+  uint32_t uiEditorBit;
   uint32_t uiOverlayFlag;
 };
 
@@ -122,12 +122,19 @@ const tFeatureToggle g_aFeatures[] = {
   { SHOW_STUNTS,              ROLLER_ED_OVERLAY_SHOW_STUNT_MARKERS },
   { SHOW_REF_MODEL,           ROLLER_ED_OVERLAY_SHOW_REFERENCE_MESH }
 };
+
+// The second persisted word starts here. Keeping a separate table makes it
+// impossible for a new feature to alias one of the 32 legacy show_models bits.
+const tFeatureToggle g_aDisplayFeatures[] = {
+  { SHOW_FEATURE_TOWERS, ROLLER_ED_OVERLAY_SHOW_TOWER_MARKERS }
+};
 }
 
 //-------------------------------------------------------------------------------------------------
 
 CEditorOverlaySettings::CEditorOverlaySettings()
   : m_uiShowModels(0)
+  , m_uiShowFeatures(0)
   , m_bHasShowModels(false)
   , m_iSelFrom(-1)
   , m_iSelTo(-1)
@@ -197,6 +204,14 @@ void CEditorOverlaySettings::SetShowModels(uint32_t uiShowModels)
 
 //-------------------------------------------------------------------------------------------------
 
+void CEditorOverlaySettings::SetShowFeatures(uint32_t uiShowFeatures)
+{
+  m_uiShowFeatures = uiShowFeatures;
+  Rebuild();
+}
+
+//-------------------------------------------------------------------------------------------------
+
 void CEditorOverlaySettings::SetSelectionRange(int iSelFrom, int iSelTo)
 {
   m_iSelFrom = iSelFrom;
@@ -235,9 +250,10 @@ void CEditorOverlaySettings::Rebuild()
       uiWireframeClassMask |= ROLLER_ED_OVERLAY_CLASS_BIT(Toggle.uiSurfaceClass);
   }
 
-  // Buildings and towers have never had a checkbox: the legacy editor always
-  // drew them. Keeping their class bits set preserves that, and leaves the
-  // door open for a checkbox later without another ABI change.
+  // Buildings and towers have no legacy surface-checkbox bits, so their class
+  // bits stay available. The core additionally requires SHOW_TOWER_MARKERS
+  // for a tower, so this class-mask compatibility does not override the new
+  // Towers feature checkbox.
   uiSurfaceClassMask |=
       ROLLER_ED_OVERLAY_CLASS_BIT(ROLLER_ED_SURFACE_CLASS_BUILDING)
       | ROLLER_ED_OVERLAY_CLASS_BIT(ROLLER_ED_SURFACE_CLASS_TOWER);
@@ -251,7 +267,12 @@ void CEditorOverlaySettings::Rebuild()
     uiFlags |= ROLLER_ED_OVERLAY_SHOW_WIREFRAME;
 
   for (const tFeatureToggle &Feature : g_aFeatures) {
-    if ((m_uiShowModels & Feature.uiShowModelsBit) != 0)
+    if ((m_uiShowModels & Feature.uiEditorBit) != 0)
+      uiFlags |= Feature.uiOverlayFlag;
+  }
+
+  for (const tFeatureToggle &Feature : g_aDisplayFeatures) {
+    if ((m_uiShowFeatures & Feature.uiEditorBit) != 0)
       uiFlags |= Feature.uiOverlayFlag;
   }
 

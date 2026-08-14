@@ -54,7 +54,8 @@ bool ClassInMask(uint32_t uiMask, uint32_t uiSurfaceClass)
   return (uiMask & ROLLER_ED_OVERLAY_CLASS_BIT(uiSurfaceClass)) != 0;
 }
 
-// Buildings and towers never had a checkbox and must stay visible.
+// Buildings and towers have no legacy surface-checkbox bits. Tower drawing
+// additionally requires the second-word marker flag after E7-S4.
 const uint32_t g_uiAlwaysVisible =
     ROLLER_ED_OVERLAY_CLASS_BIT(ROLLER_ED_SURFACE_CLASS_BUILDING)
     | ROLLER_ED_OVERLAY_CLASS_BIT(ROLLER_ED_SURFACE_CLASS_TOWER);
@@ -106,7 +107,7 @@ void test_each_checkbox_selects_exactly_its_own_class()
     assert((Wire.uiFlags & ROLLER_ED_OVERLAY_SHOW_WIREFRAME) != 0);
     assert(Wire.uiWireframeClassMask
            == ROLLER_ED_OVERLAY_CLASS_BIT(Expected.uiSurfaceClass));
-    // Only buildings and towers remain solid: no track class was checked.
+    // Only the non-legacy class bits remain: no track class was checked.
     assert(Wire.uiSurfaceClassMask == g_uiAlwaysVisible);
   }
 }
@@ -155,15 +156,17 @@ void test_signs_follow_their_single_checkbox()
                       ROLLER_ED_SURFACE_CLASS_SIGN));
 }
 
-void test_buildings_and_towers_are_always_drawn()
+void test_building_and_tower_class_bits_remain_available()
 {
   CEditorOverlaySettings Settings;
 
   Settings.SetShowModels(0);
   const tEdOverlayState &State = Settings.GetOverlayState();
   assert(State.uiSurfaceClassMask == g_uiAlwaysVisible);
-  // Even with every box cleared, the master stays on for them.
+  // Even with every legacy surface box cleared, the class mask stays valid.
+  // A tower still needs ROLLER_ED_OVERLAY_SHOW_TOWER_MARKERS to be accepted.
   assert((State.uiFlags & ROLLER_ED_OVERLAY_SHOW_SURFACES) != 0);
+  assert((State.uiFlags & ROLLER_ED_OVERLAY_SHOW_TOWER_MARKERS) == 0);
   assert((State.uiFlags & ROLLER_ED_OVERLAY_SHOW_WIREFRAME) == 0);
 }
 
@@ -194,6 +197,39 @@ void test_feature_toggles_map_to_overlay_flags()
   }
 }
 
+void test_the_second_feature_word_controls_tower_markers()
+{
+  static_assert(SHOW_FEATURE_TOWERS == 0x00000001,
+                "persisted show_features values must not be renumbered");
+
+  CEditorOverlaySettings Settings;
+  Settings.SetShowModels(SHOW_CENTER_SURF_MODEL | SHOW_AUDIO);
+  assert((Settings.GetOverlayState().uiFlags
+          & ROLLER_ED_OVERLAY_SHOW_TOWER_MARKERS) == 0);
+
+  Settings.SetShowFeatures(SHOW_FEATURE_TOWERS);
+  assert(Settings.GetShowFeatures() == SHOW_FEATURE_TOWERS);
+  assert((Settings.GetOverlayState().uiFlags
+          & ROLLER_ED_OVERLAY_SHOW_TOWER_MARKERS) != 0);
+  // The second word changes only its feature: it cannot overwrite a legacy
+  // preference while both words are translated into one facade request.
+  assert((Settings.GetOverlayState().uiFlags
+          & ROLLER_ED_OVERLAY_SHOW_AUDIO_MARKERS) != 0);
+  assert(ClassInMask(Settings.GetOverlayState().uiSurfaceClassMask,
+                     ROLLER_ED_SURFACE_CLASS_CENTER));
+
+  Settings.SetShowFeatures(0);
+  assert((Settings.GetOverlayState().uiFlags
+          & ROLLER_ED_OVERLAY_SHOW_TOWER_MARKERS) == 0);
+  assert((Settings.GetOverlayState().uiFlags
+          & ROLLER_ED_OVERLAY_SHOW_AUDIO_MARKERS) != 0);
+
+  // Reserved bits in the extensible word are inert until explicitly mapped.
+  Settings.SetShowFeatures(0x80000000u);
+  assert((Settings.GetOverlayState().uiFlags
+          & ROLLER_ED_OVERLAY_SHOW_TOWER_MARKERS) == 0);
+}
+
 void test_no_undefined_flag_or_class_bit_is_ever_published()
 {
   // The facade refuses an unknown flag or class bit outright, so a mask this
@@ -222,7 +258,8 @@ void test_no_undefined_flag_or_class_bit_is_ever_published()
                 | ROLLER_ED_OVERLAY_SHOW_TEST_CAR
                 | ROLLER_ED_OVERLAY_SHOW_REFERENCE_MESH
                 | ROLLER_ED_OVERLAY_TEST_CAR_MILLION_PLUS
-                | ROLLER_ED_OVERLAY_TEST_CAR_ADVANCED)) == 0);
+                | ROLLER_ED_OVERLAY_TEST_CAR_ADVANCED
+                | ROLLER_ED_OVERLAY_SHOW_TOWER_MARKERS)) == 0);
   }
 }
 
@@ -552,8 +589,9 @@ int main()
   test_each_checkbox_selects_exactly_its_own_class();
   test_surface_and_wireframe_stay_independent();
   test_signs_follow_their_single_checkbox();
-  test_buildings_and_towers_are_always_drawn();
+  test_building_and_tower_class_bits_remain_available();
   test_feature_toggles_map_to_overlay_flags();
+  test_the_second_feature_word_controls_tower_markers();
   test_no_undefined_flag_or_class_bit_is_ever_published();
   test_selection_range_uses_the_sentinel_for_no_selection();
   test_every_car_model_maps_to_a_design_in_range();

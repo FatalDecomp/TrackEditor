@@ -17,6 +17,8 @@ public:
 
   uint32 GetDisplaySettings(eWhipModel &carModel, eShapeSection &aiLine, bool &bMillionPlus);
   void SetDisplaySettings(uint32 uiShowModels, eWhipModel carModel, eShapeSection aiLine, bool bMillionPlus);
+  uint32 GetFeatureSettings() const;
+  void SetFeatureSettings(uint32 uiShowFeatures);
   bool GetAnimateStunts() const;
   void SetAnimateStunts(bool bAnimate);
   bool GetAttachLast();

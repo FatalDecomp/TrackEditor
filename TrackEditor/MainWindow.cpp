@@ -1106,6 +1106,8 @@ void CMainWindow::OnTabChanged(int iIndex)
   bool bMillionPlus;
   uint32 uiShowModels = p->m_pDisplaySettings->GetDisplaySettings(carModel, aiLine, bMillionPlus);
   p->m_previewAy[iIndex]->ShowModels(uiShowModels);
+  p->m_previewAy[iIndex]->ShowFeatures(
+      p->m_pDisplaySettings->GetFeatureSettings());
   p->m_previewAy[iIndex]->SetAnimateStunts(
       p->m_pDisplaySettings->GetAnimateStunts());
   p->m_previewAy[iIndex]->UpdateCar(carModel, aiLine, bMillionPlus);
@@ -1230,6 +1232,8 @@ void CMainWindow::OnUpdatePreview()
   bool bMillionPlus;
   uint32 uiShowModels = p->m_pDisplaySettings->GetDisplaySettings(carModel, aiLine, bMillionPlus);
   GetCurrentPreview()->ShowModels(uiShowModels);
+  GetCurrentPreview()->ShowFeatures(
+      p->m_pDisplaySettings->GetFeatureSettings());
   GetCurrentPreview()->SetAnimateStunts(
       p->m_pDisplaySettings->GetAnimateStunts());
   GetCurrentPreview()->UpdateCar(carModel, aiLine, bMillionPlus);
@@ -1369,11 +1373,14 @@ void CMainWindow::LoadSettings()
   eShapeSection aiLine;
   bool bMillionPlus;
   uint32 uiShowModels = p->m_pDisplaySettings->GetDisplaySettings(carModel, aiLine, bMillionPlus);
+  uint32 uiShowFeatures = p->m_pDisplaySettings->GetFeatureSettings();
   bool bAnimateStunts = p->m_pDisplaySettings->GetAnimateStunts();
   bool bAttachLast = p->m_pDisplaySettings->GetAttachLast();
   int iCameraSpeed = (int)CEditorCameraController::GetMovementSpeed();
   //load display settings
   uiShowModels = settings.value("show_models", uiShowModels).toUInt();
+  uiShowFeatures = settings.value(
+      "show_features", SHOW_FEATURE_TOWERS).toUInt();
   //E3A-S4 added the centre line after show_models was first written, so an
   //existing profile has its bit clear for no reason the user chose. Switch it
   //on once and remember having done so, then a later deliberate untick sticks.
@@ -1389,6 +1396,7 @@ void CMainWindow::LoadSettings()
   bAttachLast = settings.value("attach_last", bAttachLast).toBool();
   iCameraSpeed = settings.value("camera_speed", iCameraSpeed).toInt();
   //apply display settings
+  p->m_pDisplaySettings->SetFeatureSettings(uiShowFeatures);
   p->m_pDisplaySettings->SetDisplaySettings(uiShowModels, carModel, aiLine, bMillionPlus);
   p->m_pDisplaySettings->SetAnimateStunts(bAnimateStunts);
   p->m_pDisplaySettings->SetAttachLast(bAttachLast);
@@ -1465,6 +1473,8 @@ void CMainWindow::SaveSettings()
   settings.setValue("show_edit_audio", p->m_pEditAudioDockWidget->isVisible());
   settings.setValue("show_edit_stunt", p->m_pEditStuntDockWidget->isVisible());
   settings.setValue("show_models", p->m_pDisplaySettings->GetDisplaySettings(carModel, aiLine, bMillionPlus));
+  settings.setValue("show_features",
+                    p->m_pDisplaySettings->GetFeatureSettings());
   settings.setValue("animate_stunts",
                     p->m_pDisplaySettings->GetAnimateStunts());
   settings.setValue("car_model", (int)carModel);

@@ -201,6 +201,11 @@ if(BUILD_TESTING)
                     "${CMAKE_CURRENT_SOURCE_DIR}/tests/test_e6_s3_releases.py"
                     -v)
         add_test(
+            NAME trackeditor-e7-s4-tower-display-contract
+            COMMAND "${Python3_EXECUTABLE}"
+                    "${CMAKE_CURRENT_SOURCE_DIR}/tests/test_e7_s4_tower_display.py"
+                    -v)
+        add_test(
             NAME trackeditor-graphics-settings-contract
             COMMAND "${Python3_EXECUTABLE}"
                     "${CMAKE_CURRENT_SOURCE_DIR}/tests/test_graphics_settings.py"

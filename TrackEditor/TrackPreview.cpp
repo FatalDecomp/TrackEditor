@@ -57,6 +57,7 @@ CTrackPreview::CTrackPreview(QWidget *pParent,
   , m_iRefZ(0)
   , m_dRefScale(1.0)
   , m_uiShowModels(0)
+  , m_uiShowFeatures(0)
   , m_carModel(eWhipModel::CAR_XZIZIN)
   , m_carAILine(eShapeSection::AILINE1)
   , m_bMillionPlus(false)
@@ -199,6 +200,20 @@ void CTrackPreview::ShowModels(uint32 uiShowModels)
   // An overlay change is a view change, not a document edit: it advances no
   // revision and needs no reload, so it rides the same coalesced render-only
   // path the camera uses.
+  ScheduleCameraRender();
+  update();
+}
+
+//-------------------------------------------------------------------------------------------------
+
+void CTrackPreview::ShowFeatures(uint32 uiShowFeatures)
+{
+  if (m_uiShowFeatures == uiShowFeatures)
+    return;
+  m_uiShowFeatures = uiShowFeatures;
+  m_OverlaySettings.SetShowFeatures(uiShowFeatures);
+  // Feature visibility is overlay state only. The coalesced camera path
+  // renders it immediately without advancing the geometry/document epoch.
   ScheduleCameraRender();
   update();
 }

@@ -27,10 +27,17 @@ class CenterLineToggleTests(unittest.TestCase):
         values = {}
         for line in flags.splitlines():
             parts = line.split()
-            if len(parts) == 3 and parts[0] == "#define" and parts[1].startswith("SHOW_"):
+            if (
+                len(parts) == 3
+                and parts[0] == "#define"
+                and parts[1].startswith("SHOW_")
+                and not parts[1].startswith("SHOW_FEATURE_")
+            ):
                 values.setdefault(int(parts[2], 16), []).append(parts[1])
-        # The mask is persisted in QSettings, so a collision would silently
-        # tie two checkboxes together in every existing user's settings.
+        # The legacy show_models word is persisted in QSettings, so a
+        # collision within that word would silently tie two checkboxes
+        # together. E7-S4 starts the separate SHOW_FEATURE_/show_features
+        # word, whose values intentionally begin again at bit zero.
         collisions = {v: n for v, n in values.items() if len(n) > 1}
         self.assertEqual(collisions, {})
         self.assertIn("SHOW_CENTER_LINE", values.get(0x20000000, []))

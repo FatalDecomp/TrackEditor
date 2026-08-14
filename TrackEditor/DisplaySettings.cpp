@@ -21,6 +21,7 @@ CDisplaySettings::CDisplaySettings(QWidget *pParent)
   ckTestCar->setChecked(true);
   ckAudio->setChecked(true);
   ckStunts->setChecked(true);
+  ckTowers->setChecked(true);
 
   cbTestCarType->addItem("F1WACK", (int)eWhipModel::CAR_F1WACK);
   cbTestCarType->addItem("XAUTO", (int)eWhipModel::CAR_XAUTO);
@@ -78,6 +79,7 @@ CDisplaySettings::CDisplaySettings(QWidget *pParent)
   connect(ckSigns, &QCheckBox::toggled, this, &CDisplaySettings::UpdatePreviewSelection);
   connect(ckAudio, &QCheckBox::toggled, this, &CDisplaySettings::UpdatePreviewSelection);
   connect(ckStunts, &QCheckBox::toggled, this, &CDisplaySettings::UpdatePreviewSelection);
+  connect(ckTowers, &QCheckBox::toggled, this, &CDisplaySettings::UpdatePreviewSelection);
   connect(ckAnimateStunts, &QCheckBox::toggled, this, &CDisplaySettings::UpdatePreviewSelection);
   connect(ckTestCar, &QCheckBox::toggled, this, &CDisplaySettings::UpdatePreviewSelection);
   connect(cbTestCarType, SIGNAL(currentIndexChanged(int)), this, SLOT(UpdatePreviewSelection()));
@@ -191,6 +193,23 @@ void CDisplaySettings::SetDisplaySettings(uint32 uiShowModels, eWhipModel carMod
   BLOCK_SIG_AND_DO(cbTestCarPos, setCurrentIndex(cbTestCarPos->findData((int)aiLine)));
   BLOCK_SIG_AND_DO(ckMillionPlus, setChecked(bMillionPlus));
 
+  UpdatePreviewSelection();
+}
+
+//-------------------------------------------------------------------------------------------------
+
+uint32 CDisplaySettings::GetFeatureSettings() const
+{
+  uint32 uiShowFeatures = 0;
+  if (ckTowers->isChecked()) uiShowFeatures |= SHOW_FEATURE_TOWERS;
+  return uiShowFeatures;
+}
+
+//-------------------------------------------------------------------------------------------------
+
+void CDisplaySettings::SetFeatureSettings(uint32 uiShowFeatures)
+{
+  BLOCK_SIG_AND_DO(ckTowers, setChecked(uiShowFeatures & SHOW_FEATURE_TOWERS));
   UpdatePreviewSelection();
 }
 

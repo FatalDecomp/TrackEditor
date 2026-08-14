@@ -34,6 +34,7 @@ public:
   void DeleteEnvirFloor();
   void UpdateTrack();
   void ShowModels(uint32 uiShowModels);
+  void ShowFeatures(uint32 uiShowFeatures);
   void SetAnimateStunts(bool bAnimate);
   void UpdateCar(eWhipModel carModel, eShapeSection aiLine, bool bMillionPlus);
   void AttachLast(bool bAttachLast);
@@ -125,6 +126,7 @@ private:
 
   CTrackPreviewPrivate *p;
   uint32 m_uiShowModels;
+  uint32 m_uiShowFeatures;
   eWhipModel m_carModel;
   eShapeSection m_carAILine;
   bool m_bMillionPlus;
