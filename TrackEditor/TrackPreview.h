@@ -132,7 +132,6 @@ private:
   eWhipModel m_carModel;
   eShapeSection m_carAILine;
   bool m_bMillionPlus;
-  bool m_bAttachLast;
   bool m_bAnimateStunts;
   int m_iScale;
   bool m_bAlreadySaved;

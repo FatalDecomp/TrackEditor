@@ -61,7 +61,6 @@ CTrackPreview::CTrackPreview(QWidget *pParent,
   , m_carModel(eWhipModel::CAR_XZIZIN)
   , m_carAILine(eShapeSection::AILINE1)
   , m_bMillionPlus(false)
-  , m_bAttachLast(false)
   , m_bAnimateStunts(false)
   , m_iScale(1)
   , m_bAlreadySaved(false)
@@ -375,8 +374,12 @@ void CTrackPreview::UpdateCar(eWhipModel carModel, eShapeSection aiLine, bool bM
 
 void CTrackPreview::AttachLast(bool bAttachLast)
 {
-  m_bAttachLast = bAttachLast;
-  UpdateTrack();
+  // This is preview state, not a document edit. ROLLER filters the closing
+  // segment at draw time, so toggling it needs neither serialization nor a
+  // geometry reload (and canonical export remains a closed track).
+  m_OverlaySettings.SetAttachLast(bAttachLast);
+  ScheduleCameraRender();
+  update();
 }
 
 //-------------------------------------------------------------------------------------------------

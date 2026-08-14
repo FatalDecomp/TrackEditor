@@ -42,6 +42,7 @@ class SubmodulePinTests(unittest.TestCase):
         self.assertIn("#define ROLLER_ED_OVERLAY_STATE_VERSION 3u", header)
         self.assertIn("ROLLER_ED_OVERLAY_ALL_SURFACE_CLASSES", header)
         self.assertIn("ROLLER_ED_SURFACE_CLASS_COUNT", header)
+        self.assertIn("ROLLER_ED_OVERLAY_DETACH_LAST", header)
 
     def test_the_staged_gitlink_matches_the_pinned_commit(self) -> None:
         result = subprocess.run(
@@ -98,6 +99,12 @@ class OverlayTranslationTests(unittest.TestCase):
         self.assertIn("uiWireframeClassMask != 0", body)
         self.assertIn("ROLLER_ED_OVERLAY_SHOW_SURFACES", body)
         self.assertIn("ROLLER_ED_OVERLAY_SHOW_WIREFRAME", body)
+
+    def test_attach_last_is_translated_as_preview_state(self) -> None:
+        self.assertIn("SetAttachLast(bool bAttachLast)", self.header)
+        body = function_body(self.source, "void CEditorOverlaySettings::Rebuild(")
+        self.assertIn("ROLLER_ED_OVERLAY_DETACH_LAST", body)
+        self.assertIn("m_bAttachLast", body)
 
     def test_the_translator_is_qt_free_and_facade_free(self) -> None:
         # It is unit-tested without a render worker or an event loop, which is
@@ -164,6 +171,15 @@ class RequestPathTests(unittest.TestCase):
         self.assertNotIn("SaveHistory", body)
         self.assertNotIn("MarkDocumentEdited", body)
         self.assertNotIn("QueueLoadAndRender", body)
+
+    def test_attach_last_re_renders_without_reloading_geometry(self) -> None:
+        preview = (EDITOR / "TrackPreview.cpp").read_text(encoding="utf-8")
+        body = function_body(preview, "void CTrackPreview::AttachLast(")
+        self.assertIn("m_OverlaySettings.SetAttachLast(bAttachLast)", body)
+        self.assertIn("ScheduleCameraRender()", body)
+        self.assertNotIn("UpdateTrack", body)
+        self.assertNotIn("QueueLoadAndRender", body)
+        self.assertNotIn("MarkDocumentEdited", body)
 
 
 class BuildRegistrationTests(unittest.TestCase):

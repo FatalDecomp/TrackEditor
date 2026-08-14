@@ -37,6 +37,8 @@ public:
   void SetSelectionRange(int iSelFrom, int iSelTo);
   // The UpdateCar(eWhipModel, eShapeSection, bool) triple, unchanged (E3A-S6).
   void SetTestCar(eWhipModel carModel, eShapeSection aiLine, bool bMillionPlus);
+  // True draws the closing segment from the last chunk back to chunk zero.
+  void SetAttachLast(bool bAttachLast);
 
   uint32_t GetShowModels() const { return m_uiShowModels; }
   uint32_t GetShowFeatures() const { return m_uiShowFeatures; }
@@ -61,6 +63,7 @@ private:
   // has always shown: every surface class solid, no wireframe. Deriving that
   // from a zero mask instead would blank the track for the first frames.
   bool m_bHasShowModels;
+  bool m_bAttachLast;
   int m_iSelFrom;
   int m_iSelTo;
   eWhipModel m_carModel;

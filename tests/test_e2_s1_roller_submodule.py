@@ -10,7 +10,7 @@ import unittest
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
 ROLLER_ROOT = REPOSITORY_ROOT / "external" / "ROLLER"
-EXPECTED_ROLLER_COMMIT = "154397f407020e6b5c94b251a04728f4d11233e9"
+EXPECTED_ROLLER_COMMIT = "0c6b8b4c87229c71b241468d621e8b11b2a18e9d"
 
 
 def run_git(*arguments: str, cwd: Path = REPOSITORY_ROOT) -> subprocess.CompletedProcess:

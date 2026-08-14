@@ -136,6 +136,7 @@ CEditorOverlaySettings::CEditorOverlaySettings()
   : m_uiShowModels(0)
   , m_uiShowFeatures(0)
   , m_bHasShowModels(false)
+  , m_bAttachLast(true)
   , m_iSelFrom(-1)
   , m_iSelTo(-1)
   // The same model CTrackPreview has always defaulted to, so the first frame
@@ -233,6 +234,14 @@ void CEditorOverlaySettings::SetTestCar(eWhipModel carModel,
 
 //-------------------------------------------------------------------------------------------------
 
+void CEditorOverlaySettings::SetAttachLast(bool bAttachLast)
+{
+  m_bAttachLast = bAttachLast;
+  Rebuild();
+}
+
+//-------------------------------------------------------------------------------------------------
+
 void CEditorOverlaySettings::Rebuild()
 {
   uint32_t uiFlags = 0;
@@ -275,6 +284,9 @@ void CEditorOverlaySettings::Rebuild()
     if ((m_uiShowFeatures & Feature.uiEditorBit) != 0)
       uiFlags |= Feature.uiOverlayFlag;
   }
+
+  if (!m_bAttachLast)
+    uiFlags |= ROLLER_ED_OVERLAY_DETACH_LAST;
 
   m_Overlay = tEdOverlayState();
   m_Overlay.uiStructSize = sizeof(m_Overlay);

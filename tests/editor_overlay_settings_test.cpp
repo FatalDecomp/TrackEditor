@@ -87,6 +87,26 @@ void test_untouched_settings_show_everything_solid()
   assert(State.uiLastSelectedChunk == ROLLER_ED_INVALID_CHUNK_ID);
 }
 
+void test_attach_last_controls_only_the_closing_segment_flag()
+{
+  CEditorOverlaySettings Settings;
+
+  // The display-settings checkbox defaults on, preserving the normal closed
+  // track until the user deliberately opens it for editing.
+  assert((Settings.GetOverlayState().uiFlags
+          & ROLLER_ED_OVERLAY_DETACH_LAST) == 0);
+
+  Settings.SetAttachLast(false);
+  assert((Settings.GetOverlayState().uiFlags
+          & ROLLER_ED_OVERLAY_DETACH_LAST) != 0);
+  assert((Settings.GetOverlayState().uiFlags
+          & ROLLER_ED_OVERLAY_SHOW_SURFACES) != 0);
+
+  Settings.SetAttachLast(true);
+  assert((Settings.GetOverlayState().uiFlags
+          & ROLLER_ED_OVERLAY_DETACH_LAST) == 0);
+}
+
 void test_each_checkbox_selects_exactly_its_own_class()
 {
   for (const tExpectedClass &Expected : g_aExpected) {
@@ -259,7 +279,8 @@ void test_no_undefined_flag_or_class_bit_is_ever_published()
                 | ROLLER_ED_OVERLAY_SHOW_REFERENCE_MESH
                 | ROLLER_ED_OVERLAY_TEST_CAR_MILLION_PLUS
                 | ROLLER_ED_OVERLAY_TEST_CAR_ADVANCED
-                | ROLLER_ED_OVERLAY_SHOW_TOWER_MARKERS)) == 0);
+                | ROLLER_ED_OVERLAY_SHOW_TOWER_MARKERS
+                | ROLLER_ED_OVERLAY_DETACH_LAST)) == 0);
   }
 }
 
@@ -586,6 +607,7 @@ int main()
 {
   test_state_is_a_valid_request();
   test_untouched_settings_show_everything_solid();
+  test_attach_last_controls_only_the_closing_segment_flag();
   test_each_checkbox_selects_exactly_its_own_class();
   test_surface_and_wireframe_stay_independent();
   test_signs_follow_their_single_checkbox();
